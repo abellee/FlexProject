@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modules:AbstractList xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 mouseEnabled="false"
+		 paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+		 xmlns:modules="modules.*" creationComplete="abstractlist1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.data.MicroBlogDirectMessage;
+			import com.sina.microblog.data.MicroBlogUser;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			private var curPage:uint = 1;
+			
+			public function setMessageList(arr:Array, mode:String = "normal"):void{
+				
+				if(!arr || arr.length == 0){
+					
+					return;
+					
+				}
+				var num:uint = arr.length;
+				for (var i:int = 0; i < num; i++){
+					
+					var item:CommentItem = new CommentItem();
+					var msg:MicroBlogDirectMessage = arr[i] as MicroBlogDirectMessage;
+					var createTime:Date = msg.createdAt;
+					var now:Date = new Date();
+					var user:MicroBlogUser = msg.sender;
+					item.setAvtar(user.profileImageUrl, user.id);
+					var str:String;
+					var tt:String = (createTime.getHours() < 10 ? ("0"+createTime.getHours()):createTime.getHours())+":"
+						+(createTime.getMinutes() < 10 ? ("0"+createTime.getMinutes()) : createTime.getMinutes());
+					if((now.time - createTime.time) / 1000 / 60 < 59){
+						
+						str = int((now.time - createTime.time) / 1000 / 60 + 1) + "分钟前";
+						
+					}else{
+						
+						str = "今天 " + tt;
+						
+					}
+					var timeStr:String = "";
+					if(createTime.getFullYear() == now.getFullYear() && createTime.getMonth() == now.getMonth() && createTime.getDate() == now.getDate()){
+						
+						timeStr = str;
+						
+					}else{
+						
+						timeStr = ((createTime.getMonth() + 1) < 10 ? ("0"+(createTime.getMonth() + 1)) : (createTime.getMonth() + 1))
+							+"月"+(createTime.getDate() < 10 ? ("0"+createTime.getDate()) : createTime.getDate())+"日 "+tt;
+						
+					}
+					item.setText(msg.text+"("+timeStr+")", "");
+					item.username = "<font color='#2d6a9c'><b>"+user.name+"</b></font>";
+					item.pureName = user.name;
+					item.isDirectFace = true;
+					if(mode == "update" && messageList.numElements >= DataCenter.count){
+						
+						messageList.removeElementAt(DataCenter.count - 1);
+						
+					}
+					messageList.addElement(item);
+					this.dispatchEvent(new Event(Event.RENDER));
+					
+				}
+				
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var msgEvent:WindowEvent = new WindowEvent(WindowEvent.SWAP_STATE);
+				msgEvent.dispatcher = {};
+				msgEvent.dispatcher.phase = InterfaceState.PERSON_LETTER_RECEIVE;
+				this.dispatchEvent(msgEvent);
+			}
+
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				var msgEvent:WindowEvent = new WindowEvent(WindowEvent.SWAP_STATE);
+				msgEvent.dispatcher = {};
+				msgEvent.dispatcher.phase = InterfaceState.PERSON_LETTER_SEND;
+				this.dispatchEvent(msgEvent);
+			}
+			
+			public function removeAll():void{
+				
+				messageList.removeAllElements();
+				
+			}
+
+			protected function abstractlist1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="25" horizontalAlign="center" verticalAlign="top" mouseEnabled="false">
+		<s:Button skinClass="skins.MewButtonBase" label="收到的私信" mouseChildren="false" click="button1_clickHandler(event)" height="24" />
+		<s:Button skinClass="skins.MewButtonBase" label="发出的私信" mouseChildren="false" click="button2_clickHandler(event)" height="24" />
+	</s:HGroup>
+	<s:VGroup id="messageList" width="100%" height="100%" horizontalAlign="left" verticalAlign="top" mouseEnabled="false" />
+</modules:AbstractList>

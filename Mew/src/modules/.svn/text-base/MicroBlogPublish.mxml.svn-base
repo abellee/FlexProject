@@ -1,0 +1,977 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="420" height="460" systemChrome="none" transparent="true"
+		  showStatusBar="false" backgroundAlpha="0" xmlns:modules="modules.*"
+		  creationComplete="window1_creationCompleteHandler(event)" alwaysInFront="false" mouseDown="window1_mouseDownHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.greensock.easing.Cubic;
+			import com.plter.air.windows.screen.ScreenCapturer;
+			import com.plter.air.windows.screen.ScreenCapturerEvent;
+			import com.sina.microblog.data.MicroBlogStatus;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			import functional.ImageGenerator;
+			import functional.StringDetect;
+			
+			import modules.ImageLoader;
+			
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.JPEGEncoder;
+			import mx.managers.PopUpManager;
+			
+			import phase.InterfaceState;
+			
+			import skins.MewButtonBase;
+			
+			import spark.events.TextOperationEvent;
+			
+			public var isOpen:Boolean = false;
+			
+			private var file:File;
+			
+			[Bindable]
+			private var hideBtn:Boolean = true;
+			
+			[Bindable]
+			private var repTxt:String = "";
+			
+			[Bindable]
+			private var repName:String = "";
+			
+			public var rid:String = "";
+			private var cid:String = "0";
+			
+			private var _nameObj:Object;
+			
+			private var nativeStartUp:NativeProcessStartupInfo;
+			private var nativeProcess:NativeProcess;
+			
+			private var curSystem:String = "";
+			
+			private var tname:String = "";
+			
+			private var ssf:ScreenShotForWindow;
+			
+			private var loader:Loader;
+			private var capture:ScreenCapturer;
+			private var tempRect:Rectangle;
+			
+			public function get text():String{
+				
+				return microText.text;
+				
+			}
+			public function clearText():void{
+				
+				this.currentState = "normal_state";
+				microText.text = "";
+				if(restrictNum){
+					
+					restrictNum.text = 140 + "";
+					
+				}
+				if(tf){
+					
+					tf.thumbnail = null;
+					tf.visible = false;
+					tf.alpha = 1;
+					tf.height = 20;
+					
+				}
+				if(imgBox){
+					
+					imgBox.height = 20;
+					
+				}
+				if(alertTxt){
+					
+					alertTxt.visible = false;
+					
+				}
+				hideBtn = true;
+				this.mouseChildren = true;
+				if(alertLayer && alertLayer.numElements && alertLayer.contains(DataCenter.userOper)){
+					
+					alertLayer.removeElement(DataCenter.userOper);
+					alertLayer.visible = false;
+					
+				}
+				
+			}
+			public function removeLoadingBar():void{
+				
+				this.mouseChildren = true;
+				if(alertLayer && alertLayer.numElements && alertLayer.contains(DataCenter.userOper)){
+					
+					alertLayer.removeElement(DataCenter.userOper);
+					alertLayer.visible = false;
+					
+				}
+				
+			}
+			public function get num():Number{
+				
+				return Number(restrictNum.text);
+				
+			}
+			
+			public function showProgress():void{
+				
+				
+				
+			}
+			
+			public function hideProgress():void{
+				
+				
+				
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.isOpen = false;
+				TweenLite.to(this.nativeWindow, .5, {y:Screen.mainScreen.visibleBounds.height + 500, ease:Cubic.easeOut, onComplete:hideThis});
+			}
+			
+			private function hideThis():void{
+				
+				this.close();
+				
+			}
+			
+			protected function microText_textInputHandler(event:Event):void
+			{
+				var txt:String = microText.text;
+				var num:Number = 140;
+				for(var i:int=0; i < txt.length;i++){
+					
+					if(StringDetect.isChinese(txt.charAt(i))){
+						
+						num --;
+						
+					}else{
+						
+						num -= .5;
+						
+					}
+					
+				}
+				restrictNum.text = num + "";
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(microText.selectionActivePosition != microText.selectionAnchorPosition){
+					
+					microText.appendText("#"+microText.text.substring(microText.selectionActivePosition, microText.selectionAnchorPosition)+"#");
+					microText.selectRange(microText.selectionAnchorPosition,microText.selectionAnchorPosition);
+					microText.setFocus();
+					return;
+					
+				}
+				var begin:int = microText.text.length + 1;
+				var end:int = microText.text.length + 12;
+				microText.appendText("#请在这里输入自定义话题#");
+				microText.selectRange(begin,end);
+				microText.setFocus();
+				microText.dispatchEvent(new TextOperationEvent(TextOperationEvent.CHANGE));
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				if(!file){
+					
+					file = new File();
+					
+				}
+				var fileFilter:FileFilter = new FileFilter("Image","*.jpg;*.png;*.gif;*.jpeg;*.bmp");
+				file.addEventListener(Event.SELECT,loadLocalImage);
+				file.addEventListener(Event.COMPLETE, loadLocalImage_completeHandler);
+				try{
+					
+					file.browseForOpen("*.jpg;*.png;*.gif;*.jpeg;*.bmp", [fileFilter]);
+					
+				}catch(e:IllegalOperationError){
+					
+					trace("only one conversation frame one time!");
+					
+				}
+			}
+			private function loadLocalImage(event:Event):void{
+				
+				file.load();
+				
+			}
+			private function loadLocalImage_completeHandler(event:Event):void{
+				
+				file.removeEventListener(Event.SELECT,loadLocalImage);
+				file.removeEventListener(Event.COMPLETE, loadLocalImage_completeHandler);
+				showThumbImage(file.data);
+				file = null;
+				
+			}
+			/**
+			 * 要显示的被加载的图片的ByteArray
+			 */
+			private function showThumbImage(data:ByteArray):void
+			{
+				
+				TweenLite.to(imgBox, .3, {height: 150});
+				TweenLite.to(tf, .3, {height: 150, onComplete: setImageData, onCompleteParams:[data]});
+				alertTxt.visible = true;
+				alertTxt.text = "双击图片取消";
+				if(microText.text == ""){
+					
+					microText.text = "分享图片";
+					focusTextArea();
+					microText.dispatchEvent(new TextOperationEvent(TextOperationEvent.CHANGE));
+					
+				}
+				
+			}
+			
+			private function focusTextArea():void{
+				
+				microText.setFocus();
+				microText.selectRange(10000, 10000);
+				
+			}
+			
+			private function setImageData(byte:ByteArray):void{
+				
+				tf.thumbnail = byte;
+				
+			}
+			
+			protected function hgroup1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+			
+			public function setNormal():void{
+				
+				this.currentState = "normal_state";
+				hideBtn = true;
+				
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.userOper.label = "正在发布微博...请耐心等待一下喔...";
+				DataCenter.userOper.width = alertLayer.width - 50;
+				alertLayer.addElement(DataCenter.userOper);
+				alertLayer.visible = true;
+				tf.alpha = .5;
+				TweenLite.to(DataCenter.userOper, .5, {alpha:1});
+				this.mouseChildren = false;
+				
+				if(this.currentState == InterfaceState.NORMAL_STATE){
+					
+					(DataCenter.mainPanel as MainPanel).sendStatus();					
+					
+				}else if(this.currentState == InterfaceState.REPOST_STATE){
+					
+					(DataCenter.mainPanel as MainPanel).repostStatus();
+					if(commentTip.selected){
+						
+						(DataCenter.mainPanel as MainPanel).commentStatus(_nameObj.id);
+						
+					}
+					
+				}else if(this.currentState == InterfaceState.COMMENT_STATE){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.REPLY_STATUS_RESULT, replyStatus_successHandler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.REPLY_STATUS_ERROR, replyStatus_failedHandler);
+					DataCenter.microAPI.replyStatus(rid, microText.text, cid);
+					if(commentTip.selected){
+						
+						/* if(repTxt.indexOf("回复@" + tname + ":") == -1){
+							
+							repTxt = "回复@" + tname + ":" + repTxt;
+							
+						} */
+						(DataCenter.mainPanel as MainPanel).repostStatus("//@" + tname + ":" + repTxt);
+						
+					}
+					
+				}else{
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.SEND_DIRECT_MESSAGE_RESULT, sendDirect_messageResult_handler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.SEND_DIRECT_MESSAGE_ERROR, sendDirect_messageError_handler);
+					DataCenter.microAPI.sendDirectMessage(this.microText.text, _nameObj.id);
+					
+				}
+				//				setNormal();
+				//				clearText();
+			}
+			
+			private function replyStatus_successHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.REPLY_STATUS_RESULT, replyStatus_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.REPLY_STATUS_ERROR, replyStatus_failedHandler);
+				
+				(DataCenter.mainPanel as MainPanel).refreshLocalCommentTimeline();
+				(DataCenter.mainPanel as MainPanel).refreshLocalCacheData();
+				DataCenter.alertTip._text = "提示: 发布评论成功！";
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				
+				this.clearText();
+				
+			}
+			
+			private function replyStatus_failedHandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.REPLY_STATUS_RESULT, replyStatus_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.REPLY_STATUS_ERROR, replyStatus_failedHandler);
+				
+				DataCenter.alertTip._text = "提示: errorId:" + event.status + ", 发布评论失败！";
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				if(alertLayer && alertLayer.numElements && alertLayer.contains(DataCenter.userOper)){
+					
+					alertLayer.removeElement(DataCenter.userOper);
+					alertLayer.visible = false;
+					
+				}
+				
+			}
+			
+			public function get thumbnail():ByteArray{
+				
+				return tf.thumbnail;
+				
+			}
+			/**
+			 * 从系统中拖入文件时调试
+			 */
+			private function nativeDrag_enterHandler(event:NativeDragEvent):void
+			{
+				
+				var clip:Clipboard = event.clipboard;
+				if(!clip.hasFormat(ClipboardFormats.TEXT_FORMAT) && !clip.hasFormat(ClipboardFormats.FILE_LIST_FORMAT) && !clip.hasFormat(ClipboardFormats.URL_FORMAT))
+				{
+					
+					return;
+					
+				}
+				if(clip.hasFormat(ClipboardFormats.FILE_LIST_FORMAT))
+				{
+					
+					var file:File = (clip.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array)[0] as File;
+					if(file.isDirectory || file.isPackage || file.isSymbolicLink || !checkIsImage(file.extension)){
+						
+						return;
+						
+					}
+					
+				}
+				NativeDragManager.acceptDragDrop(mainBox);
+				
+			}
+			
+			/**
+			 * 从系统中拖入文件并释放在该面板时调度 
+			 */
+			private function nativeDrag_dropHandler(event:NativeDragEvent):void
+			{
+				var clip:Clipboard = event.clipboard;
+				if(clip.hasFormat(ClipboardFormats.TEXT_FORMAT)){
+					
+					microText.appendText(String(clip.getData(ClipboardFormats.TEXT_FORMAT)));
+					microText.dispatchEvent(new TextOperationEvent(TextOperationEvent.CHANGE));
+					
+				}else if(clip.hasFormat(ClipboardFormats.FILE_LIST_FORMAT)){
+					
+					var file:File = (clip.getData(ClipboardFormats.FILE_LIST_FORMAT) as Array)[0] as File;
+					if(checkIsImage(file.extension))
+					{
+						loadImage(file.url);
+					}else{
+						
+						return;
+						
+					}
+					
+				}else if(clip.hasFormat(ClipboardFormats.URL_FORMAT)){
+					
+					var url:String = String(clip.getData(ClipboardFormats.URL_FORMAT));
+					loadImage(url);
+					
+				}
+			}
+			private function imageFromClipboard_loadComplete(event:Event):void
+			{
+				
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, image_loadIOErrorHandler);
+				loaderInfo.removeEventListener(ProgressEvent.PROGRESS, image_loadProgressHandler);
+				loaderInfo.removeEventListener(Event.COMPLETE, imageFromClipboard_loadComplete);
+				var bitmapData:BitmapData = (loaderInfo.content as Bitmap).bitmapData;
+				loader = null;
+				processBitmapFromClipboard(bitmapData);
+				
+			}
+			private function image_loadProgressHandler(event:ProgressEvent):void
+			{
+				
+				alertTxt.text = "";
+				alertTxt.visible = true;
+				alertTxt.text = "加载中..." + (uint(event.bytesLoaded / event.bytesTotal * 100)) + "%";
+				
+			}
+			private function image_loadIOErrorHandler(event:IOErrorEvent):void
+			{
+				trace(event.text);
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, image_loadIOErrorHandler);
+				loaderInfo.removeEventListener(ProgressEvent.PROGRESS, image_loadProgressHandler);
+				loaderInfo.removeEventListener(Event.COMPLETE, imageFromClipboard_loadComplete);
+				loader = null;
+				alertTxt.text = "";
+				alertTxt.visible = true;
+				alertTxt.text = "加载失败,此链接无效!";
+				
+			}
+			/**
+			 * 加载指定图片
+			 */
+			private function loadImage(url:String):void
+			{
+				
+				if(!loader){
+					
+					loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, image_loadIOErrorHandler);
+					loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS, image_loadProgressHandler);
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, imageFromClipboard_loadComplete);
+					loader.load(new URLRequest(url));
+					
+				}
+				
+			}
+			/**
+			 * 检测剪切板中第一个文件是否为图片
+			 * 检测url是否为图片url
+			 */
+			private function checkIsImage(str:String):Boolean
+			{
+				
+				switch(str.toLowerCase())
+				{
+					case "png":
+					case "jpg":
+					case "jpeg":
+					case "gif":
+					case "bmp":
+						return true;
+						break;
+					default:
+						return false;
+						break;
+						
+				}
+				
+			}
+			
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_DROP, nativeDrag_dropHandler);
+				this.addEventListener(NativeDragEvent.NATIVE_DRAG_ENTER, nativeDrag_enterHandler);
+				
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				switch(Capabilities.os){
+					
+					case "Windows 7":
+						this.styleName = "win7Style";
+						break;
+					case "Windows XP":
+						this.styleName = "xpStyle";
+						break;
+					default:
+						this.styleName = "xpStyle";
+						break;
+					
+				}
+				if(Capabilities.os.indexOf("Win") != -1){
+					
+					curSystem = "win";
+					
+				}
+				if(Capabilities.os.indexOf("Mac") != -1){
+					
+					this.styleName = "macStyle";
+					curSystem = "mac";
+					
+				}
+				
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				file = null;
+				_nameObj = null;
+				DataCenter.sendPanel = null;
+				if(ssf){
+					
+					ssf.close();
+					ssf = null;
+					
+				}
+				
+			}
+			
+			protected function tf_doubleClickHandler(event:MouseEvent):void
+			{
+				tf.thumbnail = null;
+				tf.visible = false;
+				alertTxt.visible = false;
+				if(tf.height > 20){
+					
+					TweenLite.to(imgBox, .3, {height: 20});
+					TweenLite.to(tf, .3, {height: 20});
+					
+				}
+				if(microText.text != "分享图片"){
+					
+					return;
+					
+				}
+				microText.text = "";
+				restrictNum.text = 140 + "";
+			}
+			
+			public function repost(str:String, rename:String):void{
+				
+				this.currentState = "repost_state";
+				if(commentTip){
+					
+					commentTip.selected = false;
+					
+				}
+				hideBtn = false;
+				tf.visible = false;
+				if(tf.height > 20){
+					
+					TweenLite.to(imgBox, .3, {height: 20});
+					TweenLite.to(tf, .3, {height: 20});
+					
+				}
+				repTxt = str;
+				repName = rename;
+				
+			}
+			
+			public function comment(str:String, name:String, id:String, _cid:String):void{
+				
+				this.currentState = "comment_state";
+				if(commentTip){
+					
+					commentTip.selected = false;
+					
+				}
+				hideBtn = true;
+				tf.visible = false;
+				if(tf.height > 20){
+					
+					TweenLite.to(imgBox, .3, {height: 20});
+					TweenLite.to(tf, .3, {height: 20});
+					
+				}
+				repTxt = str;
+				tname = name;
+				repName = "<b>【回复】" + name + ":</b>";
+				rid = id;
+				cid = _cid;
+				if(commentTip){
+					
+					setCheckBoxLabel();
+					
+				}
+				
+			}
+			
+			public function set repostAddText(str:String):void{
+				
+				microText.text = str;
+				if(this.currentState == "repost_state"){
+					
+					microText.setFocus();
+					microText.selectRange(0, 0);
+					
+				}else{
+					
+					focusTextArea();
+					
+				}
+				microText.dispatchEvent(new TextOperationEvent(TextOperationEvent.CHANGE));
+				
+			}
+			
+			protected function repostText_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.height += repostText.height + 30;
+			}
+			
+			
+			protected function button5_clickHandler(event:MouseEvent):void
+			{
+				closeBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+			
+			public function set nameArr(obj:Object):void{
+				
+				_nameObj = obj;
+				if(commentTip){
+					
+					setCheckBoxLabel();
+					
+				}
+				
+			}
+			
+			protected function commentTip_creationCompleteHandler(event:FlexEvent):void
+			{
+				setCheckBoxLabel();
+			}
+			private function setCheckBoxLabel():void{
+				
+				if(this.currentState == "comment_state"){
+					
+					commentTip.visible = true;
+					commentTip.label = "同时转发到我的微博";
+					return;
+					
+				}
+				commentTip.visible = true;
+				commentTip.label = "同时评论给 " + _nameObj.name;
+				
+			}
+			public function sendAt(name:String, userId:String):void{
+				
+				this.currentState = "normal_state";
+				hideBtn = true;
+				_nameObj = {name:name, id:userId};
+				microText.text = "@" + name + ":";
+				focusTextArea();
+				microText.dispatchEvent(new TextOperationEvent(TextOperationEvent.CHANGE));
+				
+			}
+			
+			public function sendDirect(name:String, userId:String):void{
+				
+				this.currentState = "direct_state";
+				hideBtn = false;
+				_nameObj = {name:name, id:userId};
+				alertTxt.visible = true;
+				alertTxt.text = "发私信给 " + name;
+				
+			}
+			private function sendDirect_messageResult_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.SEND_DIRECT_MESSAGE_RESULT, sendDirect_messageResult_handler);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 发送给" + _nameObj.name + "的私信成功！";
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				(DataCenter.mainPanel as MainPanel).refreshLoacalDirectSend();
+				this.clearText();
+				
+			}
+			
+			private function sendDirect_messageError_handler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.SEND_DIRECT_MESSAGE_ERROR, sendDirect_messageError_handler);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 发送给" + _nameObj.name + "的私信失败！\n双方必需相互关注！";
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				if(alertLayer && alertLayer.numElements && alertLayer.contains(DataCenter.userOper)){
+					
+					alertLayer.removeElement(DataCenter.userOper);
+					alertLayer.visible = false;
+					
+				}
+				
+			}
+			
+			
+			protected function button6_clickHandler(event:MouseEvent):void
+			{
+				if(!NativeProcess.isSupported){
+					
+					trace("不支持本地进程通信!");
+					
+				}
+				if(!nativeStartUp){
+					
+					nativeStartUp = new NativeProcessStartupInfo();
+					
+				}
+				if(!nativeProcess){
+					
+					nativeProcess = new NativeProcess();
+					
+				}
+				var arg:Vector.<String> = new Vector.<String>();
+				if(curSystem == "win"){
+					
+					nativeStartUp = null;
+					nativeProcess = null;
+					if(ssf){
+						
+						ssf.close();
+						ssf = null;
+						
+					}
+					ssf = new ScreenShotForWindow();
+					ssf.type = NativeWindowType.LIGHTWEIGHT;
+					ssf.alwaysInFront = true;
+					ssf.open();
+					
+				}else if(curSystem == "mac"){
+					
+					nativeStartUp.executable = new File("/usr/sbin/screencapture");
+					arg.push("-s");
+					arg.push("-c");
+					nativeStartUp.arguments = arg;
+					nativeProcess.addEventListener(NativeProcessExitEvent.EXIT, showScreenShot);
+					nativeProcess.start(nativeStartUp);
+					
+				}
+				
+			}
+			public function clearSSF():void{
+				
+				ssf.close();
+				ssf = null;
+				
+			}
+			public function shotForWindow(rect:Rectangle):void{
+				
+				tempRect = rect;
+				if(!capture){
+					
+					capture = new ScreenCapturer();
+					
+				}
+				capture.addEventListener(ScreenCapturerEvent.SUCCESS, screenCaptureSuccess);
+				capture.startCapture();
+				
+			}
+			private function screenCaptureSuccess(event:ScreenCapturerEvent):void
+			{
+				capture.removeEventListener(ScreenCapturerEvent.SUCCESS, screenCaptureSuccess);
+				var bd:BitmapData = new BitmapData(tempRect.width, tempRect.height);
+				bd.copyPixels(event.bitmapData, tempRect, new Point(0, 0));
+				capture = null;
+				if(bd){
+					
+					processBitmapFromClipboard(bd);
+					
+				}
+			}
+			private function showScreenShot(event:NativeProcessExitEvent):void{
+				
+				nativeProcess.removeEventListener(NativeProcessExitEvent.EXIT, showScreenShot);
+				nativeStartUp = null;
+				nativeProcess = null;
+				var bd:BitmapData = Clipboard.generalClipboard.getData(ClipboardFormats.BITMAP_FORMAT) as BitmapData;
+				bd = ImageGenerator.generateBitmap(bd);
+				if(bd){
+					
+					processBitmapFromClipboard(bd);
+					
+				}
+				
+			}
+			/**
+			 * 处理截图或者从本地拖入的图片
+			 */
+			private function processBitmapFromClipboard(bd:BitmapData):void
+			{
+				
+				var jpgEncoder:JPEGEncoder = new JPEGEncoder(80);
+				var byteArray:ByteArray = jpgEncoder.encode(bd);
+				TweenLite.to(imgBox, .3, {height: 150});
+				TweenLite.to(tf, .3, {height: 150, onComplete: showThumbImage, onCompleteParams:[byteArray]});
+				
+			}
+			
+			protected function button7_clickHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					return;
+					
+				}
+				DataCenter.emotionWindow = new EmotionsWindow();
+				DataCenter.emotionWindow.type = NativeWindowType.LIGHTWEIGHT;
+				DataCenter.emotionWindow.alwaysInFront = true;
+				DataCenter.emotionWindow.open();
+				var nx:Number;
+				var ny:Number;
+				nx = this.nativeWindow.x;
+				ny = this.nativeWindow.y - DataCenter.emotionWindow.height;
+				DataCenter.emotionWindow.setPos(nx, ny, this);
+			}
+			
+			protected function outerBox_updateCompleteHandler(event:FlexEvent):void
+			{
+				//				this.currentState = "normal_state";
+				//				hideBtn = true;
+				if(this.isOpen){
+					
+					return;
+					
+				}
+				var tx:uint = Screen.mainScreen.visibleBounds.width - ((DataCenter.mainPanel as MainPanel).nativeWindow.x + (DataCenter.mainPanel as MainPanel).nativeWindow.width);
+				var ty:uint = Screen.mainScreen.visibleBounds.height - ((DataCenter.mainPanel as MainPanel).nativeWindow.y + (DataCenter.mainPanel as MainPanel).nativeWindow.height);
+				var rx:uint;
+				var ry:uint;
+				if(tx >= 430){
+					
+					rx = (DataCenter.mainPanel as MainPanel).nativeWindow.x + (DataCenter.mainPanel as MainPanel).nativeWindow.width;
+					
+				}else if(tx <= 430 && (DataCenter.mainPanel as MainPanel).nativeWindow.x >= 430){
+					
+					rx = (DataCenter.mainPanel as MainPanel).nativeWindow.x - this.nativeWindow.width;
+					
+				}else{
+					
+					rx = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+					
+				}
+				if(ty > 200){
+					
+					ry = (DataCenter.mainPanel as MainPanel).nativeWindow.y + (DataCenter.mainPanel as MainPanel).nativeWindow.height - this.outerBox.height - 50;
+					
+				}else{
+					
+					ry = Screen.mainScreen.visibleBounds.height - this.outerBox.height - 50;
+					
+				}
+				
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					mainBox.filters = myFilters;
+					
+				}
+				
+				this.visible = true;
+				this.nativeWindow.x = rx;
+				this.nativeWindow.y = Screen.mainScreen.visibleBounds.height + this.nativeWindow.height;
+				this.isOpen = true;
+				focusTextArea();
+				TweenLite.to(this.nativeWindow, .5, {y:ry, ease:Cubic.easeOut});
+			}
+			
+			protected function window1_mouseDownHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					
+				}
+			}
+			
+			public function insertEmotionText(str:String):void{
+				
+				microText.insertText(str);
+				
+			}
+
+			protected function mainBox_mouseOutHandler(event:MouseEvent):void
+			{
+				mainBox.removeEventListener(MouseEvent.MOUSE_OUT, mainBox_mouseOutHandler);
+				mainBox.toolTip = "";
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="normal_state" />
+		<s:State name="repost_state" />
+		<s:State name="direct_state" />
+		<s:State name="comment_state" />
+	</s:states>
+	<s:VGroup width="100%" gap="0" mouseEnabled="false" horizontalAlign="center" verticalAlign="top" id="outerBox" updateComplete="outerBox_updateCompleteHandler(event)">
+		<s:HGroup width="100%" height.repost_state="20" height.direct_state="20" height.comment_state="20"
+				  height.normal_state="20" horizontalAlign="right" mouseEnabled="false" paddingRight="65" verticalAlign="bottom" id="imgBox" includeIn="normal_state">
+			<modules:ThumbnailFrame height.repost_state="20" height.direct_state="20" height.comment_state="20"
+									height.normal_state="20" id="tf" visible="false"
+									toolTip="双击取消图片" doubleClickEnabled="true" doubleClick="tf_doubleClickHandler(event)" />
+		</s:HGroup>
+		<s:BorderContainer width="400" borderColor="#327395" borderWeight="1" cornerRadius="5"
+						  backgroundColor="#f0fbfe" id="mainBox" toolTip="可直接将您要发布的图片 | 图片链接 | 文字拖至此处" mouseOut="mainBox_mouseOutHandler(event)">
+			<s:Rect width="100%" height="30" x="0" y="0" topLeftRadiusX="5" topLeftRadiusY="5" topRightRadiusX="5" topRightRadiusY="5">
+				<s:fill>
+					<s:SolidColor color="#80bddc" />
+				</s:fill>
+			</s:Rect>
+			<s:HGroup width="100%" height="30" x="0" y="0" paddingLeft="10" paddingRight="10"
+					  verticalAlign="middle" horizontalAlign="right" gap="10" mouseDown="hgroup1_mouseDownHandler(event)" id="controlBox">
+				<s:Button skinClass="skins.TopicBtnSkin" mouseChildren="false" toolTip="话题" buttonMode="true"
+						  click="button2_clickHandler(event)" visible="{hideBtn}" />
+				<s:Button skinClass="skins.ScreenShotBtnSkin" mouseChildren="false" toolTip="截图" buttonMode="true"
+						  click="button6_clickHandler(event)" visible="{hideBtn}" id="screenshotBtn" enabled="false" enabled.normal_state="true"
+						  alpha.comment_state=".4" alpha.direct_state=".4" alpha.repost_state=".4" alpha="1" />
+				<s:Button skinClass="skins.ImageBtnSkin" mouseChildren="false" toolTip="图片" buttonMode="true"
+						  click="button3_clickHandler(event)" visible="{hideBtn}" id="imgBtn" enabled="false" enabled.normal_state="true"
+						  alpha.comment_state=".4" alpha.direct_state=".4" alpha.repost_state=".4" alpha="1" />
+				<s:Button skinClass="skins.FaceBtnSkin" mouseChildren="false" toolTip="表情" buttonMode="true" click="button7_clickHandler(event)" />
+				<s:Button skinClass="skins.CloseBtn0" mouseChildren="false" toolTip="关闭" buttonMode="true" click="button1_clickHandler(event)" id="closeBtn" />
+			</s:HGroup>
+			<s:HGroup mouseEnabled="false" width="100%" height="130" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" x="0" y="30">
+				<s:TextArea width="100%" height="130" borderAlpha=".5" focusAlpha="0" id="microText"
+							change="microText_textInputHandler(event)"
+							selectable="true" selectionHighlighting="TextSelectionHighlighting.ALWAYS" />
+			</s:HGroup>
+			<s:VGroup width="100%" x="0" y="170" horizontalAlign="right" gap="5" paddingLeft="5" paddingRight="5" paddingBottom="5">
+				<s:VGroup width="100%" mouseEnabled="false" includeIn="repost_state, comment_state">
+					<s:CheckBox skinClass="skins.CheckBoxClass" mouseChildren="false" id="commentTip" visible="false"
+								creationComplete="commentTip_creationCompleteHandler(event)" />
+				</s:VGroup>
+				<s:HGroup width="100%" mouseEnabled="false" horizontalAlign="center">
+					<s:Button label="发 送" click="button4_clickHandler(event)" skinClass="skins.MewButtonBase" height="28" width="60" />
+					<s:Button label="关 闭" click="button5_clickHandler(event)" skinClass="skins.MewButtonBase" height="28" width="60" />
+				</s:HGroup>
+				<mx:HRule width="100%" includeIn="repost_state, comment_state" />
+				<mx:Label width="100%" id="repostName" minHeight="0" includeIn="repost_state, comment_state" htmlText="{repName}" paddingTop="3" />
+				<s:Label focusEnabled="false" width="100%"
+						 id="repostText" updateComplete="repostText_creationCompleteHandler(event)" minHeight="0"
+						 paddingLeft="5" paddingRight="5" paddingBottom="5" includeIn="repost_state, comment_state" text="{repTxt}" />
+			</s:VGroup>
+			<s:Label text="双击图片取消" id="alertTxt" visible="false" x="85" y="8" alpha=".8" />
+			<s:Label text="140" fontFamily="Digit" fontSize="20" color="#327395" mouseEnabled="false"
+					 mouseChildren="false" y="5" x="10" id="restrictNum" />
+			<s:BorderContainer id="alertLayer" width="100%" height="100%" backgroundAlpha=".5" mouseEnabled="false" mouseChildren="false" visible="false">
+				<s:layout>
+					<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" />
+				</s:layout>
+			</s:BorderContainer>
+		</s:BorderContainer>
+	</s:VGroup>
+</s:Window>

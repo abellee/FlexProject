@@ -1,0 +1,287 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="420" height="720" systemChrome="none"
+		  transparent="true" showStatusBar="false" backgroundAlpha="0" mouseDown="window1_mouseDownHandler(event)"
+		  creationComplete="window1_creationCompleteHandler(event)" alpha="0">
+	<s:layout>
+		<s:HorizontalLayout horizontalAlign="center" verticalAlign="top" gap="0" paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.data.MicroBlogStatus;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			import resource.ResCenter;
+			
+			import skins.MainCloseBtnSkin;
+			import skins.MiniBtnSkin;
+			import skins.ScrollerSkin;
+			
+			private var sid:String = ""; // 微博id
+			
+			private var commentInput:CommentInput;
+			private var commentList:CommentList; //评论列表
+			
+			private var _data:MicroBlogStatus;
+			
+			protected function bordercontainer1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					mainBox.filters = myFilters;
+					
+				}
+			}
+
+			protected function closeBtn_clickHandler(event:MouseEvent):void
+			{
+				easeToClose();
+			}
+			
+			public function easeToClose():void{
+				
+				TweenLite.to(this, .2, {alpha:0, onComplete:closeWindow});
+				
+			}
+			
+			private function closeWindow():void{
+				
+				DataCenter.commentListWindow = null;
+				this.close();
+				
+			}
+
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				setPos();
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			
+			private function setPos():void{
+				
+				var tx:uint = Screen.mainScreen.visibleBounds.width - (DataCenter.mainPanel.nativeWindow.x + DataCenter.mainPanel.nativeWindow.width);
+				var ty:uint = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				var rx:uint;
+				if(tx >= 420){
+					
+					rx = DataCenter.mainPanel.nativeWindow.x + DataCenter.mainPanel.nativeWindow.width;
+					
+				}else if(tx <= 420 && DataCenter.mainPanel.nativeWindow.x >= 420){
+					
+					rx = DataCenter.mainPanel.nativeWindow.x - this.nativeWindow.width;
+					
+				}else{
+					
+					rx = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+					
+				}
+				
+				this.nativeWindow.x = rx;
+				this.nativeWindow.y = ty; 
+				
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(commentInput){
+					
+					commentInput.removeEventListener(WindowEvent.COMMENT_SUCCESS, addNewComment);
+					
+				}
+				if(commentList){
+					
+					commentList.removeEventListener(WindowEvent.ADD_COMMENT_TEXT, addCommentDefaultText);
+					commentList.removeEventListener(WindowEvent.UPDATE_COMPLETE, resetScrollerSize);
+					
+				}
+				this.removeAllElements();
+				commentInput = null;
+				commentList = null;
+				mewIcon.source = null;
+				
+			}
+			
+			public function set data(status:MicroBlogStatus):void{
+				
+				_data = status;
+				
+			}
+			public function setComment(id:String, name:String):void{
+				
+				if(commentInput){
+					
+					if(mainList.contains(commentInput)){
+						
+						mainList.removeElement(commentInput);
+						
+					}
+					commentInput = null;
+					
+				}
+				if(commentList){
+					
+					if(mainList.contains(commentList)){
+						
+						mainList.removeElement(commentList);
+						
+					}
+					commentList = null;
+					
+				}
+				
+				commentInput = new CommentInput();
+				mainList.addElement(commentInput);
+				commentInput.addEventListener(WindowEvent.COMMENT_SUCCESS, addNewComment);
+				commentInput.sid = id;
+				commentInput.ownerName = name;
+				if(_data.repost){
+					
+					commentInput.curText = "@" + _data.user.name + ":" + _data.text;
+					
+				}
+				
+				commentList = new CommentList();
+				listGroup.addElement(commentList);
+				commentList.addEventListener(WindowEvent.ADD_COMMENT_TEXT, addCommentDefaultText);
+				commentList.addEventListener(WindowEvent.UPDATE_COMPLETE, resetScrollerSize);
+				commentList.mouseEnabled = false;
+				commentList.addComment(id, DataCenter.commentCount);
+				
+			}
+			
+			private function addCommentDefaultText(event:WindowEvent):void{
+				
+				commentInput.commentInitTxt = String(event.dispatcher.name);
+				commentInput.cid = event.dispatcher.cid;
+				commentInput.sid = event.dispatcher.sid;
+				
+			}
+			
+			private function addNewComment(event:WindowEvent):void{
+				
+				commentList.addNewComment(event.dispatcher as MicroBlogComment);
+				
+			}
+
+			protected function mainList_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(_data){
+					
+					sid = _data.id;
+					
+					var entry:MicroBlogEntry = new MicroBlogEntry();
+					entry.setEntry(_data, InterfaceState.COMMENT_WINDOW);
+					mainList.addElement(entry);
+					var hdb:HDashBord = new HDashBord();
+					mainList.addElement(hdb);
+					entry.removeNameBoxOper();
+					
+					setComment(sid, _data.user.name);
+					_data = null;
+					
+				}
+				TweenLite.to(this, .5, {alpha:1});
+			}
+			
+			private function resetScrollerSize(event:WindowEvent):void{
+				
+//				commentList.removeEventListener(WindowEvent.UPDATE_COMPLETE, resetScrollerSize);
+				listGroup.verticalScrollPosition = 0;
+				var sh:uint = commentList.height;
+				if((mainList.height + commentList.height) > 670){
+					
+					sh = 670 - mainList.height;
+					
+				}
+				var nh:uint = sh + mainList.height + 60;
+				TweenLite.to(scroller, .3, {height: sh});
+				TweenLite.to(this.nativeWindow, .3, {height: nh, onComplete: showScrollBar});
+				
+			}
+			
+			private function showScrollBar():void{
+				
+				scroller.setStyle("verticalScrollPolicy", "auto");
+				
+			}
+
+			protected function window1_mouseDownHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					
+				}
+			}
+			
+			public function get entryHeight():uint{
+				
+				var entry:MicroBlogEntry = mainList.getElementAt(0) as MicroBlogEntry;
+				if(entry){
+					
+					return entry.height;
+					
+				}
+				return 0;
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Group width="400" mouseEnabled="false" creationComplete="group1_creationCompleteHandler(event)" id="mainBox">
+		<s:BorderContainer width="400" borderColor="#427087" borderWeight="2" cornerRadius="8"
+						   y="20" backgroundColor="#ebf9ff" mouseEnabled="false">
+			<s:layout>
+				<s:VerticalLayout gap="0" />
+			</s:layout>
+			<s:BorderContainer width="396" height="25" borderVisible="false" mouseDown="bordercontainer1_mouseDownHandler(event)" backgroundAlpha="0">
+				<s:Rect width="396" height="25" topLeftRadiusX="8" topLeftRadiusY="8" topRightRadiusX="8" topRightRadiusY="8">
+					<s:fill>
+						<s:SolidColor color="#83bddc" />
+					</s:fill>
+				</s:Rect>
+			</s:BorderContainer>
+			<s:VGroup width="396" mouseEnabled="false" gap="0" minHeight="0" id="mainList" horizontalAlign="center" creationComplete="mainList_creationCompleteHandler(event)" />
+			<s:Scroller width="396" height="0" skinClass="skins.ScrollerSkin" id="scroller" verticalScrollPolicy="off">
+				<s:Group id="listGroup" mouseEnabled="false" width="100%">
+					<s:Rect width="100%" topLeftRadiusX="8" topLeftRadiusY="8" topRightRadiusX="8" topRightRadiusY="8">
+						<s:fill>
+							<s:SolidColor color="#d2e9f5" alpha=".6" />
+						</s:fill>
+					</s:Rect>
+				</s:Group>
+			</s:Scroller>
+		</s:BorderContainer>
+		<s:BitmapImage source="{ResCenter.MewIcon}" y="25" x="10" id="mewIcon" />
+		<s:Button skinClass="skins.MainCloseBtnSkin" right="0" y="12" mouseChildren="false" id="closeBtn" click="closeBtn_clickHandler(event)" />
+	</s:Group>
+</s:Window>

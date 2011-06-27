@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modules:AbstractList xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+		  horizontalAlign="left" verticalAlign="top" xmlns:modules="modules.*" creationComplete="abstractlist1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.sina.microblog.data.MicroBlogCount;
+			import com.sina.microblog.data.MicroBlogStatus;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.EffectCenter;
+			import functional.StringDetect;
+			import functional.Utils;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import phase.InterfaceState;
+			
+			private var curInterface:String = InterfaceState.FRIENDS_TIME_LINE;
+			
+			private var entryList:Array;
+			
+			private var ids:Array;
+			private var countList:Object;
+			
+			public function setList(arr:Array, cur:String):void{
+				
+				if(!arr || arr.length == 0){
+					
+					return;
+					
+				}
+				this.dispatchEvent(new WindowEvent(WindowEvent.LOAD_COMPLETE));
+				this.curInterface = cur;
+				if(this.numElements){
+					
+					this.removeAllElements();
+					
+				}
+				ids = [];
+				entryList = [];
+				if(cur == InterfaceState.USER_TIME_LINE || cur == InterfaceState.TARGET_USER){
+					
+					if(!DataCenter.userDes){
+						
+						DataCenter.userDes = new UserDescription();
+						
+					}
+					var tempUser:MicroBlogUser = (arr[0] as MicroBlogStatus).user;
+					if(DataCenter.userDes.user != tempUser.name){
+						
+						DataCenter.userDes.currentUser(tempUser);
+						
+					}
+					this.addElementAt(DataCenter.userDes, 0);
+					
+				}
+				var num:uint = arr.length;
+				for(var i:uint = 0; i < num; i++){
+					
+					var status:MicroBlogStatus = arr[i] as MicroBlogStatus;
+					var entry:MicroBlogEntry = new MicroBlogEntry();
+					entry.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					entry.setEntry(status, curInterface);
+					this.addElement(entry);
+					var hdb:HDashBord = new HDashBord();
+					this.addElement(hdb);
+					entryList.push([entry, hdb]);
+					if(!isExist(status.id)) ids.push(status.id);
+					if(status.repost){
+						
+						if(!isExist(status.repost.id)) ids.push(status.repost.id);
+						
+					}
+					this.dispatchEvent(new Event(Event.RENDER));
+					
+				}
+				loadStatusCount();
+				
+			}
+			private function isExist(id:String):Boolean
+			{
+				
+				for each(var str:String in ids){
+					
+					if(str == id){
+						
+						return true;
+						
+					}
+					
+				}
+				return false;
+				
+			}
+			private function loadStatusCount():void
+			{
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_STATUS_COUNTS_RESULT, loadStatus_countsResultHandler);
+				DataCenter.microAPI.loadStatusCounts(ids);
+			}
+			private function loadStatus_countsResultHandler(event:MicroBlogEvent):void
+			{
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_STATUS_COUNTS_RESULT, loadStatus_countsResultHandler);
+				ids = null;
+				if(!event.result || !event.result.length){
+					
+					return;
+					
+				}
+				countList = {};
+				for each(var mbc:MicroBlogCount in event.result){
+					
+					countList[mbc.id] = mbc;
+					
+				}
+			}
+			
+			public function getStatusCount(id:String):MicroBlogCount
+			{
+				if(!countList || !countList[id]){
+					
+					return null;
+					
+				}
+				return countList[id];
+				
+			}
+			
+			public function updateStatus_handler(status:MicroBlogStatus):void{
+				
+				if(entryList && entryList.length >= DataCenter.count){
+					
+					this.removeElement(entryList[entryList.length - 1][0]);
+					this.removeElement(entryList[entryList.length - 1][1]);
+					entryList.splice(entryList.length - 1, 1);
+					
+				}
+				var entry:MicroBlogEntry = new MicroBlogEntry();
+				entry.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				entry.setEntry(status, curInterface);
+				
+				var hdb:HDashBord = new HDashBord();
+				this.addElementAt(hdb, 0);
+				
+				this.addElementAt(entry, 0);
+				if(!entryList && !entryList.length){
+					
+					entryList = [];
+					
+				}
+				entryList.splice(0, 0, [entry, hdb]);
+				this.dispatchEvent(new Event(Event.RENDER));
+				
+			}
+			
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				if(curInterface == InterfaceState.COLLECTION_TIME_LINE){
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.REMOVE_FROM_FAVORITES_RESULT, cancelCollection_handler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.REMOVE_FROM_FAVORITES_ERROR, cancelCollection_errorHandler);
+					DataCenter.microAPI.removeFromFavorites(event.dispatcher.id);
+					return;
+					
+				}
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.DELETE_STATUS_RESULT, deleteStatus_result);
+				DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.DELETE_STATUS_ERROR, deleteStatus_errorResult);
+				DataCenter.microAPI.deleteStatus(event.dispatcher.id);
+				
+			}
+			private function cancelCollection_errorHandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.REMOVE_FROM_FAVORITES_RESULT, cancelCollection_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.REMOVE_FROM_FAVORITES_ERROR, cancelCollection_errorHandler);
+				DataCenter.alertTip._text = "提示: 删除收藏微博失败!";
+				
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				
+			}
+			private function deleteStatus_errorResult(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_STATUS_RESULT, deleteStatus_result);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_STATUS_ERROR, deleteStatus_errorResult);
+				DataCenter.alertTip._text = "提示: 删除微博失败!";
+				(DataCenter.mainPanel as MainPanel).showAlertTip();
+				
+			}
+			private function cancelCollection_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.REMOVE_FROM_FAVORITES_RESULT, cancelCollection_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.REMOVE_FROM_FAVORITES_ERROR, cancelCollection_errorHandler);
+				removeEntry((event.result as MicroBlogStatus).id);
+				
+			}
+			private function deleteStatus_result(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_STATUS_RESULT, deleteStatus_result);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_STATUS_ERROR, deleteStatus_errorResult);
+				
+				removeEntry((event.result as MicroBlogStatus).id);
+				
+			}
+			private function removeEntry(id:String):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.DELETE_STATUS_SUCCESS));
+				for each(var arr:Array in entryList){
+					
+					var entry:MicroBlogEntry = arr[0] as MicroBlogEntry;
+					if(entry.getSid == id){
+						
+						entry.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+						this.removeElement(entry);
+						this.removeElement(arr[1]);
+						return;
+						
+					}
+					
+				}
+				
+			}
+			public function removeAll():void{
+				
+				this.removeAllElements();
+				for each(var arr:Array in entryList){
+					
+					var entry:MicroBlogEntry = arr[0] as MicroBlogEntry;
+					if(entry.hasEventListener(WindowEvent.DELETE_STATUS)){
+						
+						entry.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+						
+					}
+					
+				}
+				entryList = null;
+				
+			}
+			/* private function loadMiddleImg(event:WindowEvent):void{
+				
+				var midImgEvent:WindowEvent = new WindowEvent(WindowEvent.MIDDLE_IMG);
+				midImgEvent.dispatcher = {};
+				midImgEvent.dispatcher.midImg = event.dispatcher.midImg;
+				midImgEvent.dispatcher.bigImg = event.dispatcher.bigImg;
+				this.dispatchEvent(midImgEvent);
+				
+			} */
+
+
+			protected function abstractlist1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				removeAll();
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</modules:AbstractList>

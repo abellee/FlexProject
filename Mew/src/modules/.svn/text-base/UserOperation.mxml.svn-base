@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%"
+		 minHeight="0" minWidth="0" borderVisible="false" mouseEnabled="false" backgroundAlpha="0"
+		 creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout verticalAlign="middle" horizontalAlign="center" gap="0" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import localManager.LocalDataManager;
+			
+			import mx.controls.Label;
+			import mx.events.FlexEvent;
+			
+			import skins.MewButtonBase;
+			
+			[Bindable]
+			private var size:int = 20;
+			
+			[Bindable]
+			private var gapSize:int = 6;
+			
+			public var pureUsername:String = "";
+			public var _uuid:String = "";
+			private var isFollowed:Boolean = false;
+			
+			protected function label5_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.resetPublishPanel();
+				DataCenter.sendPanel.sendDirect(pureUsername, _uuid);
+			}
+
+			protected function label6_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.resetPublishPanel();
+				DataCenter.sendPanel.sendAt(pureUsername, _uuid);
+			}
+
+			protected function button1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var btn:Button = event.target as Button;
+				btn.labelDisplay.right = 0;
+				btn.labelDisplay.left = 0;
+				var borderContainer:BorderContainer = (btn.skin as MewButtonBase).bc as BorderContainer;
+				borderContainer.setStyle("borderWeight", 1);
+				
+				if(isFollowed){
+					
+					relationBtn.label = "-";
+					relationBtn.toolTip = "取消关注";
+					
+				}else{
+					
+					relationBtn.label = "+";
+					relationBtn.toolTip = "加关注";
+					
+				}
+			}
+
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+			public function set relationShip(bool:Boolean):void
+			{
+				isFollowed = bool;
+				if(relationBtn){
+					
+					if(bool){
+						
+						relationBtn.label = "-";
+						relationBtn.toolTip = "取消关注";
+						
+					}else{
+						
+						relationBtn.label = "+";
+						relationBtn.toolTip = "加关注";
+						
+					}
+					
+				}
+			}
+
+			protected function relationBtn_clickHandler(event:MouseEvent):void
+			{
+				if(isFollowed){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+					DataCenter.microAPI.cancelFollowing(null, _uuid);
+					
+				}else{
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+					DataCenter.microAPI.follow(null, _uuid);
+					
+				}
+			}
+			private function followResult_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+				LocalDataManager.spliceData([event.result as MicroBlogUser], DataCenter.FansListFileName);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 关注" + pureUsername + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(1);
+				relationShip = true;
+				isFollowed = true;
+				
+			}
+			
+			private function cancelFollow_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 取消关注" + pureUsername + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(-1);
+				relationShip = false;
+				isFollowed = false;
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:TileGroup requestedColumnCount="2" requestedRowCount="2" mouseEnabled="false"
+				 horizontalAlign="center" verticalAlign="justify" horizontalGap="{gapSize}" verticalGap="{gapSize}">
+		<s:Button skinClass="skins.MewButtonBase" label="私" mouseChildren="false" width="{size}" height="{size}"
+				  creationComplete="button1_creationCompleteHandler(event)" toolTip="发送私信" click="label5_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" label="@" mouseChildren="false" width="{size}" height="{size}"
+				  creationComplete="button1_creationCompleteHandler(event)" toolTip="@TA" click="label6_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" label="" mouseChildren="false" width="{size}" height="{size}"
+				  creationComplete="button1_creationCompleteHandler(event)" toolTip="" id="relationBtn" click="relationBtn_clickHandler(event)" />
+	</s:TileGroup>
+	
+</s:BorderContainer>

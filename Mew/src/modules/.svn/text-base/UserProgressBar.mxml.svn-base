@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="100" mouseEnabled="false"
+		  mouseChildren="false" backgroundColor="#ebf9ff" borderColor="#327395"
+		  borderWeight="5" dropShadowVisible="true" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			public function setLabel(str:String):void{
+				
+				progressBar.label = str;
+				
+			}
+
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:ProgressBar width="80%" height="30" indeterminate="true" id="progressBar" labelPlacement="bottom" textAlign="center"
+					trackHeight="30" label="正在加载数据..." labelWidth="{this.width * .8}" chromeColor="#327395" />
+</s:BorderContainer>

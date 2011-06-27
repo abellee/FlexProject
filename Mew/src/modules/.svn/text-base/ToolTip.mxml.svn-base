@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" mouseChildren="false" minHeight="0" minWidth="0"
+		 creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _txt:String;
+			
+			[Bindable]
+			private var _align:String = "left";
+			
+			public function set text(str:String):void{
+				
+				_txt = str;
+				
+			}
+			
+			public function set txtAlign(str:String):void{
+				
+				_align = str;
+				
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+				var myFilters:Array = new Array();
+				myFilters.push(filter);
+				this.filters = myFilters;
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.filters = null;
+				this.removeAllElements();
+				
+			}
+			
+			protected function text1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(_align == "center"){
+					
+					txt.setStyle("paddingBottom", 0);
+					txt.setStyle("paddingLeft", 0);
+					txt.setStyle("paddingRight", 0);
+					txt.setStyle("paddingTop", 0);
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer backgroundColor="#327395" borderWeight="2" borderColor="#ffffff" cornerRadius="5" mouseChildren="false" mouseEnabled="false"
+					   width="100%" height="100%" bottom="7" minHeight="0" minWidth="0">
+		<mx:Text htmlText="{_txt}" mouseEnabled="false" mouseChildren="false" selectable="false" color="#ffffff"
+				 paddingBottom="10" paddingLeft="5" paddingRight="5" paddingTop="10" leading="5"
+				 letterSpacing="1" textAlign="{_align}" width="100%" height="100%" minHeight="0" minWidth="0"
+				 creationComplete="text1_creationCompleteHandler(event)" id="txt" />
+	</s:BorderContainer>
+	<s:BitmapImage source="{ResCenter.Arrow_Bottom}" width="11" height="9" bottom="0" />
+</s:Group>

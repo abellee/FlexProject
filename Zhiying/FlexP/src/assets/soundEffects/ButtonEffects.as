@@ -1,0 +1,1 @@
+﻿package assets.soundEffects{		public class ButtonEffects{				[Embed(source="assets/btnSkin.swf",symbol="DownEffect")]		public static var downEffect:Class;		[Embed(source="assets/btnSkin.swf",symbol="OverEffect")]		public static var overEffect:Class;			}	}

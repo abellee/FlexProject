@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modules:AbstractList xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  mouseEnabled="false"
+		  paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"
+		  xmlns:modules="modules.*" creationComplete="abstractlist1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.sina.microblog.data.MicroBlogRelationshipDescriptor;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.data.MicroBlogUsersRelationship;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.Utils;
+			
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			private var curInterface:String = "";
+
+			public function listFans(arr:Array, cur:String, mode:String = "normal"):void
+			{
+				if(!arr || arr.length == 0){
+					
+					return;
+					
+				}
+				curInterface = cur;
+				var ctrlStr:String = "";
+				if(curInterface == InterfaceState.FANS_LIST || curInterface == InterfaceState.SEARCH_USER){
+					
+					ctrlStr = "+加关注";
+					
+				}else{
+					
+					ctrlStr = "取消关注";
+					
+				}
+				for each(var user:MicroBlogUser in arr){
+					
+					var userEntry:UserEntry = new UserEntry();
+					userEntry.avatar(user.profileImageUrl, user.id);
+//					var username:String = "<font color='#2d6a9c'>"+ user.name + "</font>";
+					userEntry.username = user.name;
+//					userEntry.pureName = user.name;
+					userEntry.controlTxt = ctrlStr;
+					userEntry.curInterface = curInterface;
+					userEntry.isVerified = user.isVerified;
+					userEntry.sex = user.gender;
+					userEntry.location = user.location;
+					var fans:String = "粉丝"+ user.followersCount +"人";
+					var txt:String = "";
+					var time:String = "";
+					if(user.status){
+						
+						txt = user.status.text;
+						time = "(" + Utils.dataTransfer(user.status.createdAt as Date) + ")";
+						
+					}
+					userEntry.setTxt = fans+"<br><br>"+ txt + time;
+					if(mode == "update"){
+						
+						if(this.numElements >= DataCenter.count){
+							
+							this.removeElementAt(DataCenter.count - 1);
+							
+						}
+						
+					}
+					this.addElement(userEntry);
+					this.dispatchEvent(new Event(Event.RENDER));
+					
+				}
+			}
+			
+			public function removeAll():void{
+				
+				this.removeAllElements();
+				
+			}
+
+
+			protected function abstractlist1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</modules:AbstractList>

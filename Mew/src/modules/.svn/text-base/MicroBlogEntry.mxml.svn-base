@@ -1,0 +1,645 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" xmlns:functional="functional.*"
+					   mouseOver="vgroup1_mouseOverHandler(event)" mouseOut="vgroup1_mouseOutHandler(event)" xmlns:modules="modules.*"
+					   creationComplete="vgroup1_creationCompleteHandler(event)" rollOver="bordercontainer1_rollOverHandler(event)"
+					   rollOut="bordercontainer1_rollOutHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.greensock.TweenMax;
+			import com.sina.microblog.MicroBlog;
+			import com.sina.microblog.data.MicroBlogCount;
+			import com.sina.microblog.data.MicroBlogStatus;
+			import com.sina.microblog.data.MicroBlogUsersRelationship;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.net.navigateToURL;
+			import flash.text.engine.TextElement;
+			
+			import functional.Confirm;
+			import functional.EffectCenter;
+			import functional.StringDetect;
+			import functional.Utils;
+			import functional.VideoChecker;
+			
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import phase.InterfaceState;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _text:String;
+			
+			[Bindable]
+			private var _from:String;
+			
+			/* [Bindable]
+			private var _repost:String; */
+			
+			/* [Bindable]
+			private var user_oper:String; */
+			
+			private var sid:String;  //status id
+			private var rid:String;  //repost id
+			
+			[Bindable]
+			private var _uuid:String; //user id
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			/* [Bindable]
+			private var _repostV:Boolean = false; */
+			
+			[Bindable]
+			private var _operVisible:Boolean = false;
+			
+			[Bindable]
+			private var _repostNum:String = "";
+			
+			[Bindable]
+			private var _commentNum:String = "";
+			
+			[Bindable]
+			private var _isOwn:Boolean = false;
+			
+			[Bindable]
+			private var _username:String = "";
+			
+			[Bindable]
+			private var _showCollection:Boolean = true;
+			
+			/* [Bindable]
+			private var _repostN:String = ""; */
+			
+			/* [Bindable]
+			private var _path:String; */
+			
+			private var tempArr:Array = [];
+			
+			private var thumbImger:ThumbContainer;
+			
+			private var reposter:RepostContainer;
+			
+			private var videoCK:VideoChecker;
+			
+			private var curInterface:String;
+			
+			private var isFollowed:Boolean = true;
+			
+			[Bindable]
+			public var blogStatus:MicroBlogStatus = null;
+			
+			public function setEntry(status:MicroBlogStatus,curState:String):void{
+				
+				curInterface = curState;
+				blogStatus = status;
+//				_path = status.user.profileImageUrl;
+				_text = StringDetect.setURL(status.text);
+				var createTime:Date = status.createdAt;
+				var timeStr:String = Utils.dataTransfer(createTime);
+				_from = "<font color='#2d6a9c'>"+timeStr+"</font>	<font color='#6d6969'>来自</font><u><font color='#2d6a9c'>"+status.source+"</font></u>";
+				_isVerified = status.user.isVerified;
+				_username = status.user.name;
+				sid = status.id;
+				_uuid = status.user.id;
+				
+				if(status.user.id == DataCenter.user.id){
+					
+					_isOwn = true;
+					
+				}
+				
+				if(curState == InterfaceState.COLLECTION_TIME_LINE){
+					
+					_showCollection = false;
+					_isOwn = true;
+					
+				}
+				
+				_from = "<font color='#2d6a9c'>"+timeStr+"</font>	<font color='#6d6969'>来自</font><u><font color='#2d6a9c'>"+status.source+"</font></u>";
+				
+				if(curState == InterfaceState.COMMENT_WINDOW){
+					
+					return;
+					
+				}
+				
+				if(status.thumbPicUrl != ""){
+					
+					thumbImger = new ThumbContainer();
+					thumbImger.setURL(status.thumbPicUrl, status.bmiddlePicUrl, status.originalPicUrl);
+					mainBox.addElementAt(thumbImger, mainBox.numElements - 1);
+					
+				}
+				
+				if(status.repost){
+					
+					reposter = new RepostContainer();
+					rid = status.repost.id;
+					reposter.setRepostData(status.repost, this.curInterface);
+					reposter.addEventListener(MouseEvent.ROLL_OUT, hideOper);
+					reposter.addEventListener(MouseEvent.ROLL_OVER, showOper);
+					reposter.addEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+					reposter.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					reposter.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					mainBox.addElementAt(reposter, mainBox.numElements - 1);
+					
+				}
+				
+			}
+			private function setRelationShip(bool:Boolean):void
+			{
+				
+				if(DataCenter.aAndD && this.outBox.contains(DataCenter.aAndD)){
+					
+					DataCenter.aAndD.relationShip = bool;
+					
+				}
+				
+			}
+			private function showOper(event:MouseEvent):void{
+				
+				if(reposter){
+					
+					reposter.operVisible = true;
+					
+				}
+				
+			}
+			private function hideOper(event:MouseEvent):void{
+				
+				if(reposter){
+					
+					reposter.operVisible = false;
+					
+				}
+				
+			}
+			private function loadStatus_counts_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_STATUS_COUNTS_RESULT,loadStatus_counts_handler);
+				var arr:Array = event.result as Array;
+				for each(var sc:MicroBlogCount in arr){
+					
+					if(sc.id == sid){
+						
+						if(curInterface == InterfaceState.FRIENDS_TIME_LINE){
+							
+							_repostNum = sc.repostsCount == 0 ? "":("("+sc.repostsCount+")");
+							_commentNum = sc.commentsCount == 0 ? "":("("+sc.commentsCount+")");
+							/* if(_isOwn){
+								
+								user_oper = "<font color='#2d6a9c'><a href='event:delete'>删除</a></font> | <font color='#2d6a9c'><a href='event:repost'>转发("
+									+sc.repostsCount+")</a></font> | <font color='#2d6a9c'>收藏</font> | <a href='event:comment'><font color='#2d6a9c'>评论("
+									+sc.commentsCount+")</font></a>";
+								
+							}else{
+								
+								user_oper = "<font color='#2d6a9c'><a href='event:repost'>转发("+sc.repostsCount
+									+")</a></font> | <font color='#2d6a9c'>收藏</font> | <a href='event:comment'><font color='#2d6a9c'>评论("+sc.commentsCount+")</font></a>";
+								
+							}	 */
+							
+						}
+						if(curInterface == InterfaceState.USER_TIME_LINE || curInterface == InterfaceState.AT_TIME_LINE){
+							
+							/* user_oper = "<font color='#2d6a9c'><a href='event:delete'>删除</a></font> | <font color='#2d6a9c'><a href='event:repost'>转发("
+								+sc.repostsCount+")</a></font> | <font color='#2d6a9c'>收藏</font> | <a href='event:comment'><font color='#2d6a9c'>评论("+sc.commentsCount+")</font></a>"; */
+							
+						}
+						if(curInterface == InterfaceState.COLLECTION_TIME_LINE){
+							
+							/* user_oper = "<font color='#2d6a9c'><a href='event:repost'>转发("+sc.repostsCount
+								+")</a></font> | <font color='#2d6a9c'>取消收藏</font> | <a href='event:comment'><font color='#2d6a9c'>评论("+sc.commentsCount+")</font></a>"; */
+							
+						}
+						
+					}
+//					if(sc.id == rid){
+						
+						/* _repost += "<br><font color='#2d6a9c'>原文转发("+sc.repostsCount+")	原文评论("+sc.commentsCount+")</font>"; */
+						
+//					}
+					
+				}
+				
+			}
+			
+			private function showTargetUser(event:MouseEvent):void{
+				
+				
+				
+			}
+			
+			private function showMiddleImg(event:MouseEvent):void{
+				
+				/* var midImgEvent:WindowEvent = new WindowEvent(WindowEvent.MIDDLE_IMG);
+				midImgEvent.dispatcher = {};
+				midImgEvent.dispatcher.midImg = this.middleImg;
+				midImgEvent.dispatcher.bigImg = this.bigImg;
+				this.dispatchEvent(midImgEvent); */
+				
+			}
+
+			/* protected function button1_clickHandler(event:MouseEvent):void
+			{
+				imger.rotation -= 90;
+				if(imger.height > MaxPicW){
+					
+					var coefficient:Number = MaxPicW / imger.height;
+					imger.height = int(imger.height * coefficient);
+					imger.width = int(imger.width * coefficient);
+					
+				}else{
+					
+					imger.height = originH;
+					imger.width = originW;
+					
+				}
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				imger.rotation += 90;
+				if(imger.height > MaxPicW){
+					
+					var coefficient:Number = MaxPicW / imger.height;
+					imger.height = int(imger.height * coefficient);
+					imger.width = int(imger.width * coefficient);
+					
+				}else{
+					
+					imger.height = originH;
+					imger.width = originW;
+					
+				}
+			} */
+			
+			public function get getSid():String{
+				
+				return sid;
+				
+			}
+
+			protected function vgroup1_mouseOverHandler(event:MouseEvent):void
+			{
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_STATUS_COUNTS_RESULT,loadStatus_counts_handler);
+				DataCenter.microAPI.loadStatusCounts(tempArr);
+				_operVisible = true;
+			}
+
+			protected function vgroup1_mouseOutHandler(event:MouseEvent):void
+			{
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_STATUS_COUNTS_RESULT,loadStatus_counts_handler);
+				_operVisible = false;
+			}
+
+			protected function namebox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				nameBox.addEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+				nameBox.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				nameBox.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+				nameBox.addEventListener(WindowEvent.COLLECT_STATUS, collectStatus_handler);
+			}
+			private function collectStatus_handler(event:WindowEvent):void{
+				
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.ADD_TO_FAVORITES_RESULT, addTo_favoritesResult_handler);
+				DataCenter.microAPI.addToFavorites(sid);
+				
+			}
+			private function addTo_favoritesResult_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.ADD_TO_FAVORITES_RESULT, addTo_favoritesResult_handler);
+				DataCenter.alertTip._fsize = 18;
+				DataCenter.alertTip._text = "提示: 收藏微博成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.dataPreloader.preloadCollectionList();
+				
+			}
+			private function repost_status_handler(event:WindowEvent):void{
+				
+				DataCenter.mainPanel.resetPublishPanel();
+				
+				// 添加转发状态时的文字内容
+				var repostStr:String = "";
+				var rename:String = "";
+				var obj:Object = {name:blogStatus.user.name, id:blogStatus.id};
+				if(reposter){
+					
+					DataCenter.sendPanel.rid = reposter.sid;
+					repostStr = reposter.repostStatus.text;
+					DataCenter.sendPanel.repostAddText = "//@" + blogStatus.user.name + ":" + blogStatus.text;
+					rename = reposter.repostStatus.user.name;
+					
+				}else{
+					
+					DataCenter.sendPanel.rid = blogStatus.id;
+					repostStr = blogStatus.text;
+					DataCenter.sendPanel.repostAddText = "转发微博";
+					rename = blogStatus.user.name;
+					
+				}
+				DataCenter.sendPanel.repost(repostStr, "<b>【转】" + rename + ":</b>");
+				DataCenter.sendPanel.nameArr = obj;
+				
+			}
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				if(!DataCenter.confirmPanel){
+					
+					DataCenter.confirmPanel = new ConfirmPanel();
+					
+				}
+				if(DataCenter.confirmPanel.hasEventListener(WindowEvent.CONFIRM_YES)){
+					
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+					
+				}
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+				if(curInterface == InterfaceState.COLLECTION_TIME_LINE){
+					
+					DataCenter.confirmPanel.txt = "确定删除该收藏?";
+					
+				}else{
+					
+					DataCenter.confirmPanel.txt = "是否确定删除此微博?";
+					
+				}
+				DataCenter.confirmPanel.noLabel = Confirm.NO;
+				DataCenter.confirmPanel.show(DataCenter.mainPanel, false);
+				
+			}
+			private function deleteStatus(event:WindowEvent):void{
+				
+				DataCenter.confirmPanel.dispatchEvent(new WindowEvent(WindowEvent.CONFIRM_NO));
+				var evt:WindowEvent = new WindowEvent(WindowEvent.DELETE_STATUS);
+				evt.dispatcher = {};
+				evt.dispatcher["id"] = sid;
+				this.dispatchEvent(evt);
+				
+			}
+			private function removeConfirm(event:WindowEvent):void{
+				
+				DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+				DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+				DataCenter.confirmPanel.hide();
+				
+			}
+			private function commentStatus_handler(event:WindowEvent):void{
+				
+				/* if(commentList && commentList.isAdded){
+					
+					entryBox.removeElement(commentList);
+					commentList.isAdded = false;
+					if(event.dispatcher && event.dispatcher.id && commentList.type == "repost"){
+						
+						commentList = null;
+						return;
+						
+					}
+					if(!event.dispatcher && commentList.type == "normal"){
+						
+						commentList = null;
+						return;
+						
+					}
+					commentList = null;
+					
+				} */
+				/* if(DataCenter.commentList){
+					
+					(DataCenter.commentList.parent as VGroup).removeElement(DataCenter.commentList);
+					if(event.target as NameBox){
+						
+						if(DataCenter.commentList.sid == sid){
+							
+							DataCenter.commentList = null;
+							return;
+							
+						}
+						
+					}else if(event.target as RepostContainer){
+						
+						if(event.dispatcher.id == DataCenter.commentList.sid){
+							
+							DataCenter.commentList = null;
+							return;
+							
+						}
+						
+					}
+					
+				}
+				DataCenter.commentList = null;
+				DataCenter.commentList = new CommentList();
+				entryBox.addElement(DataCenter.commentList);
+				var ccid:String = sid;
+				var oname:String = blogStatus.user.name;
+				if(event.dispatcher && event.dispatcher.id){
+					
+					ccid = event.dispatcher.id;
+					oname = event.dispatcher.name;
+					
+				}
+				DataCenter.commentList.mouseEnabled = false;
+				DataCenter.commentList.ownerName = oname;
+				DataCenter.commentList.addComment(ccid, DataCenter.commentCount); */
+				if(DataCenter.commentListWindow){
+					
+					DataCenter.commentListWindow.easeToClose();
+					DataCenter.commentListWindow = null;
+					
+				}
+				DataCenter.commentListWindow = new CommentListWindow();
+				var data:MicroBlogStatus;
+				data = blogStatus;
+				var ct:RepostContainer = event.currentTarget as RepostContainer;
+				if(ct){
+					
+					data = ct.repostStatus;
+					
+				}
+				DataCenter.commentListWindow.data = data;
+				DataCenter.commentListWindow.type = NativeWindowType.LIGHTWEIGHT;
+				DataCenter.commentListWindow.open();
+				
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(curInterface == InterfaceState.COMMENT_WINDOW){
+					
+					removeMouseEvent();
+					
+				}
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				nameBox.removeEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+				nameBox.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				nameBox.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+				nameBox.removeEventListener(WindowEvent.COLLECT_STATUS, collectStatus_handler);
+				if(reposter){
+					
+					reposter.removeEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+					reposter.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					reposter.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					reposter.removeEventListener(MouseEvent.ROLL_OUT, hideOper);
+					reposter.removeEventListener(MouseEvent.ROLL_OVER, showOper);
+					
+				}
+				this.removeAllElements();
+				thumbImger = null;
+				reposter = null;
+				videoCK = null;
+				tempArr = null;
+				
+			}
+
+			protected function bordercontainer1_rollOverHandler(event:MouseEvent):void
+			{
+				TweenMax.to(shadowBK, .8, {glowFilter:{color:0x000000, alpha:1, blurX:8, blurY:8}, alpha:.6});
+				var sc:MicroBlogCount = DataCenter.mainPanel.getStatusCount(this.sid);
+				if(sc){
+					
+					nameBox.repostNum = "(" + sc.repostsCount + ")";
+					nameBox.commentNum = "(" + sc.commentsCount + ")";
+					
+				}
+				if(rid){
+					
+					var rc:MicroBlogCount = DataCenter.mainPanel.getStatusCount(this.rid);
+					if(rc){
+						
+						reposter.repostNum = "(" + rc.repostsCount + ")";
+						reposter.commentNum = "(" + rc.commentsCount + ")";
+						
+					}
+					
+				}
+			}
+
+			protected function bordercontainer1_rollOutHandler(event:MouseEvent):void
+			{
+				TweenMax.to(shadowBK, .8, {glowFilter:{color:0x000000, alpha:0, blurX:0, blurY:0}, alpha:0});
+			}
+			private function textLink_eventHandler(event:TextEvent):void{
+				
+				if(event.text.substr(0, 5) == "topic"){ // 搜索话题
+					
+					var e:WindowEvent = new WindowEvent(WindowEvent.SEARCH_TOPIC);
+					e.dispatcher = {};
+					e.dispatcher.topic = event.text.substring(6, event.text.length - 1);
+					DataCenter.mainPanel.dispatchEvent(e);
+					return;
+					
+				}
+				var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.name = event.text;
+				DataCenter.mainPanel.dispatchEvent(e);
+				
+			}
+			public function removeNameBoxOper():void{
+				
+				if(nameBox){
+					
+					nameBox.removeOper();
+					
+				}
+				
+			}
+			public function removeMouseEvent():void{
+
+				this.removeEventListener(MouseEvent.MOUSE_OVER, vgroup1_mouseOverHandler);
+				this.removeEventListener(MouseEvent.MOUSE_OUT, vgroup1_mouseOutHandler);
+				this.removeEventListener(MouseEvent.ROLL_OVER, bordercontainer1_rollOverHandler);
+				this.removeEventListener(MouseEvent.ROLL_OUT, bordercontainer1_rollOutHandler);
+				this.mouseEnabled = false;
+				
+			}
+			private function avatarModule_rollOverHandler(event:MouseEvent):void
+			{
+				var p:Point = new Point(avatar.width - avatar.mouseX, avatar.mouseY);
+				DataCenter.mainPanel.addFloatUserInfo(blogStatus.user, p);
+			}
+
+			protected function avatar_rollOutHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.startToCount();
+			}
+
+			protected function outBox_rollOverHandler(event:MouseEvent):void
+			{
+				if(_uuid == DataCenter.user.id){
+					
+					return;
+					
+				}
+				if(!DataCenter.aAndD)
+				{
+					DataCenter.aAndD = new UserOperation();
+				}
+				DataCenter.aAndD._uuid = _uuid;
+				DataCenter.aAndD.pureUsername = _username;
+				setRelationShip(isFollowed);
+				outBox.addElement(DataCenter.aAndD);
+			}
+
+			protected function outBox_rollOutHandler(event:MouseEvent):void
+			{
+				if(DataCenter.aAndD && outBox.contains(DataCenter.aAndD))
+				{
+					outBox.removeElement(DataCenter.aAndD);
+				}
+				DataCenter.aAndD = null;
+			}
+
+			protected function avatar_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.startToCount(true);
+				nameBox.userNameLabel.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="100%" height="100%" minHeight="0" borderVisible="false" alpha="0"
+					   mouseEnabled="false" mouseChildren="false" cornerRadius="5" id="shadowBK" backgroundColor="#f0fbfe" />
+	<s:VGroup width="100%" height="100%" mouseEnabled="false" gap="0" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" id="entryBox">
+		<s:HGroup horizontalAlign="center" verticalAlign="top" width="100%" id="box" mouseEnabled="false">
+			<s:VGroup horizontalAlign="center" verticalAlign="top" paddingLeft="2" paddingRight="2" id="outBox" gap="2"
+					  rollOver="outBox_rollOverHandler(event)" rollOut="outBox_rollOutHandler(event)">
+				<modules:AvatarModule id="avatar" path="{blogStatus.user.profileImageUrl}" uuid="{_uuid}" size="50" mouseChildren="false"
+									  rollOver="avatarModule_rollOverHandler(event)" rollOut="avatar_rollOutHandler(event)" click="avatar_clickHandler(event)" />
+			</s:VGroup>
+			<s:VGroup width="100%" height="100%" mouseEnabled="false" id="mainBox">
+				<modules:NameBox x="92" y="35" username="{_username}"
+								 isVerified="{_isVerified}" operVisible="{_operVisible}"
+								 repostNum="{_repostNum}" commentNum="{_commentNum}"
+								 deleteBtnVisible="{_isOwn}" collectionBtnVisible="{_showCollection}" uuid="{_uuid}"
+								 creationComplete="namebox1_creationCompleteHandler(event)" id="nameBox" />
+				<mx:Text width="100%" htmlText="{_text}" fontWeight="normal" leading="5" link="textLink_eventHandler(event)" />
+				<mx:Text htmlText="{_from}" width="100%" fontWeight="normal" fontSize="12" selectable="false" />
+			</s:VGroup>
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

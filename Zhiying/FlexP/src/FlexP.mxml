@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" backgroundColor="0x333333" applicationComplete="init()" width="1004" height="600">
+<mx:Style>
+	/****************************************************************/
+	
+	/*                    button style                              */
+	
+	/****************************************************************/
+	.btnFree{
+		
+		upSkin:Embed(source="assets/btnSkin.swf",symbol="btnFreeNormal");
+		overSkin:Embed(source="assets/btnSkin.swf",symbol="btnFreeUp");
+		downSkin:Embed(source="assets/btnSkin.swf",symbol="btnFreeNormal");
+		
+	}
+	.btnLogin{
+	
+		upSkin:Embed(source="assets/btnSkin.swf",symbol="btnLoginUp");
+		overSkin:Embed(source="assets/btnSkin.swf",symbol="btnLoginOver");
+		downSkin:Embed(source="assets/btnSkin.swf", symbol="btnLoginUp");	
+		
+	}
+	.btnParental{
+	
+		upSkin:Embed(source="assets/btnSkin.swf",symbol="btnParentalUp");
+		overSkin:Embed(source="assets/btnSkin.swf",symbol="btnParentalOver");
+		downSkin:Embed(source="assets/btnSkin.swf",symbol="btnParentalUp");	
+		
+	}
+	.treeBackground{
+	
+		backgroundImage:Embed(source="assets/btnSkin.swf",symbol="treeBackground");
+		backgroundSize:"100%";	
+		
+	}
+	.zyImage{
+		
+		backgroundImage:Embed(source="assets/btnSkin.swf",symbol="zyLogo");
+		backgroundSize:"100%"	
+		
+	}
+	.signInBtn{
+		
+		upSkin:Embed(source="assets/btnSkin.swf",symbol="btnSignIn");
+		overSkin:Embed(source="assets/btnSkin.swf",symbol="btnSignIn");
+		downSkin:Embed(source="assets/btnSkin.swf",symbol="btnSignIn");
+		
+	}
+	.clearBtn{
+	
+		upSkin:Embed(source="assets/btnSkin.swf",symbol="btnClear");
+		overSkin:Embed(source="assets/btnSkin.swf",symbol="btnClear");
+		downSkin:Embed(source="assets/btnSkin.swf",symbol="btnClear");	
+		
+	}
+	/****************************************************************/
+	.codeStyle{
+	
+		fontFamily:Arial;
+		fontSize:14;
+		fontWeight:bold;	
+		
+	}
+	.textInputStyle{
+		
+		fontFamily:宋体;
+		fontSize:12;	
+		
+	}
+	ToolTip{
+	
+		fontFamily:宋体;
+		fontSize:12;	
+		
+	}
+	.errorTip{
+	
+		fontFamily:宋体;
+		fontSize:12;	
+		
+	}
+	Alert{
+	
+		fontFamily:宋体;
+		fontSize:12;	
+		
+	}
+</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import assets.soundEffects.ButtonEffects;
+			import mx.containers.FormItem;
+			import mx.events.ValidationResultEvent;
+			import mx.controls.Alert;
+			import mx.rpc.events.FaultEvent;
+			import mx.rpc.events.ResultEvent;
+			import mx.core.Application;
+			
+			import flash.filters.GlowFilter;
+			import flash.net.URLVariables;
+			
+			private var tempStr:String;
+			private var codeRecorder:String="";
+			private var checkerArray:Array;
+			private var userVariables:URLVariables = new URLVariables();
+			private var downSound:Sound = new ButtonEffects.downEffect() as Sound;
+			private var overSound:Sound = new ButtonEffects.overEffect() as Sound;
+			private var sndVolumn:SoundTransform = new SoundTransform();
+			
+			
+			private function init():void{
+				
+				sndVolumn.volume = 1;
+				checkerArray = new Array();
+				checkerArray.push(userNameChecker);
+				checkerArray.push(userPasswordChecker);
+				checkerArray.push(validateCodeChecker);
+				loginView.selectedIndex = 0;
+				var filter:GlowFilter = new GlowFilter();
+				filter.color = 0x001800;
+				filter.alpha = 1;
+				filter.blurX = 21;
+				filter.blurY = 21;
+				filter.strength = 1;
+				filter.quality = BitmapFilterQuality.HIGH;
+				filter.inner = false;
+				filter.knockout = false;
+				freeBtn.filters = loginBtn.filters = parentalBtn.filters = [filter];
+				
+			}
+			private function goFree():void{
+				
+				downSound.play(0,0,sndVolumn);
+				navigateToURL(new URLRequest("leaning/index.html"),"_self");
+				
+			}
+			private function mouseOver():void{
+				
+				overSound.play(0,0,sndVolumn);
+				
+			}
+			private function showLogin():void{
+				
+				downSound.play(0,0,sndVolumn);
+				loginView.selectedIndex = 1;
+				
+			}
+			private function goShop():void{
+				
+				downSound.play(0,0,sndVolumn);
+				navigateToURL(new URLRequest("http://www.zhiyingjiaoyu.com"),"_self");
+				
+			}
+			private function refreshCode():void{
+				
+				drawLabel();
+				
+			}
+			private function drawLabel():void{
+				
+				tempStr = "";
+				charCode.graphics.beginFill(Math.random()*0xffffff,1);
+				charCode.graphics.drawRect(0,0,charCode.width,charCode.height);
+				charCode.graphics.endFill();
+				generateCode();
+				
+			}
+			private function generateCode():void{
+				
+				var str:Array = new Array("A","B","C","D","E","F","G","H","I","J","K","L","M","N","O","P","Q","R","S","T","U","V","W","X","Y","Z");
+				var num:Array = new Array("0","1","2","3","4","5","6","7","8","9");
+				for(var i:uint=0;i<2;i++){
+					
+					var strCode:String = str[Math.floor(Math.random()*26)]
+					var numCode:String = num[Math.floor(Math.random()*10)];
+					tempStr += strCode+numCode;
+					
+				}
+				charCode.text = tempStr;
+				codeRecorder = tempStr;
+				trace("tempStr is:"+tempStr);
+				trace("codeRecorder is:"+codeRecorder);
+				
+			}
+			//clear all
+			private function clearAllInput():void{
+				
+				var xml:XML = describeType(this);
+				var proXMLList:XMLList = xml.accessor.(@type =="mx.controls::TextInput");
+				for each(var pro:XML in proXMLList){
+					
+					var property:String = pro.@name;
+					TextInput(this[property]).text = "";
+					
+				}
+				
+			}
+			//check user
+			private function checkUser():void{
+				
+				var errorArea:Array = Validator.validateAll(checkerArray);
+				if(!errorArea.length){
+					
+					if(String(charValidator.text) == codeRecorder){
+						
+						userVariables.action = "check";
+						userVariables.username = userName.text;
+						userVariables.password = userPassword.text;
+						userChecking.send(userVariables);
+						
+					}else{
+						
+						Alert.show("您输入的验证码不正确，请重新输入！","验证码错误提示:",Alert.OK);
+						charValidator.text = "";
+						return;
+						
+					}
+					
+				}else{
+					
+					var err:ValidationResultEvent;
+					var errArr:Array = new Array();
+					for each(err in errorArea){
+						
+						var errorField:String = FormItem(err.currentTarget.source.parent).label;
+						errArr.push(errorField+err.message);
+						
+					}
+					Alert.show(errArr.join("\n"),"提交失败信息:",Alert.OK);
+					
+				}
+				
+			}
+			private function checkFailed(e:FaultEvent):void{
+				
+				Alert.show("连接失败"+e.fault.message,"链接失败提示:",Alert.OK);
+				return;
+				
+			}
+			private function checkSuccess(e:ResultEvent):void{
+				
+				trace(e.result);
+				if(e.result == "1"){
+					
+					navigateToURL(new URLRequest("http://www.zhiyingjiaoyu.com"),"_self");
+					return;
+					
+				}else{
+					
+					Alert.show(String(e.result),"帐户认证失败!",Alert.OK);
+					return;
+					
+				}
+				
+			}
+			private function registUser():void{
+				
+				navigateToURL(new URLRequest("http://www.zhiyingjiaoyu.com"),"_self");
+				
+			}
+		]]>
+	</mx:Script>
+	<mx:SWFLoader id="swfLoader" source="assets/skin.swf" width="100%" height="100%" horizontalAlign="center" verticalAlign="top"/>
+	<mx:HTTPService id="userChecking" url="http://127.0.0.1/php/testHttpService.php" method="POST" fault="checkFailed(event)" result="checkSuccess(event)" useProxy="false" showBusyCursor="true"/>
+	<mx:Validator id="userNameChecker" source="{userName}" required="true" requiredFieldError="请输入用户名！" property="text"/>
+	<mx:Validator id="userPasswordChecker" source="{userPassword}" required="true" requiredFieldError="请输入帐户密码！" property="text"/>
+	<mx:Validator id="validateCodeChecker" source="{charValidator}" required="true" requiredFieldError="请输入验证码！" property="text"/>
+	<mx:Fade duration="500" alphaFrom="1.0" alphaTo="0" id="fadeOut"/>
+	<mx:Fade duration="500" alphaFrom="0" alphaTo="1.0" id="fadeIn"/>
+	<mx:Canvas id="loginWindow" styleName="treeBackground" width="340" height="274" horizontalCenter="30" verticalCenter="20">
+		<mx:ViewStack id="loginView" verticalCenter="-20" horizontalCenter="-10" width="200">
+			<mx:Box hideEffect="{fadeOut}">
+				<mx:Canvas id="zyLogo" styleName="zyImage" width="179" height="149"/>
+			</mx:Box>
+			<mx:Box showEffect="{fadeIn}">
+				<mx:Form id="loginForm" horizontalScrollPolicy="off" width="188">
+					<mx:FormItem required="true" indicatorSkin='@Embed(source="assets/btnSkin.swf",symbol="userNameImg")' indicatorGap="65" direction="horizontal">
+						<mx:TextInput id="userName" width="104" backgroundColor="#F5FF99" styleName="textInputStyle"/>
+					</mx:FormItem>
+					<mx:FormItem required="true" indicatorSkin='@Embed(source="assets/btnSkin.swf",symbol="passwordImg")' indicatorGap="65">
+						<mx:TextInput id="userPassword" displayAsPassword="true" width="104" backgroundColor="#F5FF99" styleName="textInputStyle"/>
+					</mx:FormItem>
+					<mx:FormItem direction="horizontal" required="true" indicatorSkin='@Embed(source="assets/btnSkin.swf",symbol="validateImg")' indicatorGap="65">
+							<mx:TextInput id="charValidator" width="52" restrict="A-Z 0-9" maxChars="4" backgroundColor="#F5FF99" styleName="textInputStyle"/>
+							<mx:Label id="charCode" buttonMode="true" mouseChildren="false" click="refreshCode()" creationComplete="drawLabel()" width="52" styleName="codeStyle" toolTip="请点击刷新验证码!"/>
+					</mx:FormItem>
+					<mx:FormItem direction="horizontal" horizontalAlign="right" width="100%" paddingRight="5">
+							<mx:Button buttonMode="true" id="signIn" styleName="signInBtn" click="checkUser()"/>
+							<mx:Button buttonMode="true" id="clearAll" styleName="clearBtn" click="registUser()"/>
+					</mx:FormItem>
+				</mx:Form>
+			</mx:Box>
+		</mx:ViewStack>
+	</mx:Canvas>
+	<mx:Button id="freeBtn" styleName="btnFree" buttonMode="true" x="{loginWindow.x-120}" y="{loginWindow.y+loginWindow.height-50}" click="goFree()" mouseOver="mouseOver()"/>
+	<mx:Button id="loginBtn" styleName="btnLogin" buttonMode ="true" x="{loginWindow.x+loginWindow.width/2-loginBtn.width/2}" y="{loginWindow.y+loginWindow.height+10}" click="showLogin()" mouseOver="mouseOver()"/>
+	<mx:Button id="parentalBtn" styleName="btnParental" buttonMode = "true" x="{loginBtn.x+loginBtn.width+60}" y="{loginBtn.y-30}" click="goShop()" mouseOver="mouseOver()"/>
+</mx:Application>

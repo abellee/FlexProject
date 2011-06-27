@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" verticalAlign="middle" horizontalAlign="center" mouseEnabled="false" creationComplete="hgroup1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import mx.events.FlexEvent;
+			protected function nextBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.NEXT_PAGE));
+			}
+
+			protected function preBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.PRE_PAGE));
+			}
+
+
+			protected function indexBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.INDEX_PAGE));
+			}
+
+
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Button skinClass="skins.IndexFlipBtn" id="indexBtn" click="indexBtn_clickHandler(event)" mouseChildren="false" buttonMode="true" toolTip="跳转至第一页" />
+	<s:Button skinClass="skins.PrePageBtn" id="preBtn" click="preBtn_clickHandler(event)" mouseChildren="false" buttonMode="true" toolTip="上一页" />
+	<s:Button skinClass="skins.PrePageBtn" scaleX="-1" click="nextBtn_clickHandler(event)" id="nextBtn" mouseChildren="false" buttonMode="true" toolTip="下一页" />
+</s:HGroup>

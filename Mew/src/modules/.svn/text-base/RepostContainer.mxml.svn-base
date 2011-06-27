@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" backgroundColor="#d2e9f5" mouseEnabled="false"  cornerRadius="5" minHeight="0" minWidth="0"
+		 backgroundAlpha=".6" borderAlpha=".5" xmlns:modules="modules.*" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout verticalAlign="top" horizontalAlign="left" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" gap="4" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.data.MicroBlogStatus;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.Confirm;
+			import functional.StringDetect;
+			
+			import mx.core.Window;
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			[Bindable]
+			private var _nameTxt:String;
+			
+			[Bindable]
+			private var _isVerified:Boolean;
+			
+			[Bindable]
+			private var _commentNum:String = "";
+			
+			[Bindable]
+			private var _repostNum:String = "";
+			
+			[Bindable]
+			public var _repost:String;
+			
+			[Bindable]
+			private var _operVisible:Boolean;
+			
+			[Bindable]
+			private var _isOwn:Boolean = false;
+			
+			[Bindable]
+			private var _uuid:String;
+			
+			public var _username:String;
+			
+			public var sid:String;
+			
+			private var thumbImger:ThumbContainer;
+			
+			private var curInterface:String;
+			
+			public var repostStatus:MicroBlogStatus = null;
+			
+			public function setRepostData(repost:MicroBlogStatus, curState:String):void{
+				
+				curInterface = curState;
+				repostStatus = repost;
+				_username = repost.user.name;
+				_nameTxt = "<font color='#2d6a9c'><b>@"+repost.user.name+"</b></font>";
+				_isVerified = repost.user.isVerified;
+				_repost = StringDetect.setURL(repost.text);
+				_operVisible = false;
+				_uuid = repost.user.id;
+				sid = repost.id;
+				
+				if(repost.user.id == DataCenter.user.id){
+					
+					_isOwn = true;
+					
+				}
+				
+				if(repost.thumbPicUrl != ""){
+					
+					thumbImger = new ThumbContainer();
+					thumbImger.setURL(repost.thumbPicUrl, repost.bmiddlePicUrl, repost.originalPicUrl);
+					this.addElement(thumbImger);
+					
+				}
+				
+			}
+			public function set operVisible(bool:Boolean):void{
+				
+				_operVisible = bool;
+				
+			}
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				if(nameBox){
+					
+					nameBox.removeEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+					nameBox.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					nameBox.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					
+				}
+				thumbImger = null;
+				repostStatus = null;
+				
+			}
+
+			protected function text1_linkHandler(event:TextEvent):void
+			{
+				var e:WindowEvent;
+				if(event.text.substr(0, 5) == "topic"){ // 搜索话题
+					
+					e = new WindowEvent(WindowEvent.SEARCH_TOPIC);
+					e.dispatcher = {};
+					e.dispatcher.topic = event.text.substring(6, event.text.length - 1);
+					DataCenter.mainPanel.dispatchEvent(e);
+					return;
+					
+				}
+				e = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.name = event.text;
+				(DataCenter.mainPanel as MainPanel).dispatchEvent(e);
+			}
+
+			protected function namebox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				nameBox.addEventListener(WindowEvent.REPOST_STATUS, repost_status_handler);
+				nameBox.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				nameBox.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+			}
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				var evt:WindowEvent = new WindowEvent(WindowEvent.DELETE_STATUS);
+				this.dispatchEvent(evt);
+				
+			}
+			private function commentStatus_handler(event:WindowEvent):void{
+				
+				var e:WindowEvent = new WindowEvent(WindowEvent.COMMENT_STATUS);
+				e.dispatcher = {};
+				e.dispatcher.id = repostStatus.id;
+				e.dispatcher.name = repostStatus.user.name;
+				this.dispatchEvent(e);
+				
+			}
+			private function repost_status_handler(event:WindowEvent):void{
+				
+				DataCenter.mainPanel.resetPublishPanel();
+				
+				// 添加转发状态时的文字内容
+				var repostStr:String = "";
+				var rename:String = "";
+				var obj:Object = {name:repostStatus.user.name, id:repostStatus.id};
+				DataCenter.sendPanel.rid = repostStatus.id;
+				repostStr = repostStatus.text;
+				DataCenter.sendPanel.repostAddText = "转发微博";
+				rename = repostStatus.user.name;
+				DataCenter.sendPanel.repost(repostStr, "<b>[转] " + rename + ":</b>");
+				DataCenter.sendPanel.nameArr = obj;
+				
+			}
+			public function set repostNum(str:String):void
+			{
+				_repostNum = str;
+			}
+			public function set commentNum(str:String):void
+			{
+				_commentNum = str;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<modules:NameBox x="92" y="35" username="{_nameTxt}"
+					 isVerified="{_isVerified}" operVisible="{_operVisible}" uuid="{_uuid}"
+					 repostNum="{_repostNum}" commentNum="{_commentNum}" deleteBtnVisible="{_isOwn}"
+					 creationComplete="namebox1_creationCompleteHandler(event)" id="nameBox" />
+	<mx:Text width="100%" htmlText="{_repost}" fontWeight="normal" leading="5" link="text1_linkHandler(event)" />
+</s:BorderContainer>

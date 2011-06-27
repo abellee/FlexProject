@@ -1,0 +1,338 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" mouseEnabled="false" creationComplete="vgroup1_creationCompleteHandler(event)" xmlns:modules="modules.*">
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.sina.microblog.data.MicroBlogRelationshipDescriptor;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.data.MicroBlogUsersRelationship;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import localManager.LocalDataManager;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _attTxt:String = "";
+			
+			[Bindable]
+			private var _link:String = "";
+			
+			[Bindable]
+			private var _username:String = "";
+			
+			[Bindable]
+			private var _des:String = "";
+			
+			[Bindable]
+			private var _follow:String = "";
+			
+			[Bindable]
+			private var _fans:String = "";
+			
+			[Bindable]
+			private var _micro:String = "";
+			
+			[Bindable]
+			private var _sex:Class;
+			
+			[Bindable]
+			private var _location:String = "";
+			
+			[Bindable]
+			private var _attVis:Boolean = false;
+			
+			[Bindable]
+			private var _operVis:Boolean = true;
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			private var _user:String;
+			
+			private var _uuid:String;
+			
+			[Bindable]
+			private var controlBoxVisible:Boolean = false;
+			
+			[Bindable]
+			private var btnLabel:String;
+			
+			private var isFollowed:Boolean = false;
+			
+			private var pureUsername:String;
+			
+			private var loader:Loader;
+			
+			[Bindable]
+			private var _followEachOther:String = "";
+			
+			public function currentUser(user:MicroBlogUser):void{
+				
+//				_link = "博客: <font color='#2d6a9c'><a href=\""+user.url+"\">"+user.url+"</a></font>";
+				_des = user.description;
+				avatar(user.profileImageUrl);
+				_username = "<b><font color='#000000'>"+user.name+"</font></b>";
+				pureUsername = user.name;
+				_isVerified = user.isVerified;
+				_operVis = false;
+				_sex = user.gender == "m" ? ResCenter.BoyIcon : ResCenter.GirlIcon;
+				_location = user.location;
+				_follow = "关注"+user.friendsCount+"人";
+				_fans = "粉丝"+user.followersCount+"人";
+				_micro = "微博"+user.statusesCount+"条";
+				_uuid = user.id;
+				if(_uuid == DataCenter.user.id){
+					
+					controlBoxVisible = false;
+					
+				}else{
+					
+					controlBoxVisible = true;
+					checkRelationShip();
+					
+				}
+				if(!_isVerified){
+					
+					removeVerifyIcon();
+					
+				}
+				
+			}
+			private function removeVerifyIcon():void{
+				
+				verifyIcon.unloadAndStop();
+				verifyIcon.source = null;
+				nameBox.removeElement(verifyIcon);
+				
+			}
+			private function checkRelationShip():void{
+				
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.CHECK_IS_FOLLOWING_RESULT, checkIs_following_resultHandler);
+				DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.CHECK_IS_FOLLOWING_ERROR, checkIs_followingFailed_handler);
+				DataCenter.microAPI.checkIsFollowing(_uuid);
+				
+			}
+			private function checkIs_followingFailed_handler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.CHECK_IS_FOLLOWING_RESULT, checkIs_following_resultHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.CHECK_IS_FOLLOWING_ERROR, checkIs_followingFailed_handler);
+				trace(event.message);
+				
+			}
+			private function checkIs_following_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.CHECK_IS_FOLLOWING_RESULT, checkIs_following_resultHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.CHECK_IS_FOLLOWING_ERROR, checkIs_followingFailed_handler);
+				var rl:MicroBlogUsersRelationship = event.result as MicroBlogUsersRelationship;
+				if(rl.target.isFollowedBy){
+					
+					if(rl.target.isFollowingMe){
+						
+						_followEachOther = "互相关注";
+						
+					}
+					btnLabel = "取消关注";
+					isFollowed = true;
+					return;
+					
+				}else{
+					
+					btnLabel = "+ 加关注";
+					isFollowed = false;
+					return;
+					
+				}
+				btnLabel = "+ 加关注";
+				isFollowed = false;
+				
+			}
+			public function get user():String{
+				
+				return _user;
+				
+			}
+			private function avatar(str:String):void{
+				
+				var pattern:RegExp = /\/50\//;
+				str = str.replace(pattern,"/180/");
+				if(!loader){
+					
+					loader = new Loader();
+					
+				}
+				var path:URLRequest = new URLRequest(str);
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, avatarLoaded);
+				loader.load(path);
+				
+			}
+			private function avatarLoaded(event:Event):void{
+				
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE,avatarLoaded);
+				loader = null;
+				var bitmap:Bitmap = loaderInfo.content as Bitmap;
+				userAvatar.source = bitmap;
+				userAvatar.alpha = 0;
+				TweenLite.to(userAvatar, .5, {alpha:1});
+				
+			}
+			
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.curPage = 1;
+				var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.id = _uuid;
+				DataCenter.mainPanel.dispatchEvent(e);
+			}
+
+			protected function linkbutton2_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.curPage = 1;
+				var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.fans = _uuid;
+				DataCenter.mainPanel.dispatchEvent(e);
+			}
+
+			protected function linkbutton3_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.curPage = 1;
+				var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.follow = _uuid;
+				DataCenter.mainPanel.dispatchEvent(e);
+			}
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, resetHead);
+			}
+			private function resetHead(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, resetHead);
+				if(loader){
+					
+					if(loader.contentLoaderInfo.hasEventListener(Event.COMPLETE)){
+						
+						loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, avatarLoaded);
+						
+					}
+					loader = null;
+					
+				}
+				this.removeAllElements();
+				DataCenter.userDes = null;
+				
+			}
+
+			protected function followBtn_clickHandler(event:MouseEvent):void
+			{
+				if(isFollowed){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+					DataCenter.microAPI.cancelFollowing(null, _uuid);
+					
+				}else{
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+					DataCenter.microAPI.follow(null, _uuid);
+					
+				}
+			}
+			
+			private function followResult_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+				LocalDataManager.spliceData([event.result as MicroBlogUser], DataCenter.FansListFileName);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 关注" + pureUsername + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(1);
+				btnLabel = "取消关注";
+				isFollowed = true;
+				
+			}
+			
+			private function cancelFollow_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 取消关注" + pureUsername + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(-1);
+				btnLabel = "+ 加关注";
+				isFollowed = false;
+				
+			}
+			
+			private function directBtn_clickHandler(event:MouseEvent):void{
+				
+				DataCenter.mainPanel.resetPublishPanel();
+				DataCenter.sendPanel.sendDirect(pureUsername, _uuid);
+				
+			}
+			
+			private function atBtn_clickHandler(event:MouseEvent):void{
+				
+				DataCenter.mainPanel.resetPublishPanel();
+				DataCenter.sendPanel.sendAt(pureUsername, _uuid);
+				
+			}
+			private function relationLabel_creationCompleteHandler(event:FlexEvent):void
+			{
+				relationLabel.removeEventListener(FlexEvent.CREATION_COMPLETE, relationLabel_creationCompleteHandler);
+				infoBox.removeElement(relationLabel);
+				relationLabel = null;
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup mouseEnabled="false" width="100%">
+		<s:BorderContainer mouseEnabled="false" mouseChildren="false" width="100" height="100">
+			<s:layout>
+				<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" gap="0" />
+			</s:layout>
+			<s:BitmapImage id="userAvatar" width="100%" height="100%" source="resource/default180.jpg" />
+		</s:BorderContainer>
+		<s:VGroup mouseEnabled="false" width="100%" gap="5" id="infoBox">
+			<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" gap="0" id="nameBox">
+				<mx:Label htmlText="{_username}" fontWeight="bold" />
+				<mx:Image source="{ResCenter.VIPIcon}" minHeight="0" minWidth="0" visible="{_isVerified}" toolTip="新浪认证用户"
+						  verticalAlign="middle" height="100%" mouseChildren="false" id="verifyIcon" />
+			</s:HGroup>
+			<mx:Button icon="{_sex}" label="{_location}" skin="{null}" mouseEnabled="false" mouseChildren="false" paddingLeft="2" />
+			<s:HGroup width="100%" mouseEnabled="false" id="controlBox" verticalAlign="middle" visible="{controlBoxVisible}">
+				<s:Button id="followBtn" skinClass="skins.MewButtonBase" fontSize="12" height="27" label="{btnLabel}" click="followBtn_clickHandler(event)" />
+				<mx:LinkButton color="#0f73a4" fontWeight="bold" label="发私信" id="directBtn" click="directBtn_clickHandler(event)" />
+				<mx:LinkButton color="#0f73a4" fontWeight="bold" label="@TA" id="atBtn" click="atBtn_clickHandler(event)" />
+			</s:HGroup>
+			<s:Label text="{_followEachOther}" color="#999999" paddingLeft="2" creationComplete="relationLabel_creationCompleteHandler(event)" id="relationLabel" />
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup width="100%" mouseEnabled="false">
+		<mx:LinkButton label="{_follow}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4"
+					   click="linkbutton3_clickHandler(event)" id="followTxt" />
+		<mx:LinkButton label="{_fans}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4"
+					   click="linkbutton2_clickHandler(event)" id="fansTxt" />
+		<mx:LinkButton label="{_micro}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4"
+					   click="linkbutton1_clickHandler(event)" id="microTxt" />
+	</s:HGroup>
+	<s:Label text="{_des}" width="100%" mouseChildren="false" paddingLeft="4" paddingRight="4" />
+	<modules:HDashBord />
+</s:VGroup>

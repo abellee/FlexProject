@@ -1,0 +1,348 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Application xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" creationComplete="application1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import flashx.textLayout.container.ScrollPolicy;
+			
+			import modules.VideoDisplayContainer;
+			
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.validators.Validator;
+			
+			private var nc:NetConnection = new NetConnection();
+			private var cam:Camera;
+			private var mic:Microphone;
+			private var validator:Array = [];
+			
+			private var videoList:Object = {};
+			private var ns:NetStream;
+			
+			private var serverPath:String = "rtmp://60.190.171.136/chat";
+			
+			private var selfVideo:VideoDisplayContainer = new VideoDisplayContainer();
+			
+			[Bindable]
+			private var uname:String = "";
+			
+			private var account:String = "";
+			
+			private var pnum:int = 49;    // current person num
+
+			protected function loginBtn_clickHandler(event:MouseEvent):void
+			{
+				var arr:Array = Validator.validateAll(validator);
+				if(arr.length){
+					
+					Alert.show("用户名或密码填写有误!");
+					return;
+					
+				}
+				loginBox.mouseChildren = false;
+				connectToServer();
+			}
+			
+			private function connectToServer():void{
+				
+				nc.client = this;
+				nc.addEventListener(NetStatusEvent.NET_STATUS, connectionStatus_handler);
+				nc.connect(serverPath, uname);
+				
+			}
+			
+			private function connectionStatus_handler(event:NetStatusEvent):void{
+				
+				switch(event.info.code){
+					
+					case "NetConnection.Connect.Success":
+						/* uname = username.text;
+						username.text = "";
+						password.text = ""; */
+						loginBox.visible = false;
+						this.removeElement(loginBox);
+						this.removeElement(failedText);
+						enterRoom();
+						return;
+						break;
+					case "NetConnection.Connect.Close":
+						Alert.show("服务器已关闭，请联系管理员!");
+						break;
+					case "NetConnection.Connect.Failed":
+						Alert.show("尝试与服务器连接失败，请联系管理员!");
+						break;
+					case "NetConnection.Connect.Rejected":
+						Alert.show(event.info.application);
+						break;
+					
+				}
+				loginBox.mouseChildren = true;
+				
+			}
+			
+			public function close():void{}
+			
+			private function enterRoom():void{
+				
+				cam = Camera.getCamera();
+				mic = Microphone.getMicrophone();
+				if(cam != null || mic != null){
+					
+					publicScreen.visible = true;
+					textScreen.visible = true;
+					userInput.visible = true;
+					sendBtn.visible = true;
+					var uic:UIComponent = new UIComponent();
+					selfVideo.camera = cam;
+					selfVideo.setVideoSize(270, 190);
+					selfVideo.showNoVideoBig();
+					uic.addChild(selfVideo);
+					selfVideo.x = - selfVideo.width / 2;
+					selfVideo.y = - selfVideo.height / 2;
+					publicScreen.addElement(uic);
+					publicScreen.title = uname;
+					ns = new NetStream(nc);
+					ns.attachAudio(mic);
+					ns.attachCamera(cam);
+					ns.addEventListener(NetStatusEvent.NET_STATUS, nsPublish_statusHandler);
+					ns.publish(uname, "live");
+					mic.addEventListener(ActivityEvent.ACTIVITY, iamTalking);
+					
+				}else{
+					
+					Alert.show("无法获取您当前的视频设备, 请检查您的视频设备!");
+					
+				}
+				
+			}
+			
+			private function iamTalking(event:ActivityEvent):void{
+				
+				var level:int = (event.target as Microphone).activityLevel;
+				nc.call("isTalking", null, uname, level);
+				selfVideo.volumn(uint(level / 5) == 0 ? 1 : uint(level / 5 + 1));
+				
+			}
+			public function whoIsTalking(name:String, level:int):void{
+				
+				for(var key:Object in videoList){
+					
+					if(videoList[key].cname == name){
+						
+						videoList[key].volumn(uint(level / 5) == 0 ? 1 : uint(level / 5 + 1));
+						return;
+						
+					}
+					
+				}
+				
+			}
+			
+			public function subscribeLiveVideo(sname:*):void{
+				
+				if(sname is String){
+					
+					if(sname == uname){
+						
+						return;
+						
+					}
+					var lvs:NetStream = new NetStream(nc);
+					var tvideo:VideoDisplayContainer = new VideoDisplayContainer();
+					tvideo.cname = sname;
+					tvideo.addStreamAndPlay(lvs, sname);
+					tvideo.x = (videoBox.numChildren % 7) * (tvideo.width + 10);
+					tvideo.y = uint(videoBox.numChildren / 7) * (tvideo.height + 10);
+					videoBox.addChild(tvideo);
+					videoList[sname] = tvideo;
+					
+				}
+				 if(sname is Object){
+					
+					for (var key:* in sname){
+						
+						if(key == uname){
+							
+							continue;
+							
+						}
+						var lvss:NetStream = new NetStream(nc);
+						var tvideos:VideoDisplayContainer = new VideoDisplayContainer();
+						tvideos.cname = key;
+						tvideos.addStreamAndPlay(lvss, key);
+						tvideos.x = (videoBox.numChildren % 7) * (tvideos.width + 10);
+						tvideos.y = uint(videoBox.numChildren / 7) * (tvideos.height + 10);
+						videoBox.addChild(tvideos);
+						videoList[key] = tvideos;
+						
+					}
+					
+				} 
+				
+			}
+			
+			public function removeDisconnectUser(name:String):void{
+				
+				videoBox.removeChild(videoList[name]);
+				delete videoList[name];
+				
+			}
+			
+			private function nsPublish_statusHandler(event:NetStatusEvent):void{
+				
+				if(event.info.code == "NetStream.Publish.BadName"){
+					
+					Alert.show("您当前的视频已经发布!");
+					
+				}
+				
+			}
+			
+			private function backToLogin():void{
+				
+				this.addElement(loginBox);
+				loginBox.visible = true;
+				
+			}
+
+			protected function application1_creationCompleteHandler(event:FlexEvent):void
+			{
+				/* validator.push(nameValidator);
+				validator.push(passwordValidator); */
+				uname = ExternalInterface.call("getUserName");
+				account = uname;
+				if(uname != "" && uname){
+					
+					alertText.text = "\"您是否确定使用您的帐号" + uname + "作为您在会议室中的昵称？\"\n在下方输入框中输入您想要使用的昵称，并点击\"确定\"按钮将使用您输入的昵称，\n点击\"取消\"按钮将使用您的帐号作为昵称!"
+					loginBox.visible = true;
+					
+				}else{
+					
+					failedText.visible = true;
+					
+				}
+			}
+
+
+			protected function sendBtn_clickHandler(event:MouseEvent):void
+			{
+				if(userInput.text != ""){
+					
+					nc.call("chatWithEachOther", null, uname, userInput.text);
+					userInput.text = "";
+					
+				}
+			}
+			public function receiveChatContent(name:String, time:String, str:String):void{
+				
+				textScreen.htmlText += "<font color=\"#3e87ae\">" + name + "   " + time + "</font>\n" + str + "<br>";
+				
+			}
+
+			protected function userInput_creationCompleteHandler(event:FlexEvent):void
+			{
+				userInput.addEventListener(TextEvent.TEXT_INPUT, noWordWrap);
+				userInput.addEventListener(KeyboardEvent.KEY_DOWN, enterKey_downHandler);
+			}
+			
+			private function noWordWrap(event:TextEvent):void{
+				
+				if(event.text == "\n"){
+					
+					event.preventDefault();
+					
+				}
+				
+			}
+			
+			private function enterKey_downHandler(event:KeyboardEvent):void{
+				
+				if(event.keyCode == Keyboard.ENTER){
+					
+					sendBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					
+				}
+				
+			}
+			
+			protected function textArea_updateCompleteHandler(event:FlexEvent):void
+			{
+				textScreen.verticalScrollPosition = textScreen.maxVerticalScrollPosition;
+			}
+			
+			public function errorInfo(str:String):void{
+				
+				Alert.show(str);
+				
+			}
+
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				if(account){
+					
+					uname = account;
+					connectToServer();
+					
+				}
+			}
+
+			protected function enterBtn_clickHandler(event:MouseEvent):void
+			{
+				if(nicknameTxt.text){
+					
+					uname = nicknameTxt.text;
+					connectToServer();
+					
+				}else{
+					
+					Alert.show("请输入您要使用的昵称后再次点击确定按钮!");
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!--<mx:StringValidator id="nameValidator" property="text" source="{username}"
+							requiredFieldError="用户名不能为空，或者长度需要在4-12个字母之间!" maxLength="12" minLength="4"
+							tooLongError="用户名长度需要在4-12个字母之间!" tooShortError="用户名长度需要在4-12个字母之间!" />
+		<mx:StringValidator id="passwordValidator" property="text" source="{password}"
+							requiredFieldError="密码不能为空，或者长度需要在6-20个字母之间!" maxLength="20" minLength="6"
+							tooLongError="密码长度需要在6-20个字母之间!" tooShortError="密码长度需要在6-20个字母之间!" />-->
+	</fx:Declarations>
+	<s:SpriteVisualElement width="100%" height="100%" mouseEnabled="false" id="videoBox" x="10" y="10" />
+	<mx:Panel x="640" y="10" width="350" height="240" mouseEnabled="false" id="publicScreen"
+			  textAlign="center" fontSize="14" fontWeight="bold" verticalAlign="middle" horizontalAlign="center" visible="false" />
+	<mx:TextArea x="640" y="260" width="350" height="291" editable="false" id="textScreen"
+				 liveScrolling="true" verticalScrollPolicy="auto" visible="false" wordWrap="true" updateComplete="textArea_updateCompleteHandler(event)" />
+	<mx:TextArea x="640" y="550" width="301" height="40" id="userInput" visible="false"
+				 verticalScrollPosition="{userInput.maxVerticalScrollPosition}" creationComplete="userInput_creationCompleteHandler(event)" />
+	<s:Button label="发送" x="940" y="550" id="sendBtn" width="50" height="40" visible="false" click="sendBtn_clickHandler(event)" />
+	<s:Label text="您尚未登录或者登录已失效，请重新登录！" id="failedText" visible="false" x="{(this.width - failedText.width) / 2}" y="{(this.height - failedText.height) / 2}" />
+	<s:VGroup width="100%" height="100%" mouseEnabled="false" verticalAlign="middle" horizontalAlign="center" id="loginBox" visible="false">
+		<s:Label id="alertText" textAlign="center" />
+		<s:TextInput width="238" id="nicknameTxt" x="380" textAlign="center" />
+		<s:HGroup width="100%" verticalAlign="top" horizontalAlign="center" mouseEnabled="false">
+			<s:Button label="确定" id="enterBtn" click="enterBtn_clickHandler(event)" />
+			<s:Button label="取消" id="cancelBtn" click="cancelBtn_clickHandler(event)" />
+		</s:HGroup>
+		<!--<mx:Form width="300" height="200" mouseEnabled="false" textAlign="center"
+				 borderColor="#000000" borderStyle="solid" borderVisible="true"
+				 borderAlpha=".5" dropShadowVisible="true" id="loginForm">
+			<mx:FormHeading label="视频会议系统" mouseEnabled="false" width="100%" fontSize="20" fontWeight="bold" height="40" />
+			<s:VGroup width="100%" height="100%" mouseEnabled="false" verticalAlign="top" horizontalAlign="center">
+				<mx:FormItem label="用	户	名:" width="80%" mouseEnabled="false" required="true">
+					<mx:TextInput id="username" width="100%" textAlign="left" />
+				</mx:FormItem>
+				<mx:FormItem label="密      码:" width="80%" mouseEnabled="false" required="true">
+					<mx:TextInput id="password" width="100%" displayAsPassword="true" textAlign="left" />
+				</mx:FormItem>
+				<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" mouseEnabled="false">
+					<s:Button label="登	录" id="loginBtn" click="loginBtn_clickHandler(event)" height="50" width="80" fontSize="15" fontWeight="bold" />
+				</s:HGroup>
+			</s:VGroup>
+		</mx:Form>-->
+	</s:VGroup>
+</s:Application>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+
+    ADOBE SYSTEMS INCORPORATED
+    Copyright 2008 Adobe Systems Incorporated
+    All Rights Reserved.
+
+    NOTICE: Adobe permits you to use, modify, and distribute this file
+    in accordance with the terms of the license agreement accompanying it.
+
+-->
+
+<!--- The default skin class for the Spark HScrollBar component. The thumb and track skins are defined by the
+HScrollBarThumbSkin and HScrollBarTrackSkin classes, respectively.  
+
+       @see spark.components.HScrollBar
+       @see spark.skins.spark.HScrollBarThumbSkin
+       @see spark.skins.spark.HScrollBarTrackSkin
+        
+      @langversion 3.0
+      @playerversion Flash 10
+      @playerversion AIR 1.5
+      @productversion Flex 4
+-->
+<s:SparkSkin xmlns:fx="http://ns.adobe.com/mxml/2009" xmlns:s="library://ns.adobe.com/flex/spark"
+    xmlns:fb="http://ns.adobe.com/flashbuilder/2009" minWidth="35" minHeight="15" 
+    alpha.disabled="0.5" alpha.inactive="0.5">
+
+    <fx:Metadata>
+    <![CDATA[ 
+        /** 
+         * @copy spark.skins.spark.ApplicationSkin#hostComponent
+         */
+        [HostComponent("spark.components.HScrollBar")]
+    ]]>
+    </fx:Metadata> 
+    
+    <fx:Script fb:purpose="styling">
+        /* Define the skin elements that should not be colorized. 
+           For scroll bar, the skin itself is colorized but the individual parts are not. */
+        static private const exclusions:Array = ["track", "thumb", "decrementButton", "incrementButton"];
+
+        /**
+         * @private
+         */
+        override public function get colorizeExclusions():Array {return exclusions;}
+        
+        /**
+         * @private
+         */
+        override protected function initializationComplete():void
+        {
+            useChromeColor = true;
+            super.initializationComplete();
+        }
+    </fx:Script>
+    
+    <s:states>
+        <s:State name="normal" />
+        <s:State name="disabled" />
+        <s:State name="inactive" />
+    </s:states>
+    
+	<s:Button id="track" top="0" bottom="0" right="1" left="1"
+			  focusEnabled="false" skinClass="skins.HScrollBarTrackSkin" width="100%" height="100%"/>
+	
+	<s:Button id="thumb" 
+			  focusEnabled="false" visible.inactive="false"
+			  right="2" skinClass="skins.HScrollBarThumbSkin" />
+
+</s:SparkSkin>

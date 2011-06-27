@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:ProgressBar xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" indeterminate="true" labelPlacement="bottom" textAlign="center"
+				trackHeight="10" label="API速度可能过慢,请您耐心等待..." labelWidth="{this.width}" toolTip="双击取消登录" chromeColor="#2d6a9c">
+	<fx:Script>
+		<![CDATA[
+			import resource.ResCenter;
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+</mx:ProgressBar>

@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:HGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx"
+		  width="100%" mouseEnabled="false" verticalAlign="middle" gap="0" creationComplete="hgroup1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			public var _username:String;
+			
+			[Bindable]
+			public var isVerified:Boolean = false;
+			
+			[Bindable]
+			public var operVisible:Boolean = false;
+			
+			[Bindable]
+			public var repostNum:String = "";
+			
+			[Bindable]
+			public var commentNum:String = "";
+			
+			[Bindable]
+			public var deleteBtnVisible:Boolean = false;
+			
+			[Bindable]
+			public var collectionBtnVisible:Boolean = true;
+			
+			public var uuid:String;
+
+			protected function button1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(!deleteBtnVisible){
+					
+					removeDelBtn();
+					
+				}
+			}
+			
+			public function set username(str:String):void{
+				
+				_username = "<font color='#2d6a9c'><b>" + str +"</b></font>";
+				
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.REPOST_STATUS));
+			}
+
+			protected function delBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.DELETE_STATUS));
+			}
+
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.COLLECT_STATUS));
+			}
+
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.COMMENT_STATUS));
+			}
+
+			protected function hgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(vipIcon){
+					
+					vipIcon.source = null;
+					
+				}
+				this.removeAllElements();
+				
+			}
+
+			protected function button3_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(!collectionBtnVisible){
+					
+					removeCollectBtn();
+					
+				}
+			}
+
+
+			protected function label1_clickHandler(event:MouseEvent):void
+			{
+				if(uuid && uuid != ""){
+					
+					var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+					e.dispatcher = {};
+					e.dispatcher.id = uuid;
+					DataCenter.mainPanel.dispatchEvent(e);
+					
+				}
+			}
+			public function removeRepostBtn():void{
+				
+				if(repostBtn){
+					
+					userOper.removeElement(repostBtn);
+					repostBtn.removeEventListener(MouseEvent.CLICK, button2_clickHandler);
+					repostBtn = null;
+					
+				}
+				
+			}
+			public function removeDelBtn():void{
+				
+				if(delBtn){
+					
+					userOper.removeElement(delBtn);
+					delBtn.removeEventListener(FlexEvent.CREATION_COMPLETE, button1_creationCompleteHandler);
+					delBtn.removeEventListener(MouseEvent.CLICK, delBtn_clickHandler);
+					delBtn = null;
+					
+				}
+				
+			}
+			public function removeCollectBtn():void{
+				
+				if(collectBtn){
+					
+					userOper.removeElement(collectBtn);
+					collectBtn.removeEventListener(FlexEvent.CREATION_COMPLETE, button3_creationCompleteHandler);
+					collectBtn.removeEventListener(MouseEvent.CLICK, button3_clickHandler);
+					collectBtn = null;
+					
+				}
+				
+			}
+			public function removeCommentBtn():void{
+				
+				if(commentBtn){
+					
+					userOper.removeElement(commentBtn);
+					commentBtn.removeEventListener(FlexEvent.CREATION_COMPLETE, button4_clickHandler);
+					commentBtn = null;
+					
+				}
+				
+			}
+			public function removeOper():void{
+				
+				removeRepostBtn();
+				removeDelBtn();
+				removeCollectBtn();
+				removeCommentBtn();
+				this.removeElement(userOper);
+				userOper = null;
+				
+			}
+
+			protected function image1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(!isVerified){
+					
+					this.removeElement(vipIcon);
+					vipIcon.unloadAndStop();
+					vipIcon.toolTip = null;
+					vipIcon.removeEventListener(FlexEvent.CREATION_COMPLETE, image1_creationCompleteHandler);
+					vipIcon = null;
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:Label fontWeight="bold" htmlText="{_username}" mouseChildren="false" buttonMode="true" click="label1_clickHandler(event)"
+			  toolTip="点击查看对方微博" id="userNameLabel" />
+	<mx:Image source="{ResCenter.VIPIcon}" minHeight="0" minWidth="0" visible="{isVerified}" toolTip="新浪认证用户"
+			  verticalAlign="middle" height="100%" mouseChildren="false" creationComplete="image1_creationCompleteHandler(event)" id="vipIcon" />
+	<s:HGroup mouseEnabled="false" horizontalAlign="right" verticalAlign="middle" width="100%" visible="{operVisible}" id="userOper">
+		<s:Button skinClass="skins.RepostSkin" mouseChildren="false" label="{repostNum}" click="button2_clickHandler(event)" id="repostBtn" toolTip="转发" />
+		<s:Button skinClass="skins.DeleteBtn" mouseChildren="false"
+				  creationComplete="button1_creationCompleteHandler(event)" id="delBtn" click="delBtn_clickHandler(event)" toolTip="删除" />
+		<s:Button skinClass="skins.CollectionSkin" mouseChildren="false"
+				  click="button3_clickHandler(event)" creationComplete="button3_creationCompleteHandler(event)" id="collectBtn" toolTip="收藏" />
+		<s:Button skinClass="skins.CommentSkin" mouseChildren="false" label="{commentNum}" click="button4_clickHandler(event)" id="commentBtn" toolTip="评论" />
+	</s:HGroup>
+</s:HGroup>

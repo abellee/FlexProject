@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  verticalAlign="top" horizontalAlign="center" mouseEnabled="false" creationComplete="vgroup1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import skins.CheckBoxSkin;
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+			protected function checkbox1_clickHandler(event:MouseEvent):void
+			{
+				searchUser.selected = false;
+				searchWB.selected = true;
+			}
+
+			protected function checkbox2_clickHandler(event:MouseEvent):void
+			{
+				searchWB.selected = false;
+				searchUser.selected = true;
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var e:WindowEvent;
+				if(searchUser.selected){
+					
+					if(inputTxt.text != ""){
+						
+						e = new WindowEvent(WindowEvent.SEARCH_USER);
+						e.dispatcher = {};
+						e.dispatcher.name = inputTxt.text;
+						
+					}
+					
+				}else if(searchWB.selected){
+					
+					if(inputTxt.text != ""){
+						
+						e = new WindowEvent(WindowEvent.SEARCH_TOPIC);
+						e.dispatcher = {};
+						e.dispatcher.topic = inputTxt.text;
+						
+					}
+					
+				}
+				this.dispatchEvent(e);
+			}
+
+			/**
+			 * 随便看看
+			 */
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.loadRandomStatus();
+			}
+			/**
+			 * 猜你喜欢
+			 */
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.loadSuggestion();
+			}
+			/**
+			 * 港台名人
+			 */
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+			/**
+			 * 人气关注
+			 */
+			protected function button5_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+			/**
+			 * 影视明星
+			 */
+			protected function button6_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+			/**
+			 * 美食|健康
+			 */
+			protected function button7_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+			/**
+			 * 商界名人
+			 */
+			protected function button8_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+			/**
+			 * IT互联网
+			 */
+			protected function button9_clickHandler(event:MouseEvent):void
+			{
+				var urlReq:URLRequest = new URLRequest("http://api.t.sina.com.cn/statuses/public_timeline.xml?source=" + DataCenter.appKey + "&count=" + DataCenter.count);
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="55" mouseEnabled="false" horizontalAlign="center" verticalAlign="bottom" paddingTop="10" paddingLeft="10" paddingRight="10" paddingBottom="10">
+		<s:TextInput id="inputTxt" width="100%" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize = "12" height="27" label="搜索" click="button1_clickHandler(event)" />
+		<s:CheckBox skinClass="skins.CheckBoxSkin" label="搜微博" click="checkbox1_clickHandler(event)" id="searchWB" selected="true" />
+		<s:CheckBox skinClass="skins.CheckBoxSkin" label="找人" click="checkbox2_clickHandler(event)" id="searchUser" />
+	</s:HGroup>
+	<!--<s:TileGroup requestedColumnCount="4" requestedRowCount="2" mouseEnabled="false"
+				 horizontalAlign="center" verticalGap="15" horizontalGap="15">
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="随便看看" click="button2_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="猜你喜欢" click="button3_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="港台名人" click="button4_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="人气关注" click="button5_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="影视明星" click="button6_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="美食|健康" click="button7_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="商界名人" click="button8_clickHandler(event)" />
+		<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="IT互联网" click="button9_clickHandler(event)" />
+	</s:TileGroup>-->
+</s:VGroup>

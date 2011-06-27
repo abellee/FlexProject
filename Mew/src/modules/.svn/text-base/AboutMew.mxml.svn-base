@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   width="300" borderColor="#327395" cornerRadius="5" borderWeight="1" backgroundColor="#d2e9f6"
+				   dropShadowVisible="true" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.CLOSE));
+			}
+
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.checkMode = "manual";
+				DataCenter.mainPanel.updateChecked = false;
+				DataCenter.mainPanel.checking();
+			}
+
+			protected function text1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var xmlns:Namespace = new Namespace(NativeApplication.nativeApplication.applicationDescriptor.namespace());
+				authorText.htmlText = "<b>Mew微博 "+ NativeApplication.nativeApplication.applicationDescriptor.xmlns::version +"</b><br><font color=\"#9c9c9c\">程序设计</font><br>Abel Lee<br><font color=\"#002aff\"><a href=\"http://www.iabel.com\">http://www.iabel.com</a></font><br><font color=\"#9c9c9c\">美术设计</font><br>Nora Ding<br><font color=\"#002aff\"><a href=\"http://blog.sina.com.cn/nora9\">http://blog.sina.com.cn/nora9</a></font>";
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Rect width="100%" height="30" topLeftRadiusX="5" topLeftRadiusY="5" topRightRadiusX="5" topRightRadiusY="5">
+		<s:fill>
+			<s:SolidColor color="#84bedc" />
+		</s:fill>
+	</s:Rect>
+	<s:Label height="30" textAlign="left" width="100%" y="0" verticalAlign="middle" text="关于Mew微博" paddingLeft="5" paddingRight="5" />
+	<s:Button skinClass="skins.CloseBtnBase" mouseChildren="false" right="0" width="30" height="30" click="button1_clickHandler(event)" />
+	<s:VGroup width="100%" height="100%" mouseEnabled="false" verticalAlign="top" horizontalAlign="center" y="30">
+		<s:HGroup mouseEnabled="false" verticalAlign="top" horizontalAlign="center" width="100%" height="100%" paddingTop="10" paddingLeft="10">
+			<s:VGroup mouseEnabled="false" height="100%">
+				<mx:Image source="resource/about.png" mouseEnabled="false" mouseChildren="false" />
+				<s:Button skinClass="skins.MewButtonBase" label="检查更新" mouseChildren="false" height="30" click="button2_clickHandler(event)" />
+			</s:VGroup>
+			<mx:Text height="100%" leading="7" fontSize="12" creationComplete="text1_creationCompleteHandler(event)" id="authorText"/>
+		</s:HGroup>
+		<s:Label text="版本归开发者Abel Lee所有!" height="40" verticalAlign="middle" />
+	</s:VGroup>
+</s:BorderContainer>

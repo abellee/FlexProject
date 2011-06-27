@@ -1,0 +1,669 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="490" height="275" systemChrome="none"
+		  transparent="true" showStatusBar="false" backgroundAlpha="0" mouseEnabled="false"
+		  creationComplete="window1_creationCompleteHandler(event)" initialize="window1_initializeHandler(event)">
+	<s:layout>
+		<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.controls.VRule;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Label;
+
+			private var xmlPath:URLRequest = new URLRequest("config/emotions.xml");
+			private var urlLoader:URLLoader;
+			
+			private var normalTitle:Vector.<String>;
+			private var magicTitle:Vector.<String>;
+			
+			private var preTab:Label = null;
+			private var curCate:String = "normal";
+			
+			private var size:uint = 26;
+			private var column:uint = 15;
+			private var cateName:String = null;
+			
+			private var emotionObj:Dictionary;
+			
+			private var curPage:uint = 1;
+			private var totalPage:uint;
+			
+			private var magicNumPerPage:uint = 14;
+			
+			private var pageFlipper:PageFlipper;
+			
+			private var curTarget:*;
+			
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			
+			private function loadEmotionXML():void{
+				
+				if(!urlLoader){
+					
+					urlLoader = new URLLoader();
+					
+				}
+				urlLoader.addEventListener(Event.COMPLETE, emotionXML_loadComplete);
+				urlLoader.load(xmlPath);
+				
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				listChildrenTab(null);
+				normalTitle = null;
+				magicTitle = null;
+				preTab = null;
+				curCate = null;
+				emotionObj = null;
+				curTarget = null;
+				removePageFlipper();
+				if(xmlPath){
+					
+					xmlPath = null;
+					
+				}
+				if(urlLoader){
+					
+					urlLoader.removeEventListener(Event.COMPLETE, emotionXML_loadComplete);
+					urlLoader = null;
+					
+				}
+				if(emotionList.numChildren){
+					
+					var num:uint = emotionList.numChildren;
+					for (var j:uint = 0; j < num; j++){
+						
+						var sprite:Sprite = emotionList.getChildAt(0) as Sprite;
+						
+						if(sprite){
+							
+							var child:Loader = sprite.getChildAt(0) as Loader;
+							if(child){
+								
+								child.contentLoaderInfo.removeEventListener(Event.COMPLETE, imgLoaded);
+								child.unloadAndStop();
+								sprite.removeChildAt(0);
+								
+							}
+							sprite.removeEventListener(MouseEvent.MOUSE_OVER, showToolTip);
+							sprite.removeEventListener(MouseEvent.MOUSE_OUT, hideToolTip);
+							sprite.removeEventListener(MouseEvent.CLICK, addEmotionText);
+							emotionList.removeChild(sprite);
+							emotionList.dispatchEvent(new Event(Event.RENDER));
+							
+						}
+						
+					}
+					
+				}
+				this.removeAllElements();
+				
+			}
+			
+			private function emotionXML_loadComplete(event:Event):void{
+				
+				urlLoader.removeEventListener(Event.COMPLETE, emotionXML_loadComplete);
+				urlLoader = null;
+				var emotionXML:XMLList = XML(event.target.data).children();
+				listEmotions(cateName, size, column, emotionXML);
+				
+			}
+			
+			private function listChildrenTab(arr:Vector.<String>):void{
+				
+				if(categoryList.numElements){
+					
+					var num:uint = categoryList.numElements;
+					for(var j:uint = 0; j < num; j++){
+						
+						var child:* = categoryList.getElementAt(0);
+						if(child is Label){
+							
+							removeMouseEvent(child);
+							categoryList.removeElement(child);
+							
+						}else{
+							
+							categoryList.removeElement(child);
+							
+						}
+						categoryList.dispatchEvent(new Event(Event.RENDER));
+						
+					}
+					
+				}
+				if(!arr){
+					
+					return;
+					
+				}
+				categoryList.x = 0;
+				var len:uint = arr.length
+				for(var i:uint = 0; i < len; i++){
+					
+					var tab:Label = new Label();
+					tab.setStyle("verticalAlign", "middle");
+					tab.setStyle("textAlign", "center");
+					tab.setStyle("paddingLeft", 10);
+					tab.setStyle("paddingRight", 10);
+					tab.setStyle("color", 0x0f73a4);
+					tab.height = 20;
+					var str:String = arr[i];
+					tab.text = str;
+					addMouseEvent(tab);
+					categoryList.addElement(tab);
+					if(i < (len - 1)){
+						
+						var vRule:VRule = new VRule();
+						vRule.setStyle("chromeColor", 0x003A58);
+						vRule.setStyle("shadowColor", 0x7ECCF4);
+						vRule.setStyle("strokeColor", 0x4A92C5);
+						vRule.scaleX = 1.5;
+						vRule.height = 15;
+						categoryList.addElement(vRule);
+						
+					}
+					categoryList.dispatchEvent(new Event(Event.RENDER));
+					if(!i){
+						
+						tab.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+						
+					}
+					
+				}
+				
+			}
+			
+			private function tabMouseOver_handler(event:MouseEvent):void{
+				
+				var tab:Label = event.target as Label;
+				tab.setStyle("backgroundColor", 0x8acef0);
+				tab.setStyle("color", 0xffffff);
+				
+			}
+			
+			private function tabMouseOut_handler(event:MouseEvent):void{
+				
+				var tab:Label = event.target as Label;
+				tab.setStyle("backgroundColor", undefined);
+				tab.setStyle("color", 0x0f73a4);
+				
+			}
+			
+			private function tabMouseDown_handler(event:MouseEvent):void{
+				
+				var tab:Label = event.target as Label;
+				tab.setStyle("backgroundColor", 0x64add2);
+				
+			}
+			
+			private function tabMouseUp_handler(event:MouseEvent):void{
+				
+				var tab:Label = event.target as Label;
+				tab.setStyle("backgroundColor", 0x8acef0);
+				
+			}
+			
+			private function tabClick_handler(event:MouseEvent):void{
+				
+				curPage = 1;
+				var tab:Label = event.target as Label;
+				if(preTab){
+					
+					addMouseEvent(preTab);
+					preTab.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OUT));
+					
+				}
+				preTab = tab;
+				var cate:String = tab.text;
+				size = 26;
+				column = 15;
+				cateName = cate;
+				if(cate == "默认"){
+					
+					cateName = "";
+					
+				}
+				if(curCate == "magic"){
+					
+					size = 60;
+					column = 7;
+					
+				}
+				loadEmotionXML();
+				removeMouseEvent(tab);
+				tab.enabled = false;
+				tab.setStyle("backgroundColor", 0x8acef0);
+				tab.setStyle("color", 0xffffff);
+				
+			}
+			
+			private function listEmotions(str:String, size:uint, column:uint, emotionXML:XMLList):void{
+				
+				emotionObj = null;
+				if(emotionList.numChildren){
+					
+					var num:uint = emotionList.numChildren;
+					for (var j:uint = 0; j < num; j++){
+						
+						var sprite:Sprite = emotionList.getChildAt(0) as Sprite;
+						
+						if(sprite){
+							
+							var child:Loader = sprite.getChildAt(0) as Loader;
+							if(child){
+								
+								child.contentLoaderInfo.removeEventListener(Event.COMPLETE, imgLoaded);
+								child.unload();
+								sprite.removeChildAt(0);
+								
+							}
+							sprite.removeEventListener(MouseEvent.MOUSE_OVER, showToolTip);
+							sprite.removeEventListener(MouseEvent.MOUSE_OUT, hideToolTip);
+							sprite.removeEventListener(MouseEvent.CLICK, addEmotionText);
+							emotionList.removeChild(sprite);
+							emotionList.dispatchEvent(new Event(Event.RENDER));
+							
+						}
+						
+					}
+					
+				}
+				if(emotionXML){
+					
+					if(!emotionObj){
+						
+						emotionObj = new Dictionary();
+						
+					}
+					var list:XMLList = XMLList(emotionXML.(category == str));
+					var len:uint = list.length();
+					var index:uint = 0;
+					var gap:uint = 5;
+					if(curCate == "magic"){
+						
+						gap = 7;
+						totalPage = Math.ceil(len / magicNumPerPage);
+						removePageFlipper();
+						if(totalPage > 1){
+							
+							pageFlipper = new PageFlipper();
+							pageFlipper.y = 210;
+							addPageFlipper();
+							
+						}
+						index = (curPage - 1) * magicNumPerPage;
+						len = (len - index) > magicNumPerPage ? (index + magicNumPerPage) : len;
+						
+					}
+					for(var i:uint = index; i < len; i++){
+						
+						if(list[i]){
+							
+							var xml:XML = XML(list[i]);
+							var sp:Sprite = getSprite(size);
+							sp.mouseChildren = false;
+							var loader:Loader = new Loader();
+							loader.contentLoaderInfo.addEventListener(Event.COMPLETE, imgLoaded);
+							sp.addChild(loader);
+							loader.load(new URLRequest(xml.url));
+							loader.x = 2;
+							loader.y = 2;
+							emotionList.addChild(sp);
+							emotionList.dispatchEvent(new Event(Event.RENDER));
+							if(curCate == "magic"){
+								
+								sp.x = (i % 14 % column) * (size + gap);
+								sp.y = uint(i % 14 / column) * (size + gap);
+								
+							}else{
+								
+								sp.x = (i % column) * (size + gap);
+								sp.y = uint(i / column) * (size + gap);
+								
+							}
+							var nameStr:String = xml.phrase;         // tooltip显示的处理后的字符串
+							var textStr:String = xml.text;           // 当为“常用表情”时 此处的值与phrase相同 如果为“魔法表情”时 此处的值为表情的swf链接 当用户点击表情时 则将此值添加至文本框
+							emotionObj[sp] = {name:nameStr, text: textStr};
+							sp.addEventListener(MouseEvent.MOUSE_OVER, showToolTip);
+							sp.addEventListener(MouseEvent.MOUSE_OUT, hideToolTip);
+							sp.addEventListener(MouseEvent.CLICK, addEmotionText);
+							
+						}
+						
+					}
+					
+				}
+				
+			}
+			
+			private function imgLoaded(event:Event):void{
+				
+				var loader:LoaderInfo = event.target as LoaderInfo;
+				loader.removeEventListener(Event.COMPLETE, imgLoaded);
+				if(curCate == "normal"){
+					
+					loader.content.width = loader.content.height = 22;
+					
+				}else{
+					
+					loader.content.width = loader.content.height = 56;
+					
+				}
+				
+			}
+			
+			private function addPageFlipper():void{
+				
+				if(!pageFlipper){
+					
+					return;
+					
+				}
+				background.addElement(pageFlipper);
+				pageFlipper.addEventListener(WindowEvent.PRE_PAGE, pageFlipper_prePageHandler);
+				pageFlipper.addEventListener(WindowEvent.NEXT_PAGE, pageFlipper_nextPageHandler);
+				pageFlipper.addEventListener(WindowEvent.INDEX_PAGE, pageFlipper_indexPageHandler);
+				
+			}
+			
+			private function removePageFlipper():void{
+				
+				if(!pageFlipper){
+					
+					return;
+					
+				}
+				background.removeElement(pageFlipper);
+				pageFlipper.removeEventListener(WindowEvent.PRE_PAGE, pageFlipper_prePageHandler);
+				pageFlipper.removeEventListener(WindowEvent.NEXT_PAGE, pageFlipper_nextPageHandler);
+				pageFlipper.removeEventListener(WindowEvent.INDEX_PAGE, pageFlipper_indexPageHandler);
+				pageFlipper = null;
+				
+			}
+			
+			private function pageFlipper_prePageHandler(event:WindowEvent):void{
+				
+				if(curPage <= totalPage && curPage > 1){
+					
+					curPage --;
+					this.loadEmotionXML();
+					
+				}
+				
+			}
+			
+			private function pageFlipper_nextPageHandler(event:WindowEvent):void{
+				
+				if(curPage >= 1 && curPage < totalPage){
+					
+					curPage ++;
+					this.loadEmotionXML();
+					
+				}
+				
+			}
+			
+			private function pageFlipper_indexPageHandler(event:WindowEvent):void{
+				
+				if(curPage != 1){
+					
+					curPage = 1;
+					this.loadEmotionXML();
+					
+				}
+				
+			}
+			
+			private function addEmotionText(event:MouseEvent):void{
+				
+				var sp:Sprite = event.target as Sprite;
+				var etext:String = emotionObj[sp].text;
+				if(curTarget is MicroBlogPublish && DataCenter.sendPanel){
+					
+					DataCenter.sendPanel.insertEmotionText(etext);
+					
+				}else if(curTarget is CommentInput && DataCenter.commentListWindow){
+					
+					(curTarget as CommentInput).insertEmotion(etext);
+					
+				}
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					
+				}
+				
+			}
+			
+			private function showToolTip(event:MouseEvent):void{
+				
+				var sp:Sprite = event.target as Sprite;
+				this.toolTip = emotionObj[sp].name;
+				
+			}
+			
+			private function hideToolTip(event:MouseEvent):void{
+				
+				this.toolTip = "";
+				
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(categoryList.x <= -(categoryList.width - 430)){
+					
+					return;
+					
+				}
+				var targetPos:int = categoryList.x - 150;
+				if(targetPos <= -(categoryList.width - 430)){
+					
+					targetPos = -(categoryList.width - 430);
+					
+				}
+				TweenLite.to(categoryList, .2, {x: targetPos});
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(categoryList.x >= 0){
+					
+					return;
+					
+				}
+				var targetPos:int = categoryList.x + 150;
+				if(targetPos >= 0){
+					
+					targetPos = 0;
+					
+				}
+				TweenLite.to(categoryList, .2, {x: targetPos});
+			}
+			
+			private function removeMouseEvent(tab:Label):void{
+				
+				tab.removeEventListener(MouseEvent.MOUSE_OVER, tabMouseOver_handler);
+				tab.removeEventListener(MouseEvent.MOUSE_OUT, tabMouseOut_handler);
+				tab.removeEventListener(MouseEvent.MOUSE_UP, tabMouseUp_handler);
+				tab.removeEventListener(MouseEvent.MOUSE_DOWN, tabMouseDown_handler);
+				tab.removeEventListener(MouseEvent.CLICK, tabClick_handler);
+				
+			}
+			
+			private function addMouseEvent(tab:Label):void{
+				
+				tab.addEventListener(MouseEvent.MOUSE_OVER, tabMouseOver_handler);
+				tab.addEventListener(MouseEvent.MOUSE_OUT, tabMouseOut_handler);
+				tab.addEventListener(MouseEvent.MOUSE_UP, tabMouseUp_handler);
+				tab.addEventListener(MouseEvent.MOUSE_DOWN, tabMouseDown_handler);
+				tab.addEventListener(MouseEvent.CLICK, tabClick_handler);
+				
+			}
+
+			protected function magicEmo_creationCompleteHandler(event:FlexEvent):void
+			{
+				magicEmo.removeEventListener(FlexEvent.CREATION_COMPLETE, magicEmo_creationCompleteHandler);
+				initBigEmo(normalEmo);
+				initBigEmo(magicEmo);
+				normalEmo.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+			
+			private function magicEmo_clickHandler(event:MouseEvent):void{
+				
+				if(urlLoader){
+					
+					urlLoader.removeEventListener(Event.COMPLETE, emotionXML_loadComplete);
+					urlLoader = null;
+					
+				}
+				var tab:Label = event.target as Label;
+				if(tab.id == "normalEmo"){
+					
+					removePageFlipper();
+					removeMouseEvent(normalEmo);
+					normalEmo.removeEventListener(MouseEvent.CLICK, magicEmo_clickHandler);
+					normalEmo.enabled = false;
+					normalEmo.setStyle("backgroundColor", 0x8acef0);
+					normalEmo.setStyle("color", 0xffffff);
+					
+					curCate = "normal";
+					xmlPath.url = "config/emotions.xml";
+					this.listChildrenTab(normalTitle);
+					initBigEmo(magicEmo);
+					
+				}else if(tab.id == "magicEmo"){
+					
+					removeMouseEvent(magicEmo);
+					magicEmo.removeEventListener(MouseEvent.CLICK, magicEmo_clickHandler);
+					magicEmo.enabled = false;
+					magicEmo.setStyle("backgroundColor", 0x8acef0);
+					magicEmo.setStyle("color", 0xffffff);
+					
+					curCate = "magic";
+					xmlPath.url = "config/magic.xml";
+					this.listChildrenTab(magicTitle);
+					initBigEmo(normalEmo);
+					
+				}
+				
+			}
+			
+			private function initBigEmo(tab:Label):void{
+				
+				addMouseEvent(tab);
+				tab.removeEventListener(MouseEvent.CLICK, tabClick_handler);
+				tab.addEventListener(MouseEvent.CLICK, magicEmo_clickHandler);
+				tab.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_OUT));
+				
+			}
+			
+			private function getSprite(w:uint, lineAlpha:Number = .2):Sprite{
+				
+				var sprite:Sprite = new Sprite();
+				sprite.graphics.lineStyle(1, 0x000000, lineAlpha);
+				sprite.graphics.drawRect(0, 0, w, w); 
+				return sprite;
+				
+			}
+
+
+			protected function window1_initializeHandler(event:FlexEvent):void
+			{
+				normalTitle = new Vector.<String>(15, true);
+				magicTitle = new Vector.<String>(11, true);
+				normalTitle[0] = "默认";
+				normalTitle[1] = "心情";
+				normalTitle[2] = "爱心";
+				normalTitle[3] = "休闲";
+				normalTitle[4] = "搞怪";
+				normalTitle[5] = "管不着";
+				normalTitle[6] = "大耳兔";
+				normalTitle[7] = "哈皮兔";
+				normalTitle[8] = "天气";
+				normalTitle[9] = "星座";
+				normalTitle[10] = "小新小浪";
+				normalTitle[11] = "亚运会";
+				normalTitle[12] = "张小盒";
+				normalTitle[13] = "蘑菇点点";
+				normalTitle[14] = "阿狸";
+				
+				magicTitle[0] = "默认";
+				magicTitle[1] = "心情";
+				magicTitle[2] = "搞怪";
+				magicTitle[3] = "浪漫爱情";
+				magicTitle[4] = "时尚";
+				magicTitle[5] = "闯堂兔";
+				magicTitle[6] = "小新小浪";
+				magicTitle[7] = "张小盒";
+				magicTitle[8] = "旺狗";
+				magicTitle[9] = "悠嘻猴";
+				magicTitle[10] = "阿狸";
+			}
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					background.filters = myFilters;
+					
+				}
+			}
+			
+			public function setPos(x:Number, y:Number, target:*):void{
+				
+				this.nativeWindow.x = x;
+				this.nativeWindow.y = y;
+				curTarget = target;
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="470" height="255" backgroundColor="#ffffff" mouseEnabled="false"
+					   creationComplete="bordercontainer1_creationCompleteHandler(event)" id="background">
+		<s:Rect width="100%" height="55" x="0" y="0">
+			<s:fill>
+				<s:SolidColor color="#80bddc" />
+			</s:fill>
+		</s:Rect>
+		<s:Label text="常用表情" paddingLeft="10" paddingRight="10" verticalAlign="middle" textAlign="center"
+				 color="0x0f73a4" height="20" y="5" id="normalEmo" fontWeight="bold" x="5" />
+		<s:Label text="魔法表情" paddingLeft="10" paddingRight="10" verticalAlign="middle" textAlign="center"
+				 color="0x0f73a4" height="20" y="5" x="80" id="magicEmo" fontWeight="bold" creationComplete="magicEmo_creationCompleteHandler(event)" />
+		<s:HGroup width="100%" height="30" mouseEnabled="false" verticalAlign="middle" gap="5" y="25">
+			<s:Group width="430" height="30" clipAndEnableScrolling="true">
+				<s:HGroup height="30" verticalAlign="middle" paddingLeft="5" paddingRight="5" id="categoryList" gap="4" />
+			</s:Group>
+			<s:Button skinClass="skins.EmotionLeftArrow" scaleX="-1" mouseChildren="false" click="button2_clickHandler(event)" />
+			<s:Button skinClass="skins.EmotionLeftArrow" mouseChildren="false" click="button1_clickHandler(event)" />
+		</s:HGroup>
+		<s:SpriteVisualElement width="100%" height="100%" id="emotionList" y="64" x="3" />
+	</s:BorderContainer>
+</s:Window>

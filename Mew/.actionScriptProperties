@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<actionScriptProperties analytics="false" mainApplicationPath="Mew.mxml" projectUUID="64989d26-4830-41c7-ad39-cabc18673f33" version="10">
+  <compiler additionalCompilerArguments="-locale en_US" autoRSLOrdering="true" copyDependentFiles="true" fteInMXComponents="false" generateAccessible="true" htmlExpressInstall="true" htmlGenerate="false" htmlHistoryManagement="false" htmlPlayerVersionCheck="true" includeNetmonSwc="false" outputFolderPath="bin-debug" removeUnusedRSL="true" sourceFolderPath="src" strict="true" targetPlayerVersion="0.0.0" useApolloConfig="true" useDebugRSLSwfs="true" verifyDigests="true" warn="true">
+    <compilerSourcePath/>
+    <libraryPath defaultLinkType="3">
+      <libraryPathEntry kind="4" path="">
+        <excludedEntries>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/flex.swc" useDefaultLinkType="false"/>
+          <libraryPathEntry kind="3" linkType="1" path="${PROJECT_FRAMEWORKS}/libs/core.swc" useDefaultLinkType="false"/>
+        </excludedEntries>
+      </libraryPathEntry>
+      <libraryPathEntry kind="1" linkType="1" path="libs"/>
+    </libraryPath>
+    <sourceAttachmentPath/>
+  </compiler>
+  <applications>
+    <application path="Mew.mxml">
+      <airExcludes/>
+    </application>
+  </applications>
+  <modules/>
+  <buildCSSFiles/>
+  <flashCatalyst validateFlashCatalystCompatibility="false"/>
+  <buildTargets>
+    <buildTarget buildTargetName="default">
+      <airSettings airCertificatePath="Y:/Documents/SVN(GoogleCode)/trunk/WebSite/mew/Mew Certification.p12" airTimestamp="true" version="1">
+        <airExcludes>
+          <pathEntry path="org"/>
+          <pathEntry path=".DS_Store"/>
+          <pathEntry path="config/.DS_Store"/>
+          <pathEntry path="resource/loading1.swf"/>
+          <pathEntry path="resource/.DS_Store"/>
+          <pathEntry path="resource/res.fla"/>
+          <pathEntry path="resource/loading.fla"/>
+          <pathEntry path="com"/>
+          <pathEntry path="plugins"/>
+        </airExcludes>
+      </airSettings>
+      <actionScriptSettings version="1"/>
+    </buildTarget>
+  </buildTargets>
+</actionScriptProperties>

@@ -1,0 +1,309 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		 mouseEnabled="false" creationComplete="group1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import dataCenter.DataCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _refreshDelay:String = "0";
+			
+			[Bindable]
+			private var blogNumPerPage:String = "0";
+			
+			[Bindable]
+			private var commentNumPerPage:String = "0";
+			
+			[Bindable]
+			private var autoRun:Boolean;
+			
+			[Bindable]
+			private var alwaysInFront:Boolean;
+			
+			[Bindable]
+			private var autoHide:Boolean;
+			
+			[Bindable]
+			private var showMewSystemTrayIcon:Boolean;
+			
+			[Bindable]
+			private var voiceNotice:Boolean;
+			
+			[Bindable]
+			private var alertNotice:Boolean;
+			
+			[Bindable]
+			private var blogNotice:Boolean;
+			
+			[Bindable]
+			private var commentNotice:Boolean;
+			
+			[Bindable]
+			private var atNotice:Boolean;
+			
+			[Bindable]
+			private var fansNotice:Boolean;
+			
+			[Bindable]
+			private var personLetterNotice:Boolean;
+			
+			[Bindable]
+			private var _hideNotClose:Boolean;
+			
+			[Bindable]
+			private var _miniNotHide:Boolean;
+			
+			[Bindable]
+			private var _updateDelay:String = "0";
+
+			public function init():void
+			{
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				if(so && so.data.refreshDelay){
+					
+					_refreshDelay = so.data.refreshDelay;
+					blogNumPerPage = so.data.blogNumPerPage;
+					commentNumPerPage = so.data.commentNumPerPage;
+					autoRun = so.data.autoRun;
+					alwaysInFront = so.data.alwaysInFront;
+					showMewSystemTrayIcon = so.data.showSystemTrayIcon;
+					voiceNotice = so.data.isVoice;
+					alertNotice = so.data.isNotice;
+					blogNotice = so.data.weiboNotice;
+					commentNotice = so.data.commentNotice;
+					atNotice = so.data.atNotice;
+					fansNotice = so.data.fansNotice;
+					personLetterNotice = so.data.personalNotice;
+					autoHide = so.data.isAutoHide;
+					_hideNotClose = so.data.hideNotClose;
+					_miniNotHide = so.data.miniNotHide;
+					_updateDelay = so.data.updateDelay;
+					return;
+					
+				}
+				setDefault();
+			}
+
+			private function setDefault():void{
+				
+				refreshDelay.text = 40 + "";
+				weiboPerPage.text = 20 + "";
+				commentPerPage.text = 10 + "";
+				isAutoRun.selected = false;
+				isInFront.selected = false;
+				systemTrayIcon.selected = true;
+				isVoice.selected = true;
+				isFloat.selected = true;
+				blogAlert.selected = true;
+				commentAlert.selected = true;
+				atAlert.selected = true;
+				fansAlert.selected = true;
+				personAlert.selected = true;
+				isAutoHide.selected = true;
+				miniNotHide.selected = true;
+				hideNotClose.selected = true;
+				updateDelay.text = 1 + "";
+				
+			}
+
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				setDefault();
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				so.data.refreshDelay = refreshDelay.text;
+				so.data.blogNumPerPage = weiboPerPage.text;
+				so.data.commentNumPerPage = commentPerPage.text;
+				so.data.autoRun = isAutoRun.selected;
+				so.data.alwaysInFront = isInFront.selected;
+				so.data.showSystemTrayIcon = systemTrayIcon.selected;
+				so.data.isVoice = isVoice.selected;
+				so.data.isNotice = isFloat.selected;
+				so.data.weiboNotice = blogAlert.selected;
+				so.data.commentNotice = commentAlert.selected;
+				so.data.atNotice = atAlert.selected;
+				so.data.fansNotice = fansAlert.selected;
+				so.data.personalNotice = personAlert.selected;
+				so.data.isAutoHide = isAutoHide.selected;
+				so.data.miniNotHide = miniNotHide.selected;
+				so.data.hideNotClose = hideNotClose.selected;
+				so.data.updateDelay = uint(updateDelay.text);
+				so.flush();
+				
+				setData();
+				
+			}
+
+			private function setData():void{
+				
+				DataCenter.refreshDelay = uint(refreshDelay.text);
+				DataCenter.count = uint(weiboPerPage.text);
+				DataCenter.commentCount = uint(commentPerPage.text);
+				DataCenter.autoRun = isAutoRun.selected;
+				DataCenter.alwaysInfront = isInFront.selected;
+				DataCenter.showSystemTrayIcon = systemTrayIcon.selected;
+				DataCenter.isVoice = isVoice.selected;
+				DataCenter.isNotice = isFloat.selected;
+				DataCenter.weiboNotice = blogAlert.selected;
+				DataCenter.commentNotice = commentAlert.selected;
+				DataCenter.atNotice = atAlert.selected;
+				DataCenter.fansNotice = fansAlert.selected;
+				DataCenter.personalNotice = personAlert.selected;
+				DataCenter.mainPanel.alwaysInFront = isInFront.selected;
+				DataCenter.autoHideByEdge = isAutoHide.selected;
+				DataCenter.hideNotClose = hideNotClose.selected;
+				DataCenter.miniNotHide = miniNotHide.selected;
+				DataCenter.updateDelay = uint(updateDelay.text);
+				NativeApplication.nativeApplication.startAtLogin = isAutoRun.selected;
+				
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.showMainPanel();
+			}
+
+			protected function refreshDelay_focusOutHandler(event:FocusEvent):void
+			{
+				if(uint(refreshDelay.text) < 30){
+					
+					refreshDelay.text = 30 + "";
+					
+				}
+				if(uint(refreshDelay.text) > 3600){
+					
+					refreshDelay.text = 3600 + "";
+					
+				}
+			}
+
+
+			protected function commentPerPage_focusOutHandler(event:FocusEvent):void
+			{
+				if(uint(commentPerPage.text) < 5){
+					
+					commentPerPage.text = 5 + "";
+					
+				}
+				if(uint(commentPerPage.text) > 10){
+					
+					commentPerPage.text = 10 + "";
+					
+				}
+			}
+
+
+			protected function weiboPerPage_focusOutHandler(event:FocusEvent):void
+			{
+				if(uint(weiboPerPage.text) < 20){
+					
+					weiboPerPage.text = 20 + "";
+					
+				}
+				if(uint(weiboPerPage.text) > 50){
+					
+					weiboPerPage.text = 50 + "";
+					
+				}
+			}
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+			protected function updateDelay_focusOutHandler(event:FocusEvent):void
+			{
+				var num:uint = uint(updateDelay.text);
+				if(num > 10){
+					
+					updateDelay.text = 10 + "";
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="{DataCenter.windowWidth - 20}" height="{DataCenter.windowHeight - 20}" x="10" y="30" cornerRadius="5" borderColor="#427087" borderWeight="2"
+					   id="bk_bc" backgroundAlpha="0"
+					   mouseChildren="false">
+		<s:Rect width="100%" height="100%" radiusX="5">
+			<s:fill>
+				<s:LinearGradient>
+					<s:GradientEntry color="0x7cbbd9" ratio="0" />
+					<s:GradientEntry color="0x8ac2de" ratio="0.4" />
+					<s:GradientEntry color="0x7cbbd9" ratio="1.0" />
+				</s:LinearGradient>
+			</s:fill>
+		</s:Rect>
+		<s:BitmapImage source="{ResCenter.Avatar_Arc}" width="92" height="31" y="-22" x="-2" />
+	</s:BorderContainer>
+	<s:Label text="系统设置" mouseEnabled="false" mouseChildren="false" fontSize="14" fontWeight="bold" x="28" y="19" color="#327395" />
+	<s:VGroup width="{DataCenter.windowWidth - 20}" height="{DataCenter.windowHeight - 20}" y="39"
+			  mouseEnabled="false" paddingLeft="40" paddingTop="40" paddingBottom="40" paddingRight="40" gap="0">
+		<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" paddingBottom="5">
+			<s:Label text="刷新时间间隔:" mouseEnabled="false" mouseChildren="false"  width="110" textAlign="left"/>
+			<s:TextInput id="refreshDelay" restrict="0-9" width="50" text="{_refreshDelay}"
+						 textAlign="center" focusOut="refreshDelay_focusOutHandler(event)" />
+			<s:Label text="秒(限30～3600秒)" mouseEnabled="false" mouseChildren="false" />
+		</s:HGroup>
+		<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" paddingBottom="5">
+			<s:Label text="每页显示微博条数:" mouseEnabled="false" mouseChildren="false"  width="110"/>
+			<s:TextInput id="weiboPerPage" restrict="0-9" width="50" text="{blogNumPerPage}"
+						 textAlign="center" focusOut="weiboPerPage_focusOutHandler(event)"/>
+			<s:Label text="条(20～50条)" mouseEnabled="false" mouseChildren="false" />
+		</s:HGroup>
+		<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" paddingBottom="5">
+			<s:Label text="每页显示评论条数:" mouseEnabled="false" mouseChildren="false"  width="110"/>
+			<s:TextInput id="commentPerPage" restrict="0-9" width="50" text="{commentNumPerPage}"
+						 textAlign="center" focusOut="commentPerPage_focusOutHandler(event)"/>
+			<s:Label text="条(5～10条)" mouseEnabled="false" mouseChildren="false" />
+		</s:HGroup>
+		<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" paddingBottom="5">
+			<s:Label text="检测更新周期:" mouseEnabled="false" mouseChildren="false"  width="110"/>
+			<s:TextInput id="updateDelay" restrict="0-9" width="50" text="{_updateDelay}"
+						 textAlign="center" focusOut="updateDelay_focusOutHandler(event)"/>
+			<s:Label text="天(1～10天之间, 0为登录时检测)" mouseEnabled="false" mouseChildren="false" />
+		</s:HGroup>
+		<s:CheckBox label="开机启动运行Mew微博" id="isAutoRun" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{autoRun}" />
+		<s:CheckBox label="始终保持在其它窗口前端" id="isInFront" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{alwaysInFront}" />
+		<s:CheckBox label="停靠在桌面边缘时自动隐藏" id="isAutoHide" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{autoHide}" />
+		<s:CheckBox label="关闭按钮隐藏" id="hideNotClose" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{_hideNotClose}" />
+		<s:CheckBox label="最小化按钮显示头像浮动框" id="miniNotHide" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{_miniNotHide}" />
+		<s:CheckBox label="任务栏显示Mew图标" id="systemTrayIcon" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{showMewSystemTrayIcon}" />
+		<s:CheckBox label="允许声音提示" id="isVoice" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{voiceNotice}" />
+		<s:CheckBox label="允许浮动框提示" id="isFloat" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{alertNotice}" />
+		<s:TileGroup width="100%" requestedRowCount="3" requestedColumnCount="2" horizontalAlign="center" columnAlign="justifyUsingGap">
+			<s:CheckBox label="开启微博提醒" id="blogAlert" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{blogNotice}" />
+			<s:CheckBox label="开启评论提醒" id="commentAlert" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{commentNotice}" />
+			<s:CheckBox label="开启@我提醒" id="atAlert" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{atNotice}" />
+			<s:CheckBox label="开启粉丝提醒" id="fansAlert" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{fansNotice}" />
+			<s:CheckBox label="开启私信提醒" id="personAlert" skinClass="skins.CheckBoxSkin" fontWeight="bold" selected="{personLetterNotice}" />
+		</s:TileGroup>
+		<s:HGroup width="100%" paddingTop="30" mouseEnabled="false">
+			<mx:LinkButton label="恢复默认" click="linkbutton1_clickHandler(event)" />
+		</s:HGroup>
+		<s:HGroup horizontalAlign="right" verticalAlign="middle" mouseEnabled="false" width="100%" height="100%" gap="30" paddingRight="50">
+			<s:Button label="保 存" skinClass="skins.MewButtonBase" mouseChildren="false" height="24" click="button1_clickHandler(event)" />
+			<s:Button label="返 回" skinClass="skins.MewButtonBase" mouseChildren="false" height="24" click="button2_clickHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+</s:Group>

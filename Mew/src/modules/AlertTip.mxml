@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="80"
+				   backgroundColor="#007ebb" borderColor="#ffffff" borderWeight="5"
+				   cornerRadius="5" dropShadowVisible="true">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			[Bindable]
+			public var _text:String = "";
+			
+			[Bindable]
+			public var _fsize:uint = 18;
+			
+			public var  isOpen:Boolean = false;
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label width="100%" height="100%" verticalAlign="middle" textAlign="center" text="{_text}" fontSize="{_fsize}" color="#ffffff"
+			 paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+</s:BorderContainer>

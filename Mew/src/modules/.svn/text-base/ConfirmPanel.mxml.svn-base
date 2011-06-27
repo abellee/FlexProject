@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="200" height="120" borderColor="#327395" cornerRadius="5" borderWeight="1" backgroundColor="#d2e9f6" dropShadowVisible="true"
+		 creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.Confirm;
+			
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			[Bindable]
+			private var _yesLabel:String = Confirm.YES;
+			
+			[Bindable]
+			private var _noLabel:String = Confirm.NO;
+			
+			[Bindable]
+			private var _txt:String = "";
+			
+			[Bindable]
+			private var _title:String = "";
+			
+			public function set yesLabel(str:String):void{
+				
+				_yesLabel = str;
+				
+			}
+			public function set noLabel(str:String):void{
+				
+				_noLabel = str;
+				noBtn_creationCompleteHandler();
+				
+			}
+			public function set txt(str:String):void{
+				
+				_txt = str;
+				
+			}
+			public function set title(str:String):void{
+				
+				_title = str;
+				
+			}
+			public function get yesLabel():String{
+				
+				return _yesLabel;
+				
+			}
+			public function get noLabel():String{
+				
+				return _noLabel;
+				
+			}
+			
+			public function show(parent:DisplayObjectContainer, bool:Boolean = true):void{
+				
+				PopUpManager.addPopUp(this, parent, bool);
+				PopUpManager.centerPopUp(this);
+				
+			}
+			
+			public function hide():void{
+				
+				if(this.isPopUp){
+					
+					PopUpManager.removePopUp(this);
+					
+				}
+				
+			}
+			
+			protected function yesBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.CONFIRM_YES));
+			}
+
+			protected function noBtn_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.CONFIRM_NO));
+			}
+
+
+			protected function noBtn_creationCompleteHandler(event:FlexEvent=null):void
+			{
+				if(!noBtn){
+					
+					return;
+					
+				}
+				if(_noLabel == "" || !_noLabel){
+					
+					btnBox.removeElement(noBtn);
+					return;
+					
+				}else{
+					
+					if(!btnBox.contains(noBtn)){
+						
+						btnBox.addElement(noBtn);
+						
+					}
+					
+				}
+			}
+
+			protected function label1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.width = alertText.width + 30;
+			}
+
+			protected function alertText_updateCompleteHandler(event:FlexEvent):void
+			{
+				if(alertText){
+					
+					this.width = alertText.width + 30;
+					
+				}
+			}
+
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				DataCenter.confirmPanel = null;
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Rect width="100%" height="30" topLeftRadiusX="5" topLeftRadiusY="5" topRightRadiusX="5" topRightRadiusY="5">
+		<s:fill>
+			<s:SolidColor color="#84bedc" />
+		</s:fill>
+	</s:Rect>
+	<s:Label height="30" textAlign="left" width="100%" y="0" verticalAlign="middle" text="{_title}" paddingLeft="5" paddingRight="5" />
+	<s:VGroup mouseEnabled="false" width="100%" height="100%" y="30" horizontalAlign="center" verticalAlign="top">
+		<s:Label height="100%" textAlign="center" text="{_txt}" verticalAlign="middle"  width="100%"
+				 paddingLeft="5" paddingRight="5" paddingTop="5" paddingBottom="5"
+				 creationComplete="label1_creationCompleteHandler(event)" id="alertText" valueCommit="alertText_updateCompleteHandler(event)"/>
+		<s:HGroup mouseEnabled="false" verticalAlign="middle" horizontalAlign="center" width="100%" height="100%" id="btnBox">
+			<s:Button skinClass="skins.MewButtonBase" label="{_yesLabel}" mouseChildren="false" height="30" id="yesBtn" click="yesBtn_clickHandler(event)" />
+			<s:Button skinClass="skins.MewButtonBase" label="{_noLabel}" mouseChildren="false" height="30" id="noBtn"
+					  click="noBtn_clickHandler(event)" creationComplete="noBtn_creationCompleteHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
+</s:BorderContainer>

@@ -1,0 +1,3027 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		   xmlns:s="library://ns.adobe.com/flex/spark" 
+		   xmlns:mx="library://ns.adobe.com/flex/mx" width="400" height="720" click="window1_clickHandler(event)"
+		   creationComplete="module1_creationCompleteHandler(event)"
+		   systemChrome="none" transparent="true" showStatusBar="false"
+		   backgroundAlpha="0" xmlns:modules="modules.*" xmlns:functional="functional.*"
+		   rollOver="window1_rollOverHandler(event)" mouseDown="window1_mouseDownHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			import com.sina.microblog.MicroBlog;
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.data.MicroBlogCount;
+			import com.sina.microblog.data.MicroBlogDirectMessage;
+			import com.sina.microblog.data.MicroBlogStatus;
+			import com.sina.microblog.data.MicroBlogUnread;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			import dataCenter.DataPreloader;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.Confirm;
+			import functional.DataFactory;
+			import functional.EffectCenter;
+			import functional.GC;
+			import functional.StringDetect;
+			import functional.Utils;
+			
+			import localManager.LocalDataManager;
+			import localManager.LocalizationPhase;
+			import localManager.NewMicroBlogChecker;
+			
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.core.WindowedApplication;
+			import mx.events.AIREvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.StringUtil;
+			
+			import phase.InterfaceState;
+			
+			import remoteManager.MewUpdater;
+			
+			import resource.ResCenter;
+			
+			import skins.SendBtnSkin;
+			
+			public var curPage:int = 1;
+			private var prePage:int = 1;
+			private var isLoading:Boolean = false;
+			
+			private var FOLLOWER_TYPE:uint = 0;
+			private var FANS_TYPE:uint = 1;
+			
+			private var mewSound:Sound;
+			private var soundChannel:SoundChannel;
+			private var lastSoundTime:Number = 0;
+			
+			/*******************************************************
+			 * 
+			 * temporary components
+			 * 
+			 ******************************************************/
+			private var aboutPanel:AboutMew;
+			
+			private var curInterface:String = InterfaceState.FRIENDS_TIME_LINE;
+			private var autoCheck:Boolean = false;
+			private var needReload:Boolean = false;
+			
+			[Bindable]
+			private var _avatarImg:String;
+			
+			[Bindable]
+			private var _currentTitle:String = "我的首页";
+			
+			private var curTopic:String = "";
+			private var curSearchingUser:String = "";
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			private var preTBtn:ToggleButton;
+			
+			public var isActivate:Boolean = true;
+			
+			private var isLoadingWin:String = "";
+			
+			private var unreadStatus:uint = 0;
+			private var unreadComment:uint = 0;
+			private var unreadFans:uint = 0;
+			private var unreadDM:uint = 0;
+			private var unreadMention:uint = 0;
+			
+			private var replyList:ReplyList;
+			private var msgList:MessageList;
+			private var friendList:FansList;
+			private var fansList:FansList;
+			private var generalList:GeneralList;
+			private var searchPanel:SearchPanel;
+			
+			private var unreadStatusTooltip:ToolTip;
+			private var unreadCommentTooltip:ToolTip;
+			private var unreadFansTooltip:ToolTip;
+			private var unreadDMTooltip:ToolTip;
+			private var unreadMetionTooltip:ToolTip;
+			
+			public var checker:NewMicroBlogChecker;
+			
+			private var imageFrameList:Array;
+			
+			private var urlLoader:URLLoader;
+			
+			private var loading:Loading;
+			
+			public var updateChecked:Boolean = false;
+			public var checkMode:String = "auto";
+			
+			private var floatUserInfo:FloatUserInfo;
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var we:WindowEvent = new WindowEvent(WindowEvent.BACKGROUND_COMPLETE);
+				we.dispatcher = bk_bc;
+				this.dispatchEvent(we);
+			}
+
+			protected function btn_mew_clickHandler(event:MouseEvent):void
+			{
+				if(!DataCenter.mewList){
+					
+					DataCenter.mewList = new MewFuncList();
+					
+				}
+				if(DataCenter.mewList.isOpened){
+					
+					return;
+					
+				}
+				var index:int = mainBox.getElementIndex(btn_mew);
+				mainBox.addElementAt(DataCenter.mewList,index-1);
+				DataCenter.mewList.x = btn_mew.x;
+				DataCenter.mewList.y = btn_mew.y - DataCenter.mewList.height + btn_mew.height - 8;
+				EffectCenter.fadeIn(DataCenter.mewList, .5, this.addListener);
+				DataCenter.mewList.addEventListener(MouseEvent.MOUSE_OVER, list_rollOver_handler);
+				DataCenter.mewList.addEventListener(MouseEvent.MOUSE_OUT, list_rollOut_handler);
+				DataCenter.mewList.addEventListener(WindowEvent.ABOUT_MEW, showAbout);
+				DataCenter.mewList.addEventListener(WindowEvent.BUGS_SUBMIT, submitBugs);
+				DataCenter.mewList.addEventListener(WindowEvent.CHECK_UPDATE, checkUpdate);
+				DataCenter.mewList.addEventListener(WindowEvent.EXIT_MEW, exitMew);
+				DataCenter.mewList.addEventListener(WindowEvent.LOG_OUT, logOutMew);
+				DataCenter.mewList.addEventListener(WindowEvent.USER_SUGGESTION, userSuggestion);
+			}
+			private function addListener():void{
+				
+				DataCenter.mewList.isOpened = true;
+				mainBox.addEventListener(MouseEvent.MOUSE_DOWN, removeComponents);
+				
+			}
+			private function list_rollOver_handler(event:MouseEvent):void{
+				
+				mainBox.removeEventListener(MouseEvent.MOUSE_DOWN, removeComponents);
+				
+			}
+			private function list_rollOut_handler(event:MouseEvent):void{
+				
+				mainBox.addEventListener(MouseEvent.MOUSE_DOWN, removeComponents);
+				
+			}
+			public function removeComponents(event:MouseEvent = null):void{
+				
+				if(DataCenter.mewList && DataCenter.mewList.isOpened){
+					
+					EffectCenter.fadeOut(DataCenter.mewList, .5, 0, this.removeList);
+					
+				}
+				
+			}
+			
+			private function removeList():void{
+				
+				if(DataCenter.mewList){
+					
+					if(mainBox.contains(DataCenter.mewList)){
+						
+						mainBox.removeElement(DataCenter.mewList);
+						
+					}
+					DataCenter.mewList.isOpened = false;
+					DataCenter.mewList.removeEventListener(MouseEvent.MOUSE_OVER, list_rollOver_handler);
+					DataCenter.mewList.removeEventListener(MouseEvent.MOUSE_OUT, list_rollOut_handler);
+					DataCenter.mewList.removeEventListener(WindowEvent.ABOUT_MEW, showAbout);
+					DataCenter.mewList.removeEventListener(WindowEvent.BUGS_SUBMIT, submitBugs);
+					DataCenter.mewList.removeEventListener(WindowEvent.CHECK_UPDATE, checkUpdate);
+					DataCenter.mewList.removeEventListener(WindowEvent.EXIT_MEW, exitMew);
+					DataCenter.mewList.removeEventListener(WindowEvent.LOG_OUT, logOutMew);
+					DataCenter.mewList.removeEventListener(WindowEvent.USER_SUGGESTION, userSuggestion);
+					mainBox.removeEventListener(MouseEvent.MOUSE_DOWN, removeComponents);
+					DataCenter.mewList = null;
+					
+				}
+				
+			}
+			
+			private function showAbout(event:WindowEvent):void{
+				
+				removeList();
+				if(!aboutPanel){
+					
+					aboutPanel = new AboutMew();
+					aboutPanel.addEventListener(WindowEvent.CLOSE, closeAboutWindow);
+					
+				}
+				PopUpManager.addPopUp(aboutPanel, this, false);
+				PopUpManager.centerPopUp(aboutPanel); 
+				EffectCenter.fadeIn(aboutPanel);
+				
+			}
+			private function closeAboutWindow(event:WindowEvent):void{
+				
+				aboutPanel.removeEventListener(WindowEvent.CLOSE, closeAboutWindow);
+				EffectCenter.fadeOut(aboutPanel, .5, 0, this.removeAboutWindow);
+				
+			}
+			private function removeAboutWindow():void{
+				
+				PopUpManager.removePopUp(aboutPanel);
+				aboutPanel = null;
+				
+			}
+			private function submitBugs(event:WindowEvent):void{
+				
+				if(!DataCenter.bugsSubmit){
+					
+					DataCenter.bugsSubmit = new BugsSubmit();
+					DataCenter.bugsSubmit.type = NativeWindowType.LIGHTWEIGHT;
+					
+				}else{
+					
+					DataCenter.bugsSubmit.orderToFront();
+					return;
+					
+				}
+				DataCenter.bugsSubmit.open();
+				
+			}
+			private function checkUpdate(event:WindowEvent):void{
+				
+				checkMode = "manual";
+				updateChecked = false;
+				checkForUpdate();
+				
+			}
+			private function exitMew(event:WindowEvent):void{
+				
+				this.closeAllWindowAndExit();
+				
+			}
+			private function logOutMew(event:WindowEvent):void{
+				
+				
+				
+			}
+			private function userSuggestion(event:WindowEvent):void{
+				
+				if(!DataCenter.suggestionSubmit){
+					
+					DataCenter.suggestionSubmit = new SuggestionSubmit();
+					DataCenter.suggestionSubmit.type = NativeWindowType.LIGHTWEIGHT;
+					
+				}else{
+					
+					DataCenter.suggestionSubmit.orderToFront();
+					return;
+					
+				}
+				DataCenter.suggestionSubmit.open();
+				
+			}
+			
+			protected function btn_systemSet_clickHandler(event:MouseEvent):void
+			{
+				if(!DataCenter.systemSetter){
+					
+					DataCenter.systemSetter = new SystemSetting();
+					
+				}
+				(event.target as ToggleButton).selected = false;
+				DataCenter.systemSetter.init();
+				this.addElement(DataCenter.systemSetter);
+				DataCenter.systemSetter.rotationY = 90;
+				DataCenter.systemSetter.alpha = 0;
+				TweenLite.to(outerCanvas, .5, {rotationY:-90, alpha:0});
+				TweenLite.to(DataCenter.systemSetter, .5, {rotationY:0, alpha:1});
+			}
+			
+			private function btn_send_clickHandler(event:MouseEvent):void{
+				
+				resetPublishPanel();
+				
+				/* btn_send.label = "发 布";
+				DataCenter.sendPanel.addEventListener(WindowEvent.CLOSE, closeSendPanel);
+				sendPanelBox.addElement(DataCenter.sendPanel);
+				DataCenter.sendPanel.y = 200;
+				sendPanelBox.visible = true;
+				TweenLite.to(DataCenter.sendPanel, 0.5, {x:0, y:0}); */
+				
+			}
+			public function sendStatus(autoStr:String = null):void{
+				
+				if(autoStr){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.UPDATE_STATUS_RESULT, updateStatus_handler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.UPDATE_PROFILE_ERROR, updateStatus_errorhandler);
+					DataCenter.microAPI.updateStatus(autoStr, null, null);
+					return;
+					
+				}
+				if(DataCenter.sendPanel.isOpen){
+					
+					var str:String = StringDetect.trim(DataCenter.sendPanel.text);
+					str = StringDetect.replaceEnter(str);
+					if(str != ""){
+						
+						if(DataCenter.sendPanel.num < 0){
+							
+							DataCenter.alertTip._fsize = 18;
+							DataCenter.alertTip._text = "提示: 文字长度已超过140个字!";
+							showAlertTip();
+							return;
+							
+						}
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.UPDATE_STATUS_RESULT, updateStatus_handler);
+						DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.UPDATE_STATUS_ERROR, updateStatus_errorhandler);
+						DataCenter.microAPI.updateStatus(str, null, DataCenter.sendPanel.thumbnail);
+						return;
+						
+					}
+					DataCenter.alertTip._fsize = 18;
+					DataCenter.alertTip._text = "提示: 没有要发布的微博内容!";
+					showAlertTip();
+					
+				}
+				
+			}
+			private function updateStatus_errorhandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.UPDATE_STATUS_RESULT, updateStatus_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.UPDATE_PROFILE_ERROR, updateStatus_errorhandler);
+				
+				DataCenter.alertTip._text = "提示: errorId:" + event.status + ", 发布微博失败！";
+				DataCenter.mainPanel.showAlertTip();
+				
+			}
+			public function repostStatus(extraStr:String = ""):void{
+				
+				if(DataCenter.sendPanel.isOpen){
+					
+					var str:String = StringDetect.trim(DataCenter.sendPanel.text);
+					str = StringDetect.replaceEnter(str);
+					if(str != ""){
+						
+						if(DataCenter.sendPanel.num < 0){
+							
+							DataCenter.alertTip._fsize = 18;
+							DataCenter.alertTip._text = "提示: 文字长度已超过140个字!";
+							showAlertTip();
+							return;
+							
+						}
+						if(DataCenter.sendPanel.rid == ""){
+						
+							DataCenter.alertTip._fsize = 18;
+							DataCenter.alertTip._text = "提示: 系统错误！";
+							showAlertTip();
+							return;
+							
+						}
+							
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.REPOST_STATUS_RESULT, updateStatus_handler);
+						DataCenter.microAPI.repostStatus(DataCenter.sendPanel.rid, str + extraStr);
+						return;
+						
+					}
+					DataCenter.alertTip._fsize = 18;
+					DataCenter.alertTip._text = "提示: 没有要发布的微博内容!";
+					showAlertTip();
+					
+				}
+				
+			}
+			public function commentStatus(sid:String):void{
+				
+				var str:String = StringDetect.trim(DataCenter.sendPanel.text);
+				str = StringDetect.replaceEnter(str);
+				if(str != ""){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.COMMENT_STATUS_RESULT, commentStatus_resultHandler);
+					DataCenter.microAPI.commentStatus(sid, str);
+					
+				}
+				
+			}
+			
+			private function commentStatus_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.COMMENT_STATUS_RESULT, commentStatus_resultHandler);
+				
+			}
+			
+			public function updateStatus_handler(event:MicroBlogEvent):void{
+				
+				if(event.type == MicroBlogEvent.UPDATE_STATUS_RESULT || event.type == MicroBlogEvent.REPOST_STATUS_RESULT){
+					
+					DataCenter.microAPI.removeEventListener(MicroBlogEvent.UPDATE_STATUS_RESULT, updateStatus_handler);
+					DataCenter.microAPI.removeEventListener(MicroBlogEvent.REPOST_STATUS_RESULT, updateStatus_handler);
+					if(DataCenter.sendPanel && DataCenter.sendPanel.isOpen){
+						
+						DataCenter.sendPanel.clearText();
+						DataCenter.sendPanel.setNormal();
+						DataCenter.sendPanel.mouseChildren = true;
+
+					}
+					
+				}
+				DataCenter.alertTip._fsize = 18;
+				DataCenter.alertTip._text = "提示: 微博发布成功!";
+				var status:MicroBlogStatus = event.result as MicroBlogStatus;
+				DataCenter.FriendLastId = status.id;
+				if(this.curInterface == InterfaceState.FRIENDS_TIME_LINE || this.curInterface == InterfaceState.USER_TIME_LINE){
+					
+					if(curPage == 1){
+						
+						if(!generalList){
+							
+							generalList = new GeneralList();
+							
+						}
+//						microBlogList.verticalScrollPosition = 0;
+						if(!microBlogList.contains(generalList)){
+							
+							microBlogList.addElement(generalList);
+							
+						}
+						generalList.updateStatus_handler(status);
+						var bool:Boolean = LocalDataManager.spliceData(status, DataCenter.FriendTimeLineFileName);
+						if(bool){
+							
+							LocalDataManager.spliceData(status, DataCenter.UserTimeLineFileName);
+							
+						}
+						
+					}
+					
+				}
+				showAlertTip();
+				
+			}
+			public function getStatusCount(id:String):MicroBlogCount
+			{
+				return this.generalList.getStatusCount(id);
+			}
+			public function showAlertTip():void{
+				
+				if(DataCenter.sendPanel && DataCenter.sendPanel.isOpen){
+					
+					DataCenter.sendPanel.removeLoadingBar();
+					
+				}
+				DataCenter.alertTip.width = this.width - 100;
+				if(DataCenter.alertTip.isOpen){
+					
+					//EffectCenter.restartTweener();
+					return;
+					
+				}
+				PopUpManager.addPopUp(DataCenter.alertTip, this, false);
+				PopUpManager.centerPopUp(DataCenter.alertTip);
+				EffectCenter.fadeIn(DataCenter.alertTip, .5, this.alertTipShowed);
+				DataCenter.alertTip.isOpen = true;
+				
+			}
+			/**
+			 * 随便看看
+			 */
+			public function loadRandomStatus():void{
+				
+				if(!urlLoader){
+					
+					urlLoader = new URLLoader();
+					
+				}
+				urlLoader.addEventListener(Event.COMPLETE, randomStatus_loadCompleteHandler);
+				urlLoader.load(new URLRequest(DataCenter.randomStatusURL + "?source=" + DataCenter.appKey + "&count=" + DataCenter.count));
+				startDataLoading();
+				
+			}
+			/**
+			 * 猜你喜欢
+			 */
+			public function loadSuggestion():void
+			{
+				if(!urlLoader){
+					
+					urlLoader = new URLLoader();
+					
+				}
+				urlLoader.addEventListener(Event.COMPLETE, followSuggestion_loadCompleteHandler);
+				urlLoader.load(new URLRequest(DataCenter.suggestionURL + "?source=" + DataCenter.appKey + "&with_reason=0"));
+				startDataLoading();
+			}
+			private function followSuggestion_loadCompleteHandler(event:Event):void
+			{
+				urlLoader.removeEventListener(Event.COMPLETE, followSuggestion_loadCompleteHandler);
+				var xml:XML = XML(event.target.data);
+				urlLoader = null;
+				if(!xml.users.children()){
+					
+					curTopic = "";
+					DataCenter.alertTip._fsize = 14;
+					DataCenter.alertTip._text = "提示: 没有相关的微博用户！";
+					DataCenter.mainPanel.showAlertTip();
+					this.loadingFinish();
+					return;
+					
+				}else{
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					curTopic = "猜你喜欢";
+					this.curInterface = InterfaceState.FOLLOW_SUGGESTION;    // 猜你喜欢
+					this.processFollowers(DataFactory.serializationUser(xml.users.children()), 3)
+					
+				}
+				
+			}
+			private function randomStatus_loadCompleteHandler(event:Event):void
+			{
+				urlLoader.removeEventListener(Event.COMPLETE, randomStatus_loadCompleteHandler);
+				var xml:XML = XML(event.target.data);
+				urlLoader = null;
+				if(!xml.statuses.children()){
+					
+					curTopic = "";
+					DataCenter.alertTip._fsize = 14;
+					DataCenter.alertTip._text = "提示: 没有相关的微博！";
+					DataCenter.mainPanel.showAlertTip();
+					loadingFinish();
+					return;
+					
+				}else{
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					curTopic = "随便看看";
+					this.curInterface = InterfaceState.RANDOM_STATUS;    // 随便看看
+					var arr:Array = DataFactory.serializationStatus(xml.children());
+					this.loadList(arr);
+					
+				}
+				
+			}
+			private function alertTipShowed():void{
+				
+				EffectCenter.fadeOut(DataCenter.alertTip, .5, 2,this.removeAlertTip);
+				
+			}
+			private function removeAlertTip():void{
+				
+				PopUpManager.removePopUp(DataCenter.alertTip);
+				DataCenter.alertTip.isOpen = false;
+				
+			}
+
+			protected function btn_resizer_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startResize();
+			}
+
+			protected function module1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.x = Screen.mainScreen.visibleBounds.width - this.nativeWindow.width - 40;
+				this.nativeWindow.y = Screen.mainScreen.visibleBounds.y + 10;
+				switch(DataCenter.CurrentSystem){
+					
+					case "win7":
+						this.styleName = "win7Style";
+						break;
+					case "winXP":
+						this.styleName = "xpStyle";
+						break;
+					default:
+						this.styleName = "xpStyle";
+						break;
+					
+				}
+				if(DataCenter.CurrentSystem == "mac"){
+					
+					this.styleName = "macStyle";
+					
+				}
+//				this.addEventListener(AIREvent.APPLICATION_DEACTIVATE, windowDeactive_handler);
+//				this.addEventListener(AIREvent.APPLICATION_ACTIVATE, windowReactive_handler);
+				this.addEventListener(WindowEvent.TARGET_USER_DATA, getTargetUserData);
+				this.addEventListener(WindowEvent.SEARCH_TOPIC, searchTopData);
+				this.visible = false;
+				
+			}
+			public function init():void{
+				
+				_avatarImg = DataCenter.user.profileImageUrl;
+				username.text = DataCenter.user.screenName;
+				follow_num.label = "关注"+DataCenter.user.friendsCount+"人";
+				fans_num.label = "粉丝"+DataCenter.user.followersCount+"人";
+				microBlog_num.label = "微博"+DataCenter.user.statusesCount+"条";
+				_isVerified = DataCenter.user.isVerified;
+				
+				this.visible = true;
+				this.alpha = 0;
+				preTBtn = myIndex as ToggleButton;
+				TweenLite.to(this, 1, {alpha:1, onComplete:loadFriendTimeLine});
+				
+				checker = new NewMicroBlogChecker();
+				checker.start();
+				
+			}
+			public function changeFollowNum(num:int):void{
+				
+				if(num < 0){
+					
+					this.refreshLocalFollowList();
+					
+				}
+				follow_num.label = "关注"+ (DataCenter.user.friendsCount + num) +"人";
+				DataCenter.user.friendsCount += num;
+				
+			}
+			public function changeFansNum(num:int):void{
+				
+				if(num < 0){
+					
+					this.refreshLocalFansList();
+					
+				}
+				fans_num.label = "粉丝"+ (DataCenter.user.followersCount + num) +"人";
+				DataCenter.user.followersCount += num;
+				
+			}
+			public function changeMicroBlogNum(num:int):void{
+				
+				microBlog_num.label = "微博"+ (DataCenter.user.statusesCount + num) +"条";
+				DataCenter.user.statusesCount += num;
+				
+			}
+			private function loadFriendTimeLine():void{
+				
+				/* DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FRIENDS_TIMELINE_RESULT,loadFriends_timeLine_handler);
+				DataCenter.microAPI.loadFriendsTimeline("0", "0", DataCenter.count, 1); */
+				
+				startDataLoading();
+				
+				if(DataCenter.FriendTimelinePhase == LocalizationPhase.IS_LOADING){
+					
+					DataCenter.dataPreloader.addEventListener(WindowEvent.FRIEND_TIME_LINE_PRELOAD_COMPLETE, loadFriends_timeLine_handler);
+					
+				}else if(DataCenter.FriendTimelinePhase == LocalizationPhase.LOADING_COMPLETE){
+					
+					loadList(LocalDataManager.readData(null, DataCenter.FriendTimeLineFileName));
+					
+				}
+				
+				addEventListener(WindowEvent.MIDDLE_IMG, loadMiddleImg);
+				
+			}
+			private function showBigImage(event:WindowEvent):void{
+				
+				
+				
+			}
+			private function windowDeactive_handler(event:AIREvent):void{
+				
+				isActivate = false;
+				this.stage.frameRate = 1;
+				
+			}
+			private function windowReactive_handler(event:AIREvent):void{
+				
+				isActivate = true;
+				this.stage.frameRate = 30;
+				
+			}
+			
+			// 关注微博列表加载完成
+			private function loadFriends_timeLine_handler(event:WindowEvent):void{
+				
+				var arr:Array = event.dispatcher.data as Array;
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.FRIEND_TIME_LINE_PRELOAD_COMPLETE, loadFriends_timeLine_handler);
+				if(arr && arr.length){
+					
+					loadList(arr);	
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			
+			public function noDataAlert():void{
+				
+				DataCenter.alertTip._text = "提示: 已是最后一页或者无法获得更多数据!";
+				showAlertTip();
+				
+			}
+
+			private function updateStatus(state:String, arr:Array):void{
+				
+				if(this.curInterface == state){
+					
+					for each (var status:MicroBlogStatus in arr){
+						
+						generalList.updateStatus_handler(status);
+						
+					}
+					
+				}
+				
+			}
+			protected function bk_bc_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(DataCenter.miniNotHide){
+					
+					if(!DataCenter.floatAvatar){
+						
+						DataCenter.floatAvatar = new MiniCat();
+						DataCenter.floatAvatar.type = NativeWindowType.LIGHTWEIGHT;
+						DataCenter.floatAvatar.alwaysInFront = DataCenter.alwaysInfront;
+						
+					}
+					DataCenter.floatAvatar.open();
+					
+				}
+				if(DataCenter.CurrentSystem == "mac"){
+					
+					this.nativeWindow.minimize();
+					
+				}else{
+					
+					this.nativeWindow.visible = false;
+					
+				}
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(DataCenter.hideNotClose){
+					
+					if(DataCenter.CurrentSystem == "mac"){
+						
+						this.nativeWindow.minimize();
+						
+					}else{
+						
+						this.nativeWindow.visible = false;
+						
+					}
+					return;
+					
+				}
+				closeAllWindowAndExit();
+			}
+			
+			public function closeAllWindowAndExit():void{
+				
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				so.data.width = this.nativeWindow.width;
+				so.data.height = this.nativeWindow.height;
+				so.flush();
+				NativeApplication.nativeApplication.exit();
+				
+			}
+
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				if(isLoading){
+					
+					needReload = false;
+					return;
+					
+				}
+				var btn:Button = event.target as Button;
+				switch(btn.id){
+					
+					case "indexBtn":
+						if(curPage == 1){
+							
+							needReload = false;
+							return;
+							
+						}
+						curPage = 1;
+						break;
+					case "preBtn":
+						if(curPage == 1){
+							
+							needReload = false;
+							return;
+							
+						}
+						curPage --;
+						break;
+					case "nextBtn":
+						if(curPage == int(DataCenter.user.statusesCount / DataCenter.count + 1)){
+							
+							needReload = false;
+							return;
+							
+						}
+						curPage ++;
+						break;
+					
+				}
+				needReload = true;
+				this.refreshMicroBlogList();
+			}
+			private function load_friends_time_line_error_handler(event:MicroBlogErrorEvent):void{
+				
+				
+				
+			}
+			
+			private function searchTopData(event:WindowEvent):void{
+				
+				prePage = curPage;
+				curPage = 1;
+				curTopic = event.dispatcher.topic;
+				loadTopicData();
+				
+			}
+			
+			private function loadTopicData():void{
+				
+				if(urlLoader){
+					
+					urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+					urlLoader = null;
+					
+				}
+				urlLoader = new URLLoader();
+				urlLoader.addEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+				urlLoader.load(new URLRequest(DataCenter.topSearchURL + "?source=" + DataCenter.appKey + "&q=" + curTopic + "&page=" + curPage + "&count=" + DataCenter.count));
+				this.startDataLoading();
+				
+			}
+			
+			private function topicData_loadCompleteHandler(event:Event):void{
+				
+				urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+				var xml:XML = XML(event.target.data);
+				urlLoader = null;
+				if(!xml.statuses.children()){
+					
+					curTopic = "";
+					DataCenter.alertTip._fsize = 14;
+					DataCenter.alertTip._text = "提示: 没有与此话题相关的微博！";
+					DataCenter.mainPanel.showAlertTip();
+					this.loadingFinish();
+					if(prePage == -1){
+						
+						if(curPage > 1){
+							
+							curPage --;
+							
+						}
+						return;
+						
+					}
+					curPage = prePage;
+					return;
+					
+				}else{
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					prePage = -1;
+					this.curInterface = InterfaceState.SEARCH_TOPIC;    // 话题界面
+					this.loadList(DataFactory.serializationStatus(xml.statuses.children()));
+					
+				}
+				
+			}
+			
+			private function getTargetUserData(event:WindowEvent):void{
+				
+				prePage = curPage;
+				curPage = 1;
+				if(event.dispatcher.id){
+					
+					loadTargetUser(event.dispatcher.id);
+					
+				}
+				if(event.dispatcher.name){
+					
+					loadTargetUserByName(event.dispatcher.name);
+					
+				}
+				if(event.dispatcher.fans){
+					
+					loadTargetUserFans(event.dispatcher.fans);
+					
+				}
+				if(event.dispatcher.follow){
+					
+					loadTargetUserFollow(event.dispatcher.follow);
+					
+				}
+				
+			}
+			
+			private function loadTargetUser(id:String):void{
+				
+				if(id == DataCenter.user.id){
+					
+					myWeiBo.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					return;
+					
+				}
+				DataCenter.curUserId = id;
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_USER_TIMELINE_RESULT, showTargetUser);
+				DataCenter.microAPI.loadUserTimeline(id, "0", null, "0", "0", DataCenter.count, curPage);
+				this.startDataLoading();
+				
+			}
+			
+			private function loadTargetUserByName(name:String):void{
+				
+				if(name == DataCenter.user.name){
+					
+					myWeiBo.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					return;
+					
+				}
+				DataCenter.curUserName = name;
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_USER_TIMELINE_RESULT, showTargetUser);
+				DataCenter.microAPI.loadUserTimeline(null, "0", name, "0", "0", DataCenter.count, curPage);
+				this.startDataLoading();
+				
+				
+			}
+			
+			private function loadTargetUserFans(id:String):void{
+				
+				if(id == DataCenter.user.id){
+					
+					fans_num.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					return;
+					
+				}
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FOLLOWERS_INFO_RESULT, showTargetUserFans);
+				DataCenter.microAPI.loadFollowersInfo(null, id, null, DataCenter.fansNum * (curPage - 1));
+				this.startDataLoading();
+				
+			}
+			private function showTargetUserFans(event:MicroBlogEvent):void{
+				
+				var arr:Array = event.result as Array;
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_FOLLOWERS_INFO_RESULT, showTargetUserFans);
+				if(arr && arr.length){
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					curInterface = InterfaceState.TARGET_USER_FANS;
+					prePage = -1;
+					processFollowers(arr,this.FANS_TYPE);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(prePage == -1){
+						
+						if(curPage > 1){
+							
+							curPage --;
+							
+						}
+						return;
+						
+					}
+					curPage = prePage;
+					
+				}
+				
+			}
+			private function loadTargetUserFollow(id:String):void{
+				
+				if(id == DataCenter.user.id){
+					
+					follow_num.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					return;
+					
+				}
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FRIENDS_INFO_RESULT, showTargetUserFriend);
+				DataCenter.microAPI.loadFriendsInfo(null, id, null, DataCenter.fansNum * (curPage - 1));
+				this.startDataLoading();
+				
+			}
+			
+			private function showTargetUserFriend(event:MicroBlogEvent):void{
+				
+				var arr:Array = event.result as Array;
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_FRIENDS_INFO_RESULT, showTargetUserFriend);
+				if(arr && arr.length){
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					curInterface = InterfaceState.TARGET_USER_FOLLOW;
+					prePage = -1;
+					processFollowers(arr,this.FOLLOWER_TYPE);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(prePage == -1){
+						
+						if(curPage > 1){
+							
+							curPage --;
+							
+						}
+						return;
+						
+					}
+					curPage = prePage;
+					
+				}
+				
+			}
+			
+			private function showTargetUser(event:MicroBlogEvent):void{
+				
+				var arr:Array = event.result as Array;
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_USER_TIMELINE_RESULT, showTargetUser);
+				if(arr && arr.length){
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					curInterface = InterfaceState.TARGET_USER;
+					prePage = -1;
+					DataCenter.curUserId = (arr[0] as MicroBlogStatus).user.id;
+					DataCenter.curUserName = (arr[0] as MicroBlogStatus).user.name;
+					loadList(arr);	
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(prePage == -1){
+						
+						if(curPage > 1){
+							
+							curPage --;
+							
+						}
+						return;
+						
+					}
+					curPage = prePage;
+					
+				}
+				
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				var btn:ToggleButton = event.currentTarget as ToggleButton;
+				if(btn.id != "refreshBtn"){
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						
+					}
+					btn.selected = true;
+					preTBtn = btn;
+					needReload = false;
+					
+				}else{
+					
+					if(preTBtn){
+						
+						preTBtn.selected = true;
+						
+					}
+					btn.selected = false;
+					needReload = true;
+					refreshMicroBlogList();
+					return;
+					
+				}
+				checkCurState();
+				if(!scroller.visible){
+					
+					scroller.visible = true;
+					
+				}
+				if(viewerBox.visible){
+					
+					viewerBox.visible = false;
+					
+				}
+				switch(btn.id){
+					
+					case "myIndex":
+						_currentTitle = "我的首页";
+						if(curInterface == InterfaceState.FRIENDS_TIME_LINE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.FRIENDS_TIME_LINE;
+						break;
+					case "myWeiBo":
+						_currentTitle = "我的微博";
+						if(curInterface == InterfaceState.USER_TIME_LINE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						DataCenter.curUserId = DataCenter.user.id;
+						curInterface = InterfaceState.USER_TIME_LINE;
+						break;
+					case "myAt":
+						_currentTitle = "@提到我的";
+						if(curInterface == InterfaceState.AT_TIME_LINE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.AT_TIME_LINE;
+						break;
+					case "myComment":
+						_currentTitle = "我的评论";
+						if(curInterface == InterfaceState.COMMENT_TIME_LINE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.COMMENT_TIME_LINE;
+						break;
+					case "myPerson":
+						_currentTitle = "我的私信";
+						if(curInterface == InterfaceState.PERSON_LETTER_RECEIVE || curInterface == InterfaceState.PERSON_LETTER_SEND){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.PERSON_LETTER_RECEIVE;
+						break;
+					case "myCollection":
+						_currentTitle = "我的收藏";
+						if(curInterface == InterfaceState.COLLECTION_TIME_LINE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.COLLECTION_TIME_LINE;
+						break;
+					case "btn_search":
+						_currentTitle = "搜索微博/找人";
+						if(curInterface == InterfaceState.SEARCH_INTERFACE){
+							
+							return;
+							
+						}
+						curPage = 1;
+						curInterface = InterfaceState.SEARCH_INTERFACE;
+					
+				}
+				refreshMicroBlogList();
+			}
+			private function refreshMicroBlogList():void{
+				
+				if(curInterface != InterfaceState.PERSON_LETTER_RECEIVE && curInterface != InterfaceState.PERSON_LETTER_SEND){
+					
+					if(microBlogList.numElements > 0){
+						
+						var msgList:MessageList = microBlogList.getElementAt(0) as MessageList;
+						if(msgList){
+							
+							msgList.removeEventListener(WindowEvent.SWAP_STATE,changeMsgState);
+							
+						}	
+						
+					}
+					
+				}
+				startDataLoading();
+				switch(curInterface){
+					
+					case InterfaceState.FRIENDS_TIME_LINE:
+						/* isLoadingWin = InterfaceState.FRIENDS_TIME_LINE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FRIENDS_TIMELINE_RESULT, loadFriends_timeLine_handler);
+						DataCenter.microAPI.loadFriendsTimeline("0","0",DataCenter.count,curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadFriendTimeLine(curPage);
+							
+						}
+						if(DataCenter.FriendTimelinePhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.FRIEND_TIME_LINE_PRELOAD_COMPLETE, loadFriends_timeLine_handler);
+							
+							
+						}else if(DataCenter.FriendTimelinePhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							loadList(LocalDataManager.readData(null, DataCenter.FriendTimeLineFileName));
+							
+						}
+						break;
+					case InterfaceState.USER_TIME_LINE:
+						/* isLoadingWin = InterfaceState.USER_TIME_LINE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_USER_TIMELINE_RESULT, loaderUserTimeLine);
+						DataCenter.microAPI.loadUserTimeline(null, "0", null, "0", "0", DataCenter.count, curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadUserTimeLine(curPage);
+							
+						}
+						if(DataCenter.UserTimelinePhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.USER_TIME_LINE_PRELOAD_COMPLETE, loaderUserTimeLine);
+							
+						}else if(DataCenter.UserTimelinePhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							loadList(LocalDataManager.readData(null, DataCenter.UserTimeLineFileName));
+							
+						}
+						break;
+					case InterfaceState.AT_TIME_LINE:
+						/* isLoadingWin = InterfaceState.AT_TIME_LINE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_MENSIONS_RESULT, loadMensionsTimeline);
+						DataCenter.microAPI.loadMentions("0", "0", DataCenter.count, curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadAtList(curPage);
+							
+						}
+						if(DataCenter.AtDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.AT_LIST_PRELOAD_COMPLETE, loadMensionsTimeline);
+							
+						}else if(DataCenter.AtDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							loadList(LocalDataManager.readData(null, DataCenter.AtDataFileName));
+							
+						}
+						break;
+					case InterfaceState.COMMENT_TIME_LINE:
+						/* isLoadingWin = InterfaceState.COMMENT_TIME_LINE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_COMMENTS_TIMELINE_RESULT, loadCommentsTimeline);
+						DataCenter.microAPI.loadCommentsTimeline("0", "0", DataCenter.count, curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadCommentList(curPage);
+							
+						}
+						if(DataCenter.CommentDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.COMMENT_LIST_PRELOAD_COMPLETE, loadCommentsTimeline);
+							
+						}else if(DataCenter.CommentDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							refreshCommentList(LocalDataManager.readData(null, DataCenter.CommentFileName));
+							
+						}
+						break;
+					case InterfaceState.PERSON_LETTER_RECEIVE:
+						/* isLoadingWin = InterfaceState.PERSON_LETTER_RECEIVE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_DIRECT_MESSAGES_RECEIVED_RESULT, loadDirectMessage);
+						DataCenter.microAPI.loadDirectMessagesReceived("0", "0", DataCenter.count, curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadPersonReceiveList(curPage);
+							
+						}
+						if(DataCenter.PersonalReceiveDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.PERSON_RECEIVE_PRELOAD_COMPLETE, loadDirectMessage);
+							
+						}else if(DataCenter.PersonalReceiveDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							refreshMessageList(LocalDataManager.readData(null, DataCenter.PersonalReceiveFileName));
+							
+						}
+						break;
+					case InterfaceState.PERSON_LETTER_SEND:
+						/* isLoadingWin = InterfaceState.PERSON_LETTER_SEND;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_DIRECT_MESSAGES_SENT_RESULT, loadDirectMessage);
+						DataCenter.microAPI.loadDirectMessagesSent("0", "0", DataCenter.count, curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadPersonSendList(curPage);
+							
+						}
+						if(DataCenter.PersonalSendDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.PERSON_SEND_PRELOAD_COMPLETE, loadDirectMessage);
+							
+						}else if(DataCenter.PersonalSendDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							refreshMessageList(LocalDataManager.readData(null, DataCenter.PersonalSendFileName));
+							
+						}
+						break;
+					case InterfaceState.COLLECTION_TIME_LINE:
+						/* isLoadingWin = InterfaceState.COLLECTION_TIME_LINE;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FAVORITE_LIST_RESULT, loadFavoriteList);
+						DataCenter.microAPI.loadFavoriteList(curPage); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadCollectionList(curPage);
+							
+						}
+						if(DataCenter.CollectionDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.COLLECTION_LIST_PRELOAD_COMPLETE, loadFavoriteList);
+							
+						}else if(DataCenter.CollectionDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							loadList(LocalDataManager.readData(null, DataCenter.CollectionFileName));
+							
+						}
+						GC.gc();
+						break;
+					case InterfaceState.FANS_LIST:
+						/* isLoadingWin = InterfaceState.FANS_LIST;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FOLLOWERS_INFO_RESULT, loadFollowers_info_result);
+						DataCenter.microAPI.loadFollowersInfo(DataCenter.user.name, DataCenter.user.id, null, DataCenter.fansNum * (this.curPage - 1)); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadFansList(curPage);
+							
+						}
+						if(DataCenter.FansDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.FANS_LIST_PRELOAD_COMPLETE, loadFollowers_info_result);
+							
+						}else if(DataCenter.FansDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							processFollowers(LocalDataManager.readData(null, DataCenter.FansListFileName), this.FANS_TYPE);
+							
+						}
+						break;
+					case InterfaceState.FOLLOWERS_LIST:
+						/* isLoadingWin = InterfaceState.FOLLOWERS_LIST;
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_FRIENDS_INFO_RESULT, loadFriend_info_result);
+						DataCenter.microAPI.loadFriendsInfo(DataCenter.user.name, DataCenter.user.id, null, DataCenter.fansNum * (this.curPage - 1)); */
+						if(needReload){
+							
+							DataCenter.dataPreloader.preloadFollowList(curPage);
+							
+						}
+						if(DataCenter.FollowDataPhase == LocalizationPhase.IS_LOADING){
+							
+							DataCenter.dataPreloader.addEventListener(WindowEvent.FOLLOW_LIST_PRELOAD_COMPLETE, loadFriend_info_result);
+							
+						}else if(DataCenter.FollowDataPhase == LocalizationPhase.LOADING_COMPLETE){
+							
+							processFollowers(LocalDataManager.readData(null, DataCenter.FollowListFileName), this.FOLLOWER_TYPE);
+							
+						}
+						break;
+					case InterfaceState.TARGET_USER:
+						needReload = false;
+						var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+						e.dispatcher = {};
+						e.dispatcher.id = DataCenter.curUserId;
+						dispatchEvent(e);
+						break;
+					case InterfaceState.TARGET_USER_FANS:
+						needReload = false;
+						var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+						e.dispatcher = {};
+						e.dispatcher.fans = DataCenter.curUserId;
+						dispatchEvent(e);
+						break;
+					case InterfaceState.TARGET_USER_FOLLOW:
+						needReload = false;
+						var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+						e.dispatcher = {};
+						e.dispatcher.follow = DataCenter.curUserId;
+						dispatchEvent(e);
+						break;
+					case InterfaceState.SEARCH_INTERFACE:
+						microBlogList.removeAllElements();
+						microBlogList.verticalScrollPosition = 0;
+						this.loadingFinish();
+						if(searchPanel){
+							
+							searchPanel.removeEventListener(WindowEvent.SEARCH_TOPIC, searchTopData);
+							searchPanel.removeEventListener(WindowEvent.SEARCH_USER, searchUserData);
+							searchPanel = null;
+							
+						}
+						searchPanel = new SearchPanel();
+						searchPanel.addEventListener(WindowEvent.SEARCH_TOPIC, searchTopData);
+						searchPanel.addEventListener(WindowEvent.SEARCH_USER, searchUserData);
+						microBlogList.addElement(searchPanel);
+						break;
+					case InterfaceState.SEARCH_TOPIC:
+						loadTopicData();
+						break;
+					case InterfaceState.SEARCH_USER:
+						searchUser();
+						break;
+					case InterfaceState.RANDOM_STATUS:
+						loadRandomStatus();
+						break;
+					default:
+						return;
+						break;
+					
+				}
+				
+			}
+			
+			private function searchUserData(event:WindowEvent):void{
+				
+				prePage = curPage;
+				curPage = 1;
+				curSearchingUser = event.dispatcher.name;
+				searchUser();
+				
+			}
+			
+			private function searchUser():void{
+				
+				if(urlLoader){
+					
+					urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+					urlLoader = null;
+					
+				}
+				urlLoader = new URLLoader();
+				urlLoader.addEventListener(Event.COMPLETE, searchUser_loadCompleteHandler);
+				urlLoader.load(new URLRequest(DataCenter.userSearchURL + "?source=" + DataCenter.appKey + "&q=" + curSearchingUser + "&page=" + curPage + "&count=" + DataCenter.count));
+				this.startDataLoading();
+				
+			}
+			
+			private function searchUser_loadCompleteHandler(event:Event):void{
+				
+				urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+				var xml:XML = XML(event.target.data);
+				urlLoader = null;
+				if(!xml.users.children()){
+					
+					curTopic = "";
+					DataCenter.alertTip._fsize = 14;
+					DataCenter.alertTip._text = "提示: 没有您查找的微博用户！";
+					DataCenter.mainPanel.showAlertTip();
+					this.loadingFinish();
+					if(prePage == -1){
+						
+						if(curPage > 1){
+							
+							curPage --;
+							
+						}
+						return;
+						
+					}
+					curPage = prePage;
+					return;
+					
+				}else{
+					
+					if(preTBtn){
+						
+						preTBtn.selected = false;
+						preTBtn = null;
+						
+					}
+					prePage = -1;
+					this.curInterface = InterfaceState.SEARCH_USER;    // 搜索用户界面
+					this.processFollowers(DataFactory.serializationUser(xml.users.children()), 2)
+					
+				}
+				
+			}
+			
+			private function checkCurState():void{
+				
+				if(isLoading){
+					
+					switch(curInterface){
+						
+						case InterfaceState.FRIENDS_TIME_LINE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.FRIEND_TIME_LINE_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.FRIEND_TIME_LINE_PRELOAD_COMPLETE, loadFriends_timeLine_handler);
+								
+							}
+							break;
+						case InterfaceState.USER_TIME_LINE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.USER_TIME_LINE_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.USER_TIME_LINE_PRELOAD_COMPLETE, loaderUserTimeLine);
+								
+							}
+							break;
+						case InterfaceState.AT_TIME_LINE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.AT_LIST_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.AT_LIST_PRELOAD_COMPLETE, loadMensionsTimeline);
+								
+							}
+							break;
+						case InterfaceState.COMMENT_TIME_LINE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.COMMENT_LIST_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.COMMENT_LIST_PRELOAD_COMPLETE, loadCommentsTimeline);
+								
+							}
+							break;
+						case InterfaceState.PERSON_LETTER_RECEIVE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.PERSON_RECEIVE_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.PERSON_RECEIVE_PRELOAD_COMPLETE, loadDirectMessage);
+								
+							}
+							break;
+						case InterfaceState.PERSON_LETTER_SEND:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.PERSON_SEND_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.PERSON_SEND_PRELOAD_COMPLETE, loadDirectMessage);
+								
+							}
+							break;
+						case InterfaceState.COLLECTION_TIME_LINE:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.COLLECTION_LIST_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.COLLECTION_LIST_PRELOAD_COMPLETE, loadFavoriteList);
+								
+							}
+							break;
+						case InterfaceState.FANS_LIST:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.FANS_LIST_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.FANS_LIST_PRELOAD_COMPLETE, loadFollowers_info_result);
+								
+							}
+							break;
+						case InterfaceState.FOLLOWERS_LIST:
+							if(DataCenter.dataPreloader.hasEventListener(WindowEvent.FOLLOW_LIST_PRELOAD_COMPLETE)){
+								
+								DataCenter.dataPreloader.removeEventListener(WindowEvent.FOLLOW_LIST_PRELOAD_COMPLETE, loadFriend_info_result);
+								
+							}
+							break;
+						case InterfaceState.SEARCH_INTERFACE:
+							if(searchPanel){
+								
+								searchPanel.removeEventListener(WindowEvent.SEARCH_TOPIC, searchTopData);
+								searchPanel.removeEventListener(WindowEvent.SEARCH_USER, searchUserData);
+								
+							}
+							break;
+						case InterfaceState.SEARCH_TOPIC:
+							if(urlLoader){
+								
+								urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+								urlLoader = null;
+								
+							}
+							break;
+						case InterfaceState.SEARCH_USER:
+							if(urlLoader){
+								
+								urlLoader.removeEventListener(Event.COMPLETE, topicData_loadCompleteHandler);
+								urlLoader = null;
+								
+							}
+							break;
+						default:
+							break;
+						
+					}
+					
+				}
+				
+			}
+			private function loaderUserTimeLine(event:WindowEvent):void{
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.USER_TIME_LINE_PRELOAD_COMPLETE, loaderUserTimeLine);
+				isLoading = false;
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					loadList(arr);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function removeTempList():void{
+				
+				microBlogList.removeElementAt(0);
+				
+			}
+			private function loadMensionsTimeline(event:WindowEvent):void{
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.AT_LIST_PRELOAD_COMPLETE, loadMensionsTimeline);
+				isLoading = false;
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					loadList(arr);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function noUpdate_handler(event:WindowEvent):void{
+				
+				removeEventListener(WindowEvent.NO_UPDATE, noUpdate_handler);
+				DataCenter.mewUpdater = null;
+				if(checkMode == "auto"){
+					
+					return;
+					
+				}
+				if(!DataCenter.confirmPanel){
+					
+					DataCenter.confirmPanel = new ConfirmPanel();
+					
+				}
+				DataCenter.confirmPanel.noLabel = "";
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_YES,
+				function(event:WindowEvent){
+					
+					DataCenter.confirmPanel.hide();
+					
+				});
+				DataCenter.confirmPanel.txt = "您的Mew微博为最新版本，\n无需更新! ^_^";
+				DataCenter.confirmPanel.show(DataCenter.mainPanel, false);
+				
+			}
+			private function checkForUpdate():void{
+				
+				if(checkMode == "manual"){
+					
+					checking();
+					return;
+					
+				}
+				if(updateChecked){
+					
+					return;
+					
+				}
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				var now:Number = new Date().time;
+				if(so.data && so.data.lastUpdateTime){
+					
+					var delay:uint = so.data.updateDelay;
+					if(delay == 0 || (now - so.data.lastUpdateTime) >= (delay * 24 * 60 * 1000)){
+						
+						so.data.lastUpdateTime = now;
+						checking();
+						
+					}else{
+						
+						updateChecked = true;
+						
+					}
+					
+				}else{
+					
+					so.data.lastUpdateTime = now;
+					
+				}
+				so.flush();
+				
+			}
+			public function checking():void
+			{
+				if(!DataCenter.mewUpdater){
+					
+					DataCenter.mewUpdater = new MewUpdater();
+					addEventListener(WindowEvent.NO_UPDATE, noUpdate_handler);
+					
+				}
+				updateChecked = true;
+			}
+			private function loadList(arr:Array):void{
+
+				checkForUpdate();
+				if(!arr || !arr.length){
+					
+					loadingFinish();
+					noDataAlert();
+					return;
+					
+				}
+				if(arr[0] is MicroBlogStatus){
+					
+					arr.sort(Utils.sortByCreateTime);	
+					
+				}else{
+					
+					trace("系统出错，请提交此bug予开发者！谢谢您对Mew微博的支持！");
+					
+				}
+				if(microBlogList.numElements){
+					
+					microBlogList.removeAllElements();
+					
+				}
+				if(!generalList){
+					
+					generalList = new GeneralList();
+					
+				}
+				generalList.removeAll();
+				microBlogList.verticalScrollPosition = 0;
+				microBlogList.addElement(generalList);
+				
+				generalList.setList(arr, this.curInterface);
+				
+				if(curInterface == InterfaceState.TARGET_USER){
+					
+					_currentTitle = (arr[0] as MicroBlogStatus).user.name + "的微博";
+					
+				}
+				
+				if(curInterface == InterfaceState.SEARCH_TOPIC){
+					
+					_currentTitle = "关于 " + curTopic + " 的微博";
+					
+				}
+				if(curInterface ==InterfaceState.RANDOM_STATUS){
+					
+					_currentTitle = curTopic;
+					
+				}
+				
+				generalList.addEventListener(WindowEvent.DELETE_STATUS_SUCCESS, deleteStatus_successHandler);
+				loadingFinish();
+				
+				if(DataCenter.loginTimes == 3){
+					
+					++DataCenter.loginTimes;
+					recommandMew();
+					
+				}
+				
+			}
+			private function recommandMew():void{
+				
+				if(!DataCenter.confirmPanel){
+					
+					DataCenter.confirmPanel = new ConfirmPanel();
+					
+				}
+				if(DataCenter.confirmPanel.hasEventListener(WindowEvent.CONFIRM_YES)){
+					
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, recommandWeiBo);
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+					
+				}
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_YES, recommandWeiBo);
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+				DataCenter.confirmPanel.txt = "您已连续3次登录Mew微博，\n是否愿意向您的好友们推荐Mew?";
+				DataCenter.confirmPanel.noLabel = Confirm.NO;
+				DataCenter.confirmPanel.show(DataCenter.mainPanel, false);
+				
+			}
+			private function recommandWeiBo(event:WindowEvent):void{
+				
+				DataCenter.confirmPanel.dispatchEvent(new WindowEvent(WindowEvent.CONFIRM_NO));
+				sendStatus("嗨！我正在使用Mew微博，很可爱的微博工具，定时发微博、截图、自动分条发布、多帐号登录、魔法表情等等非常精彩的功能，点击链接下载: http://mew.iabel.com 让我们一起\"Mew to the world!\"");
+				
+			}
+			private function removeConfirm(event:WindowEvent):void{
+				
+				DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+				DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, recommandWeiBo);
+				DataCenter.confirmPanel.hide();
+				
+			}
+			private function deleteStatus_successHandler(event:WindowEvent):void{
+				
+				DataCenter.alertTip._fsize = 18;
+				if(this.curInterface == InterfaceState.COLLECTION_TIME_LINE){
+					
+					DataCenter.alertTip._text = "提示: 删除收藏成功!";
+					
+				}else{
+					
+					DataCenter.alertTip._text = "提示: 删除微博成功!";
+					
+				}
+				refreshLocalCacheData();
+				showAlertTip();
+				
+			}
+			public function refreshLocalCacheData():void{
+				
+				if(curPage != 1){
+					
+					DataCenter.dataPreloader.preloadUserTimeLine();
+					DataCenter.dataPreloader.preloadFriendTimeLine();
+					return;
+					
+				}
+				if(this.curInterface == InterfaceState.FRIENDS_TIME_LINE){
+					
+					DataCenter.dataPreloader.preloadUserTimeLine();
+					
+				}
+				if(this.curInterface == InterfaceState.USER_TIME_LINE){
+					
+					DataCenter.dataPreloader.preloadFriendTimeLine();
+					
+				}
+				this.refreshMicroBlogList();
+				
+			}
+			public function refreshLocalFansList():void{
+				
+				if(curPage != 1){
+					
+					DataCenter.dataPreloader.preloadFansList();
+					return;
+					
+				}
+				needReload = true;
+				this.refreshMicroBlogList();
+				
+			}
+			public function refreshLocalFollowList():void{
+				
+				if(curPage != 1){
+					
+					DataCenter.dataPreloader.preloadFollowList();
+					return;
+					
+				}
+				needReload = true;
+				this.refreshMicroBlogList();
+				
+			}
+			public function refreshLocalCommentTimeline():void{
+				
+				if(this.curInterface == InterfaceState.COMMENT_TIME_LINE){
+					
+					needReload = true;
+					this.refreshMicroBlogList();
+					
+				}else{
+					
+					DataCenter.dataPreloader.preloadCommentList();
+					
+				}
+				
+			}
+			public function resetPublishPanel():void{
+				trace(DataCenter.sendPanel);
+				if(!DataCenter.sendPanel){
+					
+					DataCenter.sendPanel = new MicroBlogPublish();
+					DataCenter.sendPanel.type = NativeWindowType.LIGHTWEIGHT;
+					
+				}
+				if(!DataCenter.sendPanel.isOpen){
+					
+					DataCenter.sendPanel.open();
+					
+				}
+				DataCenter.sendPanel.alwaysInFront = DataCenter.alwaysInfront;
+				DataCenter.sendPanel.clearText();
+				DataCenter.sendPanel.orderToFront();
+				
+			}
+			public function refreshLoacalDirectSend():void{
+				
+				if(this.curInterface == InterfaceState.PERSON_LETTER_SEND){
+					
+					needReload = true;
+					this.refreshMicroBlogList();
+					
+				}else{
+					
+					DataCenter.dataPreloader.preloadPersonSendList();
+					
+				}
+				
+			}
+			private function loadCommentsTimeline(event:WindowEvent):void{
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.COMMENT_LIST_PRELOAD_COMPLETE, loadCommentsTimeline);
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					refreshCommentList(arr);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function refreshCommentList(arr:Array):void{
+				
+				loadingFinish();
+				microBlogList.removeAllElements();
+				microBlogList.verticalScrollPosition = 0;
+				if(arr && arr.length){
+					
+					if(!replyList){
+						
+						replyList = new ReplyList();
+						
+					}
+					replyList.removeAll();
+					replyList.setReplyList(arr);
+					microBlogList.addElement(replyList);
+					
+				}else{
+					
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function loadDirectMessage(event:WindowEvent):void{
+				
+				if(DataCenter.dataPreloader.hasEventListener(WindowEvent.PERSON_RECEIVE_PRELOAD_COMPLETE)){
+					
+					DataCenter.dataPreloader.removeEventListener(WindowEvent.PERSON_RECEIVE_PRELOAD_COMPLETE, loadDirectMessage);
+					
+				}
+				if(DataCenter.dataPreloader.hasEventListener(WindowEvent.PERSON_SEND_PRELOAD_COMPLETE)){
+					
+					DataCenter.dataPreloader.removeEventListener(WindowEvent.PERSON_SEND_PRELOAD_COMPLETE, loadDirectMessage);
+					
+				}
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					refreshMessageList(arr);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function refreshMessageList(arr:Array):void{
+				
+				if(arr && arr.length){
+					
+					loadingFinish();
+					microBlogList.removeAllElements();
+					microBlogList.verticalScrollPosition = 0;
+					if(!msgList){
+						
+						msgList = new MessageList();
+						
+					}
+					msgList.removeAll();
+					if(!msgList.hasEventListener(WindowEvent.SWAP_STATE)){
+						
+						msgList.addEventListener(WindowEvent.SWAP_STATE,changeMsgState);
+						
+					}
+					msgList.setMessageList(arr);
+					microBlogList.addElement(msgList);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function changeMsgState(event:WindowEvent):void{
+				
+				this.curInterface = event.dispatcher.phase;
+				curPage = 1;
+				refreshMicroBlogList();
+				
+			}
+			private function loadFavoriteList(event:WindowEvent):void{
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.COLLECTION_LIST_PRELOAD_COMPLETE, loadFavoriteList);
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					loadList(arr);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			
+			public function startDataLoading():void{
+				
+				isLoading = true;
+				/* if(!DataCenter.loadingForMain){
+					
+					DataCenter.loadingForMain = new LoadingForPublish();
+					DataCenter.loadingForMain.loadSWF(1);
+					
+				}
+				PopUpManager.addPopUp(DataCenter.loadingForMain, mainBox);
+				PopUpManager.centerPopUp(DataCenter.loadingForMain);  */
+				/* DataCenter.userOper.label = "";
+				DataCenter.userOper.width = mainBox.width;
+				mainBox.addElement(DataCenter.userOper);
+				TweenLite.to(DataCenter.userOper, .5, {alpha:1}); */
+				if(!loading){
+					
+					loading = new Loading();
+					
+				}
+				loadingBox.addElement(loading);
+				
+			}
+			
+			private function loadingFinish():void{
+				
+				isLoading = false;
+//				PopUpManager.removePopUp(DataCenter.loadingForMain);
+//				DataCenter.loadingForMain = null;
+				if(loading && loadingBox.contains(loading)){
+					
+					loadingBox.removeElement(loading);
+					loading = null;
+					
+				}
+				
+			}
+			
+			private function removeUserOper():void{
+				
+				if(mainBox.contains(DataCenter.userOper)){
+					
+					mainBox.removeElement(DataCenter.userOper);
+					
+				}
+				
+			}
+
+			protected function microBlog_num_clickHandler(event:MouseEvent):void
+			{
+				myWeiBo.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+			protected function fans_num_clickHandler(event:MouseEvent):void
+			{
+				if(curInterface == InterfaceState.FANS_LIST){
+					
+					return;
+					
+				}
+				if(needReload){
+					
+					needReload = false;
+					
+				}
+				checkCurState();
+				this.curInterface = InterfaceState.FANS_LIST;
+				if(preTBtn){
+					
+					preTBtn.selected = false;
+					preTBtn = null;
+					
+				}
+				refreshMicroBlogList();
+				
+			}
+			private function loadFollowers_info_result(event:WindowEvent):void{
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.FANS_LIST_PRELOAD_COMPLETE, loadFollowers_info_result);
+				var arr:Array = event.dispatcher.data as Array;
+				if(arr && arr.length){
+					
+					processFollowers(arr,this.FANS_TYPE);
+					
+				}else{
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					
+				}
+				
+			}
+			private function processFollowers(arr:Array, type:uint):void{
+				
+				//PopUpManager.removePopUp(DataCenter.operPB);
+				microBlogList.removeAllElements();
+				microBlogList.verticalScrollPosition = 0;
+				switch(type){
+					
+					case 0:
+						if(!friendList){
+							
+							friendList = new FansList();
+							
+						}
+						this._currentTitle = "我的关注列表";
+						friendList.removeAll();
+						friendList.listFans(arr, this.curInterface);
+						microBlogList.addElement(friendList);
+						if(curInterface == InterfaceState.TARGET_USER_FOLLOW){
+							
+							this._currentTitle = DataCenter.curUserName + "的关注列表";
+							
+						}
+						break;
+					case 1:
+						if(!fansList){
+							
+							fansList = new FansList();
+							
+						}
+						this._currentTitle = "我的粉丝列表";
+						fansList.removeAll();
+						fansList.listFans(arr, this.curInterface);
+						microBlogList.addElement(fansList);
+						if(curInterface == InterfaceState.TARGET_USER_FANS){
+							
+							this._currentTitle = DataCenter.curUserName + "的粉丝列表";
+							
+						}
+						break;
+					case 2:
+						if(!fansList){
+							
+							fansList = new FansList();
+							
+						}
+						this._currentTitle = "有关 " + curSearchingUser + " 的微博用户";
+						fansList.removeAll();
+						fansList.listFans(arr, this.curInterface);
+						microBlogList.addElement(fansList);
+						break;
+					case 3:
+						if(!fansList){
+							
+							fansList = new FansList();
+							
+						}
+						this._currentTitle = curTopic;
+						fansList.removeAll();
+						fansList.listFans(arr, this.curInterface);
+						microBlogList.addElement(fansList);
+						break;
+					default:
+						return;
+						break;
+					
+				}
+				loadingFinish();
+				
+			}
+
+			protected function follow_num_clickHandler(event:MouseEvent):void
+			{
+				if(curInterface == InterfaceState.FOLLOWERS_LIST){
+					
+					return;
+					
+				}
+				if(needReload){
+					
+					needReload = false;
+					
+				}
+				curPage = 1;
+				checkCurState();
+				this.curInterface = InterfaceState.FOLLOWERS_LIST;
+				if(preTBtn){
+					
+					preTBtn.selected = false;
+					preTBtn = null;
+					
+				}
+				refreshMicroBlogList();
+			}
+			private function loadFriend_info_result(event:WindowEvent):void{  //自己关注的人的列表
+				
+				DataCenter.dataPreloader.removeEventListener(WindowEvent.FOLLOW_LIST_PRELOAD_COMPLETE, loadFriend_info_result);
+				isLoading = false;
+				var arr:Array = event.dispatcher.data as Array;
+				if(!arr || arr.length == 0){
+					
+					loadingFinish();
+					noDataAlert();
+					if(curPage > 1){
+						
+						curPage --;
+						
+					}
+					return;
+					
+				}
+				processFollowers(arr,this.FOLLOWER_TYPE);
+				
+			}
+			
+			private function loadMiddleImg(event:WindowEvent):void{
+				
+				var middleImg:String = event.dispatcher.midImg;
+				var bigImg:String = event.dispatcher.bigImg;
+				var type:String = event.dispatcher.type;
+				var w:uint = event.dispatcher.width;
+				var h:uint = event.dispatcher.height;
+				
+				var win:ImageFrame;
+				if(imageFrameList && imageFrameList.length){
+					
+					win = imageFrameList[0] as ImageFrame;
+					if(middleImg == win.midImg){
+						
+						win.orderToFront();
+						return;
+						
+					}
+					if(win.isOpen){
+						
+						win.easeToClose();
+						
+					}
+					imageFrameList[0] = null;
+					win = null;
+					imageFrameList.pop();
+					
+				}else{
+					
+					imageFrameList = [];
+					
+				}
+				win = new ImageFrame();
+				win.type = NativeWindowType.LIGHTWEIGHT;
+				imageFrameList.push(win);
+				win.addEventListener(WindowEvent.IMAGE_FRAME_LOAD_COMPLETE, imageFrame_loadCompleteHandler);
+				win.addEventListener(WindowEvent.IMAGE_FRAME_LOAD_FAILED, imageFrame_loadFailedHandler);
+				win.loadImage(middleImg, type, w, h);
+				win.bigImg = bigImg;
+				win.open();
+				
+			}
+			
+			private function imageFrame_loadCompleteHandler(event:WindowEvent):void{
+				
+				var win:ImageFrame = imageFrameList[0] as ImageFrame;
+				if(!win){
+					
+					return;
+					
+				}
+				win.removeEventListener(WindowEvent.IMAGE_FRAME_LOAD_COMPLETE, imageFrame_loadCompleteHandler);
+				win.removeEventListener(WindowEvent.IMAGE_FRAME_LOAD_FAILED, imageFrame_loadFailedHandler);
+				
+			}
+			
+			private function imageFrame_loadFailedHandler(event:WindowEvent):void{
+				
+				var win:ImageFrame = imageFrameList[0] as ImageFrame;
+				if(!win){
+					
+					return;
+					
+				}
+				win.removeEventListener(WindowEvent.IMAGE_FRAME_LOAD_COMPLETE, imageFrame_loadCompleteHandler);
+				win.removeEventListener(WindowEvent.IMAGE_FRAME_LOAD_FAILED, imageFrame_loadFailedHandler);
+				win.easeToClose();
+				imageFrameList[0] = null;
+				imageFrameList.pop();
+				DataCenter.alertTip._fsize = 16;
+				DataCenter.alertTip._text = "提示: 图片加载失败!";
+				showAlertTip();
+				
+			}
+
+			protected function tabs_mouseOverHandler(event:MouseEvent):void
+			{
+				var tabName:String = "";
+				var btn:ToggleButton = event.target as ToggleButton;
+				switch(btn.id){
+					
+					case "myIndex":
+						tabName = "我的首页";
+						break;
+					case "myWeiBo":
+						tabName = "我的微博";
+						break;
+					case "myAt":
+						tabName = "@提到我的";
+						break;
+					case "myComment":
+						tabName = "我的评论";
+						break;
+					case "myPerson":
+						tabName = "我的私信";
+						break;
+					case "myCollection":
+						tabName = "我的收藏";
+						break;
+					default:
+						return;
+						break;
+					
+				}
+				if(!DataCenter.toolTip){
+					
+					DataCenter.toolTip = new ToolTip();
+					
+				}
+				DataCenter.toolTip.text = "<font size='14'>"+ tabName +"</font><br>当前帐号: "+DataCenter.user.name;
+				this.addElement(DataCenter.toolTip);
+				DataCenter.toolTip.width = 200;
+				DataCenter.toolTip.height = 80;
+				DataCenter.toolTip.x = btn.x + btn.width + 10;
+				DataCenter.toolTip.y = btn.y + this.nativeWindow.height - 290 - DataCenter.toolTip.height;
+			}
+
+			protected function tabs_mouseOutHandler(event:MouseEvent):void
+			{
+				this.removeElement(DataCenter.toolTip);
+				DataCenter.toolTip = null;
+			}
+
+
+			protected function btn_mewTabs_clickHandler(event:MouseEvent):void
+			{
+				preTBtn.selected = false;
+				var tbtn:ToggleButton = event.target as ToggleButton;
+				tbtn.selected = true;
+				preTBtn = tbtn;
+				_currentTitle = "Mew TabsView";
+				scroller.visible = false;
+				viewerBox.addElement(DataCenter.tabsViewer);
+				viewerBox.mouseChildren = false;
+				viewerBox.visible = true;
+			}
+			
+			public function showMainPanel():void{
+				
+				TweenLite.to(DataCenter.systemSetter, .5, {rotationY:90, alpha:0, onComplete:removeSystemSetter});
+				TweenLite.to(outerCanvas, .5, {rotationY:0, alpha:1});
+				
+			}
+			private function removeSystemSetter():void{
+				
+				this.removeElement(DataCenter.systemSetter);
+				DataCenter.systemSetter = null;
+				
+			}
+
+			protected function window1_clickHandler(event:MouseEvent):void
+			{
+				this.orderToFront();
+			}
+
+			protected function window1_rollOverHandler(event:MouseEvent):void
+			{
+				isActivate = true;
+				this.stage.frameRate = 30;
+			}
+
+			protected function window1_mouseDownHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					
+				}
+			}
+
+			protected function verifyIcon_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(!_isVerified){
+					
+					if(verifyIcon){
+						
+						ownerNameBox.removeElement(verifyIcon);
+						verifyIcon.source = null;
+						
+					}
+					
+				}
+			}
+			
+			private function showFloatWindow(obj:*):void{
+				
+				if(DataCenter.isVoice){
+					
+					if((new Date().time - lastSoundTime) >= (10 * 1000)){
+						
+						lastSoundTime = new Date().time;
+						mewSound = new Sound(new URLRequest(DataCenter.SoundPath));
+						soundChannel = mewSound.play(0, 1);
+						soundChannel.addEventListener(Event.SOUND_COMPLETE, stopSound);
+						
+					}
+					
+				}
+				if(DataCenter.isNotice){
+					
+					if(!DataCenter.newMB){
+						
+						DataCenter.newMB = new UilityWin();
+						
+					}
+					DataCenter.newMB.setStatus(obj);
+					DataCenter.newMB.alwaysInFront = true;
+					DataCenter.newMB.type = NativeWindowType.LIGHTWEIGHT;
+					DataCenter.newMB.open();
+					DataCenter.newMB.showIt();
+					
+				}
+				
+			}
+			private function stopSound(event:Event):void{
+				
+				mewSound = null;
+				soundChannel.stop();
+				soundChannel.removeEventListener(Event.SOUND_COMPLETE, stopSound);
+				soundChannel = null;
+				
+			}
+			
+			/**
+			 * 
+			 * Timer update data functions
+			 * 
+			 */
+			public function addNewStatus(arr:Array):void{
+				
+				if(curInterface == InterfaceState.FRIENDS_TIME_LINE){
+					
+					updateStatus(InterfaceState.FRIENDS_TIME_LINE, arr);
+					
+				}
+				unreadStatus = arr.length + unreadStatus;
+				LocalDataManager.spliceData(arr, DataCenter.FriendTimeLineFileName);
+				//浮动框显示
+				showFloatWindow(arr[0]);
+				
+				if(!unreadStatusTooltip){
+					
+					unreadStatusTooltip = new ToolTip();
+					unreadStatusTooltip.addEventListener(MouseEvent.CLICK, removeStatusTooltip);
+					unreadStatusTooltip.width = 30;
+					unreadStatusTooltip.height = 27;
+					unreadStatusTooltip.txtAlign = "center";
+					this.addElement(unreadStatusTooltip);
+					
+				}else{
+					
+					unreadStatusTooltip.visible = true;
+					
+				}
+				unreadStatusTooltip.text = "<b>" + unreadStatus + "</b>";
+				unreadStatusTooltip.x = myIndex.x + myIndex.width + 10;
+				unreadStatusTooltip.y = this.nativeWindow.height - 290 + myIndex.y - unreadStatusTooltip.height;
+				
+			}
+			
+			private function removeStatusTooltip(event:MouseEvent):void{
+				
+				myIndex.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				unreadStatusTooltip.visible = false;
+				unreadStatus = 0;
+				
+			}
+			
+			public function addNewStatusToSelf(arr:Array):void{
+				
+				if(curInterface == InterfaceState.USER_TIME_LINE){
+					
+					updateStatus(InterfaceState.USER_TIME_LINE, arr);
+					
+				}
+				LocalDataManager.spliceData(arr, DataCenter.UserTimeLineFileName);
+				showFloatWindow(arr[0]);
+				
+			}
+			
+			public function addNewFollower(arr:Array):void{
+				
+				if(curInterface == InterfaceState.FANS_LIST){
+					
+					if(fansList){
+						
+						fansList.listFans(arr, curInterface, "update");
+						
+					}
+					
+				}
+				this.changeFansNum(arr.length);
+				unreadFans = arr.length + unreadFans;
+				LocalDataManager.spliceData(arr, DataCenter.FansListFileName);
+				showFloatWindow(arr[0]);
+				
+				if(!unreadFansTooltip){
+					
+					unreadFansTooltip = new ToolTip();
+					unreadFansTooltip.addEventListener(MouseEvent.CLICK, removeFansTooltip);
+					unreadFansTooltip.width = 30;
+					unreadFansTooltip.height = 27;
+					unreadFansTooltip.txtAlign = "center";
+					this.addElement(unreadFansTooltip);
+					
+				}else{
+					
+					unreadFansTooltip.visible = true;
+					
+				}
+				unreadFansTooltip.text = "<b>" + unreadFans + "</b>";
+				unreadFansTooltip.x = mainBox.x + 86 + fans_num.x + fans_num.width;
+				unreadFansTooltip.y = mainBox.y + 54 + fans_num.y - unreadFansTooltip.height;
+				
+			}
+			
+			private function removeFansTooltip(event:MouseEvent):void{
+				
+				fans_num.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				unreadFansTooltip.visible = false;
+				unreadFans = 0;
+				
+			}
+			
+			public function addNewComment(arr:Array):void{
+				
+				if(curInterface == InterfaceState.COMMENT_TIME_LINE){
+					
+					if(replyList){
+						
+						replyList.setReplyList(arr, "update");
+						
+					}
+					
+				}
+				unreadComment = arr.length + unreadComment;
+				LocalDataManager.spliceData(arr, DataCenter.CommentFileName);
+				showFloatWindow(arr[0]);
+				
+				if(!unreadCommentTooltip){
+					
+					unreadCommentTooltip = new ToolTip();
+					unreadCommentTooltip.addEventListener(MouseEvent.CLICK, removeCommentTooltip);
+					unreadCommentTooltip.width = 30;
+					unreadCommentTooltip.height = 27;
+					unreadCommentTooltip.txtAlign = "center";
+					this.addElement(unreadCommentTooltip);
+					
+				}else{
+					
+					unreadCommentTooltip.visible = true;
+					
+				}
+				unreadCommentTooltip.text = "<b>" + unreadComment + "</b>";
+				unreadCommentTooltip.x = myComment.x + myComment.width + 8;
+				unreadCommentTooltip.y = this.nativeWindow.height - 290 + myComment.y - unreadCommentTooltip.height;
+				
+			}
+			
+			private function removeCommentTooltip(event:MouseEvent):void{
+				
+				myComment.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				unreadCommentTooltip.visible = false;
+				unreadComment = 0;
+				
+			}
+			
+			public function addNewMetions(arr:Array):void{
+				
+				if(curInterface == InterfaceState.AT_TIME_LINE){
+					
+					updateStatus(InterfaceState.AT_TIME_LINE, arr);
+					
+				}
+				unreadMention = arr.length + unreadMention;
+				LocalDataManager.spliceData(arr, DataCenter.AtDataFileName);
+				showFloatWindow(arr[0]);
+				
+				if(!unreadMetionTooltip){
+					
+					unreadMetionTooltip = new ToolTip();
+					unreadMetionTooltip.addEventListener(MouseEvent.CLICK, removeMetionTooltip);
+					unreadMetionTooltip.width = 30;
+					unreadMetionTooltip.height = 27;
+					unreadMetionTooltip.txtAlign = "center";
+					this.addElement(unreadMetionTooltip);
+					
+				}else{
+					
+					unreadMetionTooltip.visible = true;
+					
+				}
+				unreadMetionTooltip.text = "<b>" + unreadMention + "</b>";
+				unreadMetionTooltip.x = myAt.x + myAt.width + 10;
+				unreadMetionTooltip.y = this.nativeWindow.height - 290 + myAt.y - unreadMetionTooltip.height;
+				
+			}
+			
+			private function removeMetionTooltip(event:MouseEvent):void{
+				
+				myAt.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				unreadMetionTooltip.visible = false;
+				unreadMention = 0;
+				
+			}
+			
+			public function addNewDM(arr:Array):void{
+				
+				if(curInterface == InterfaceState.PERSON_LETTER_RECEIVE){
+					
+					if(msgList){
+						
+						msgList.setMessageList(arr, "update");
+						
+					}
+					
+				}
+				unreadDM = arr.length + unreadDM;
+				LocalDataManager.spliceData(arr, DataCenter.PersonalReceiveFileName);
+				showFloatWindow(arr[0]);
+				
+				if(!unreadDMTooltip){
+					
+					unreadDMTooltip = new ToolTip();
+					unreadDMTooltip.addEventListener(MouseEvent.CLICK, removeDMTooltip);
+					unreadDMTooltip.width = 30;
+					unreadDMTooltip.height = 27;
+					unreadDMTooltip.txtAlign = "center";
+					this.addElement(unreadDMTooltip);
+					
+				}else{
+					
+					unreadDMTooltip.visible = true;
+					
+				}
+				unreadDMTooltip.text = "<b>" + unreadDM + "</b>";
+				unreadDMTooltip.x = myPerson.x + myPerson.width + 10;
+				unreadDMTooltip.y = this.nativeWindow.height - 290 + myPerson.y - unreadDMTooltip.height;
+				
+			}
+			
+			private function removeDMTooltip(event:MouseEvent):void{
+				
+				myPerson.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				unreadDMTooltip.visible = false;
+				unreadDM = 0;
+				
+			}
+
+			protected function bk_bc_mouseUpHandler(event:MouseEvent):void
+			{
+				if(DataCenter.autoHideByEdge){
+					
+					easeOutOfScreen();
+					
+				}
+			}
+			private function easeOutOfScreen():void{
+				
+				var w:uint = this.nativeWindow.width;
+				var h:uint = this.nativeWindow.height;
+				var wx:Number = this.nativeWindow.x;
+				var wy:Number = this.nativeWindow.y;
+				if((wx + w) >= Screen.mainScreen.visibleBounds.width){
+					
+					TweenLite.to(this.nativeWindow, .5, {x: Screen.mainScreen.visibleBounds.width - 20});
+					return;
+					
+				}
+				if(wx <= Screen.mainScreen.visibleBounds.x){
+					
+					TweenLite.to(this.nativeWindow, .5, {x: Screen.mainScreen.visibleBounds.x - w + 20});
+					return;
+					
+				}
+				/* if(wy <= Screen.mainScreen.visibleBounds.y){
+					
+					TweenLite.to(this.nativeWindow, .5, {y: Screen.mainScreen.visibleBounds.y - h + 10});
+					return;
+					
+				} */
+				
+			}
+			private function easeInOfScreen():void{
+				
+				if(this.nativeWindow.x < (Screen.mainScreen.visibleBounds.x - 20)){
+					
+					TweenLite.to(this.nativeWindow, .5, {x: Screen.mainScreen.visibleBounds.x - 10});
+					return;
+					
+				}
+				if(this.nativeWindow.x >= Screen.mainScreen.visibleBounds.width - 20){
+					
+					TweenLite.to(this.nativeWindow, .5, {x: Screen.mainScreen.visibleBounds.width - this.nativeWindow.width + 5});
+					return;
+					
+				}
+				/* if(this.nativeWindow.y < Screen.mainScreen.visibleBounds.y){
+					
+					TweenLite.to(this.nativeWindow, .5, {y: Screen.mainScreen.visibleBounds.y});
+					return;
+					
+				} */
+				
+			}
+
+			protected function outerCanvas_rollOverHandler(event:MouseEvent):void
+			{
+				if(DataCenter.autoHideByEdge){
+					
+					easeInOfScreen();
+					
+				}
+			}
+
+			protected function outerCanvas_rollOutHandler(event:MouseEvent):void
+			{
+				if(DataCenter.autoHideByEdge){
+					
+					easeOutOfScreen();
+					
+				}
+			}
+			
+			public function addFloatUserInfo(user:MicroBlogUser, p:Point):void
+			{
+				if(floatUserInfo){
+					
+					outerCanvas.removeElement(floatUserInfo);
+					floatUserInfo = null;
+					
+				}
+				floatUserInfo = new FloatUserInfo();
+				floatUserInfo.avatar = user.profileImageUrl;
+				floatUserInfo.sex = user.gender;
+				floatUserInfo.location = user.location;
+				floatUserInfo.isVerified = user.isVerified;
+				floatUserInfo.username = user.name;
+				floatUserInfo.follow = user.friendsCount;
+				floatUserInfo.fans = user.followersCount;
+				floatUserInfo.micro = user.statusesCount
+				outerCanvas.addElement(floatUserInfo);
+				if((mouseY - p.y + floatUserInfo.height) > (this.height - 75))
+				{
+					floatUserInfo.y = this.height - 75 - floatUserInfo.height;
+				}else if((mouseY - p.y) <= 75){
+					floatUserInfo.y = 75;
+				}else{
+					floatUserInfo.y = mouseY - p.y - 10;
+				}
+				floatUserInfo.x = mouseX + p.x - 10;
+			}
+			
+			public function removeFloatUserInfo():void
+			{
+				if(floatUserInfo && floatUserInfo.alpha <= 0){
+					
+					outerCanvas.removeElement(floatUserInfo);
+					floatUserInfo = null;
+					return;
+					
+				}
+				if(floatUserInfo){
+					
+					TweenLite.to(floatUserInfo, .5, {alpha:0, onComplete:removeFloatUserInfo});
+					
+				}
+			}
+			
+			public function startToCount(removeImmediate:Boolean = false):void
+			{
+				if(floatUserInfo){
+					
+					if(removeImmediate)
+					{
+						floatUserInfo.alpha = 0;
+						removeFloatUserInfo();
+						return;
+					}
+					floatUserInfo.easeToClose();
+					
+				}
+			}
+
+			protected function outerCanvas_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					outerCanvas.filters = myFilters;
+					
+				}
+			}
+			
+			public function showMainPanelHideMini():void
+			{
+				this.nativeWindow.activate();
+				if(DataCenter.floatAvatar){
+					
+					DataCenter.floatAvatar.close();
+					DataCenter.floatAvatar = null;
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="{this.width - 20}" height="{this.height - 20}" x="10" y="10" borderVisible="false" backgroundAlpha="0" id="outerCanvas"
+					   rollOver="outerCanvas_rollOverHandler(event)" rollOut="outerCanvas_rollOutHandler(event)" creationComplete="outerCanvas_creationCompleteHandler(event)">
+		<s:Rect width="30" height="280" x="2" bottom="0" topLeftRadiusX="25" topLeftRadiusY="25" bottomLeftRadiusX="25" bottomLeftRadiusY="25">
+			<s:stroke>
+				<s:SolidColorStroke color="#427087" weight="2" />
+			</s:stroke>
+			<s:fill>
+				<s:SolidColor color="#83bddc" />
+			</s:fill>
+		</s:Rect>
+		<s:VGroup verticalAlign="middle" horizontalAlign="center" x="2" bottom="0" mouseEnabled="false" width="30" height="280" gap="13">
+			<s:ToggleButton skinClass="skins.HomeBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myIndex"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" selected="true" />
+			<s:ToggleButton skinClass="skins.MineBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myWeiBo"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" />
+			<s:ToggleButton skinClass="skins.AtBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myAt"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" />
+			<s:ToggleButton skinClass="skins.CommentBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myComment"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" />
+			<s:ToggleButton skinClass="skins.LetterBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myPerson"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" />
+			<s:ToggleButton skinClass="skins.CollectionBtnSkin" click="button4_clickHandler(event)" mouseChildren="false" id="myCollection"
+							mouseOver="tabs_mouseOverHandler(event)" mouseOut="tabs_mouseOutHandler(event)" />
+			<s:ToggleButton skinClass="skins.SearchBtnSkin" toolTip="搜索微博/找人" id="btn_search" click="button4_clickHandler(event)" mouseChildren="false" />
+			<s:ToggleButton skinClass="skins.GearBtnSkin" toolTip="系统设置" id="btn_systemSet" click="btn_systemSet_clickHandler(event)" mouseChildren="false" />
+			<s:ToggleButton skinClass="skins.RefreshBtnSkin" toolTip="刷新" click="button4_clickHandler(event)" id="refreshBtn" mouseChildren="false" />
+			<!--<s:ToggleButton skinClass="skins.ClawBtnSkin" toolTip="Mew TabsViewer" id="btn_mewTabs" enabled="false" click="btn_mewTabs_clickHandler(event)" mouseChildren="false" />-->
+		</s:VGroup>
+		<s:BorderContainer width="{this.width - 60}" height="100%" x="30" backgroundAlpha="0" borderVisible="false" id="mainBox">
+			<s:BorderContainer width="{this.width - 50}" height="100%" x="0" y="20" cornerRadius="5" borderColor="#427087" borderWeight="2"
+							   creationComplete="bordercontainer1_creationCompleteHandler(event)" id="bk_bc" backgroundAlpha="0"
+							   mouseChildren="false" mouseDown="bk_bc_mouseDownHandler(event)" mouseUp="bk_bc_mouseUpHandler(event)">
+				<s:Rect width="100%" height="100%" radiusX="5">
+					<s:fill>
+						<s:LinearGradient>
+							<s:GradientEntry color="0x7cbbd9" ratio="0" />
+							<s:GradientEntry color="0x8ac2de" ratio="0.4" />
+							<s:GradientEntry color="0x7cbbd9" ratio="1.0" />
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				<s:Rect width="100%" height="20" x="0" y="60">
+					<s:fill>
+						<s:LinearGradient>
+							<s:GradientEntry color="0xc2e1ef" ratio="0" />
+							<s:GradientEntry color="0xd2e9f5" ratio="0.4" />
+							<s:GradientEntry color="0xc2e1ef" ratio="1.0" />
+						</s:LinearGradient>
+					</s:fill>
+				</s:Rect>
+				<s:Rect width="100%" height="{this.height - 175}" x="0" y="80">
+					<s:fill>
+						<s:SolidColor color="#f0fbfe" />
+					</s:fill>
+				</s:Rect>
+				<s:BitmapImage source="{ResCenter.Avatar_Arc}" width="92" height="31" y="-22" x="-2" />
+				<s:BitmapImage source="{ResCenter.TopCloseBtnBK}" width="64" height="26" y="-22" right="-2" />
+			</s:BorderContainer>
+			<s:BorderContainer cornerRadius="2" width="60" height="60" mouseEnabled="false" id="avatar_box" backgroundColor="#ebf9ff" y="14" x="16" borderColor="#327395">
+				<s:layout>
+					<s:VerticalLayout verticalAlign="middle" horizontalAlign="center" gap="0" />
+				</s:layout>
+				<modules:AvatarModule mouseChildren="false" path="{_avatarImg}" size="52" borderAlpha="0" />
+			</s:BorderContainer>
+			<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" gap="0" x="92" y="32" id="ownerNameBox" paddingTop="0">
+				<mx:Label fontWeight="bold" id="username" mouseChildren="false" fontSize="13" />
+				<mx:Image source="{ResCenter.VIPIcon}" minHeight="0" minWidth="0" visible="{_isVerified}" toolTip="新浪认证用户"
+						  verticalAlign="middle" height="100%" mouseChildren="false" id="verifyIcon" creationComplete="verifyIcon_creationCompleteHandler(event)" />
+			</s:HGroup>
+			<s:HGroup width="{this.width - 120}" height="40" verticalAlign="middle" mouseEnabled="false" x="86" y="44">
+				<mx:LinkButton id="follow_num" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" click="follow_num_clickHandler(event)" />
+				<mx:LinkButton id="fans_num" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" click="fans_num_clickHandler(event)" />
+				<mx:LinkButton id="microBlog_num" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" click="microBlog_num_clickHandler(event)" />
+			</s:HGroup>
+			<s:Scroller width="{this.width - 51}" height="{this.height - 175}" x="0" y="101"
+						horizontalScrollPolicy="off" skinClass="skins.ScrollerSkin" id="scroller">
+				<s:Group width="100%" height="100%" id="microBlogList" />
+			</s:Scroller>
+			<s:Group width="{this.width - 51}" height="{this.height - 175}" x="0" y="101" mouseEnabled="false" mouseChildren="false" visible="false" id="viewerBox" />
+			<s:HGroup width="{this.width - 50}" height="20" x="10" y="82" verticalAlign="middle" mouseEnabled="false" paddingRight="30">
+				<s:Label text="{_currentTitle}" id="txt_title" fontSize="12" fontWeight="bold" mouseChildren="false" mouseEnabled="false" color="#2d6a9c" width="100%" />
+				<s:Button skinClass="skins.IndexFlipBtn" click="button3_clickHandler(event)" id="indexBtn" mouseChildren="false" buttonMode="true" toolTip="跳转至第一页" />
+				<s:Button skinClass="skins.PrePageBtn" click="button3_clickHandler(event)" id="preBtn" mouseChildren="false" buttonMode="true" toolTip="上一页" />
+				<s:Button skinClass="skins.PrePageBtn" scaleX="-1" click="button3_clickHandler(event)" id="nextBtn" mouseChildren="false" buttonMode="true" toolTip="下一页" />
+			</s:HGroup>
+			<s:Button skinClass="skins.SendBtnSkin" right="28" bottom="8" id="btn_send" click="btn_send_clickHandler(event)" mouseChildren="false" />
+			<s:Button skinClass="skins.ResizerBtnSkin" right="18" bottom="2" id="btn_resizer" mouseDown="btn_resizer_mouseDownHandler(event)" mouseChildren="false" />
+			<s:Button skinClass="skins.MiniBtnSkin" right="56" y="17" click="button1_clickHandler(event)" mouseChildren="false" />
+			<s:Button skinClass="skins.MainCloseBtnSkin" right="21" y="4" click="button2_clickHandler(event)" mouseChildren="false" id="closeBtn" />
+			<s:Button skinClass="skins.MewBtnSkin" x="15" bottom="10" id="btn_mew" click="btn_mew_clickHandler(event)" mouseChildren="false" />
+			<s:HGroup horizontalAlign="center" verticalAlign="middle" id="loadingBox" bottom="8" minHeight="0" minWidth="0" height="40" width="100%" />
+		</s:BorderContainer>
+	</s:BorderContainer>
+</s:Window>

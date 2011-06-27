@@ -1,0 +1,543 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" minWidth="1004" minHeight="600" width="1004" height="600" applicationComplete="init()">
+	<mx:Style>
+		.literacyBtnPos{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="literacyBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="literacyOver");
+			downSkin:Embed(source="assets/skin.swf",symbol="literacyBtn");
+			
+		}
+		.readBtnPos{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="readBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="readOver");
+			downSkin:Embed(source="assets/skin.swf",symbol="readBtn");	
+			
+		}
+		.gameBtnPos{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="gameBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="gameOver");
+			downSkin:Embed(source="assets/skin.swf",symbol="gameBtn");	
+			
+		}
+		.exitBtnStyle{
+			
+			upSkin:Embed(source="assets/skin.swf",symbol="exitBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="exitOver");
+			downSkin:Embed(source="assets/skin.swf",symbol="exitBtn");	
+			
+		}
+		.returnBtnStyle{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="backBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="backOver");
+			downSkin:Embed(source="assets/skin.swf",symbol="backBtn");
+		
+		}
+		.btnStyle{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="wordSkin");
+			downSkin:Embed(source="assets/skin.swf",symbol="wordSkin");
+			overSkin:Embed(source="assets/skin.swf",symbol="wordSkin");	
+			
+		}
+		.xbStyle{
+			
+			upSkin:Embed(source="assets/skin.swf",symbol="xbBtn");
+			downSkin:Embed(source="assets/skin.swf",symbol="xbBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="xbUp");	
+			
+		}
+		.dgzStyle{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="dgzBtn");
+			downSkin:Embed(source="assets/skin.swf",symbol="dgzBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="dgzUp");	
+			
+		}
+		.zjdStyle{
+			
+			upSkin:Embed(source="assets/skin.swf",symbol="zjdBtn");
+			downSkin:Embed(source="assets/skin.swf",symbol="zjdBtn");
+			overSkin:Embed(source="assets/skin.swf",symbol="zjdUp");	
+			
+		}
+		.upBtnStyle{
+		
+			upSkin:Embed(source="assets/skin.swf",symbol="btnUpwards");
+			downSkin:Embed(source="assets/skin.swf",symbol="btnUpwards");
+			overSkin:Embed(source="assets/skin.swf",symbol="upwardsOver");	
+			
+		}
+		.downBtnStyle{
+			
+			upSkin:Embed(source="assets/skin.swf",symbol="btnDownwards");
+			downSkin:Embed(source="assets/skin.swf",symbol="btnDownwards");
+			overSkin:Embed(source="assets/skin.swf",symbol="downwardsOver");
+			
+		}
+	</mx:Style>
+	<mx:Script>
+		<![CDATA[
+			import assets.components.ButtonSound;
+			import mx.containers.HBox;
+			import mx.collections.XMLListCollection;
+			
+			import flash.external.ExternalInterface;
+			
+			[Bindable]
+			private var contentXML:XML;
+			private var list:ListUI;
+			private var readList:ReadList;
+			private var testPage:PageFlipping;
+			private var snd:Sound = new ButtonSound.btnEffect() as Sound;
+			private var sndVolumn:SoundTransform = new SoundTransform();
+			private var arr:Array;
+			private var line:uint =0;
+			private var pages:uint = 0;
+			private var preClick:*;
+			private var pageContainer:SWFLoader;
+			
+			private function init():void{
+				
+				sndVolumn.volume = 1;
+				/* ExternalInterface.addCallback("setXML",setXMLListCollection); */
+				contentXML = new XML("<root><literacy><word caption='白' src='assets/literacy/bai.swf'/><word caption='班' src='assets/literacy/ban.swf'/><word caption='成' src='assets/literacy/cheng.swf'/><word caption='得' src='assets/literacy/de.swf'/><word caption='懂' src='assets/literacy/dong.swf'/><word caption='故' src='assets/literacy/gu.swf'/><word caption='级' src='assets/literacy/ji.swf'/><word caption='讲' src='assets/literacy/jiang.swf'/><word caption='借' src='assets/literacy/jie.swf'/><word caption='久' src='assets/literacy/jiu.swf'/><word caption='觉' src='assets/literacy/jue.swf'/><word caption='始' src='assets/literacy/ks.swf'/><word caption='老' src='assets/literacy/lao.swf'/><word caption='了' src='assets/literacy/liao.swf'/><word caption='师' src='assets/literacy/ls.swf'/><word caption='没' src='assets/literacy/mei.swf'/><word caption='魔' src='assets/literacy/mo.swf'/><word caption='拿' src='assets/literacy/na.swf'/><word caption='朋' src='assets/literacy/peng.swf'/><word caption='起' src='assets/literacy/qi.swf'/><word caption='趣' src='assets/literacy/qu.swf'/><word caption='识' src='assets/literacy/shi.swf'/><word caption='术' src='assets/literacy/shu.swf'/><word caption='事' src='assets/literacy/sq.swf'/><word caption='算' src='assets/literacy/suan.swf'/><word caption='听' src='assets/literacy/ting.swf'/><word caption='完' src='assets/literacy/wan.swf'/><word caption='象' src='assets/literacy/xiang.swf'/><word caption='样' src='assets/literacy/yang.swf'/><word caption='友' src='assets/literacy/you.swf'/><word caption='院' src='assets/literacy/yuan.swf'/><word caption='知' src='assets/literacy/zd.swf'/><word caption='着' src='assets/literacy/zhe.swf'/><word caption='枝' src='assets/literacy/zhi.swf'/><word caption='专' src='assets/literacy/zhuan.swf'/></literacy><read><title skin='assets/test1.swf' id='1'><add src='assets/read/read1.swf'/><add src='assets/read/read2.swf'/><add src='assets/read/read3.swf'/><add src='assets/read/read4.swf'/></title></read></root>");
+				
+			}
+			private function playSnd(e:MouseEvent):void{
+				
+				snd.play(0,0,sndVolumn);
+				if(e.type == "mouseOver"){
+					
+					e.target.scaleX = 1.2;
+					e.target.scaleY = 1.2;
+					
+				}
+				
+			}
+			private function playGame3Snd(e:MouseEvent):void{
+				
+				snd.play(0,0,sndVolumn);
+				
+			}
+			private function resumeBtn(e:MouseEvent):void{
+				
+				e.target.scaleX = 1;
+				e.target.scaleY = 1;
+				
+			}
+			private function addDefault():void{
+				
+				currentState = "defaultInterface";
+				
+			}
+			/* private function setXMLListCollection(xml:XML):void{
+				
+				xml = <root><literacy><word caption='123' src='123.swf'/><word caption='123' src='123.swf'/><word caption='123' src='123.swf'/><word caption='123' src='123.swf'/></literacy><read><title caption='add' src='add.swf'/><title caption='add' src='add.swf'/><title caption='add' src='add.swf'/><title caption='add' src='add.swf'/></read><game><name title='d3d' src='d3d.swf'/><name title='d3d' src='d3d.swf'/><name title='d3d' src='d3d.swf'/><name title='d3d' src='d3d.swf'/></game></root>;
+				contentXML = XMLListCollection(xml.literacy);
+				
+			} */
+			private function exitSystem():void{
+				
+				navigateToURL(new URLRequest("../index.html"),"_self");
+				btnExit.enabled = false;
+				
+			}
+			private function returnBack():void{
+				
+				checkState(gameCanvas);
+				currentState = "defaultInterface";
+				
+			}
+			private function literacyC():void{
+				sndVolumn.volume = 0;
+				SoundMixer.stopAll();
+				if(preClick){
+				checkState(preClick);
+				}
+				currentState = "literacyInter";
+				btnUp.visible = false;
+				btnDown.visible = true;
+				if(literacyCanvas.numChildren>1){
+					
+					literacyCanvas.removeChildAt(1);
+					literacyBox.visible = true;
+					
+				}
+				preClick = literacyCanvas;
+				checkState(literacyCanvas);
+				var nums:uint = Math.ceil(contentXML.literacy.word.length()/5);
+				for(var i:uint = 0;i<nums;i++){
+					
+					var box:HBox = new HBox();
+					list = new ListUI();
+					list.obj = this;
+					box.addChild(list);
+					var arr:Array = new Array();
+					for(var j:uint=i*5;j<i*5+5;j++){
+						
+						if(contentXML.literacy.word[j]){
+						
+							arr.push(contentXML.literacy.word[j].@caption);
+							
+						}
+						
+					}
+					list.setBtnLabel(arr);
+					listViewStack.addChild(box);
+					
+				}
+				listViewStack.selectedIndex=0;
+				
+			}
+			private function readC():void{
+				sndVolumn.volume = 0;
+				SoundMixer.stopAll();
+				currentState = "readInter";
+				
+				if(readCanvas.numChildren>1){
+					
+					readCanvas.removeChildAt(1);
+					readBox.visible = true;
+					
+				}
+				var nums:uint = Math.ceil(contentXML.read.title.length()/2);
+				if(nums <= 2){
+					
+					prePage.visible = false;
+					nextPage.visible = false;
+					
+				}else{
+					
+					prePage.visible = false;
+					nextPage.visible = true;
+					
+				}
+				for(var i:uint = 0;i<nums;i++){
+					
+					var arr:Array = new Array();
+					var box:HBox = new HBox();
+					readList = new ReadList();
+					readList.myObject = this;
+					for(var j:uint=i*2;j<i*2+2;j++){
+						
+						if(contentXML.read.title[j]){
+							
+							arr.push([contentXML.read.title[j].@skin,contentXML.read.title[j].@id]);
+							
+						}
+					}
+					readList.loadTitles(arr);
+					box.addChild(readList);
+					readingList.addChild(box);
+					
+				}
+				readingList.selectedIndex = 0;
+				
+			}
+			private function gameC():void{
+				sndVolumn.volume = 0;
+				SoundMixer.stopAll();
+				if(preClick){
+				checkState(preClick);
+				}
+				currentState = "gameInter";
+				if(gameCanvas.numChildren>1){
+					
+					gameCanvas.removeChildAt(1);
+					gameBox.visible = true;
+					
+				}
+				returnBtn.visible = false;
+				preClick = gameCanvas;
+				checkState(gameCanvas);
+				
+			}
+			public function extractXML(str:String):void{
+				sndVolumn.volume = 1;
+				SoundMixer.stopAll();
+				if(readCanvas.numChildren>1){
+				
+					SoundMixer.stopAll();
+					readCanvas.removeChildAt(1);	
+						
+				}
+				trace("abel:"+(contentXML.read.title.(@id==str).add as XMLList).length());
+				var numRows:uint = (contentXML.read.title.(@id==str).add as XMLList).length();
+				arr = new Array();
+				for(var i:uint = 0;i<numRows;i++){
+					
+					var url:String = (contentXML.read.title.(@id==str).add as XMLList)[i].@src;
+					arr.push(url);
+					
+				}
+				pageContainer = new SWFLoader();
+				pageContainer.width = 660;
+				pageContainer.height = 500;
+				pageContainer.x = 0;
+				pageContainer.y = 0;
+				readCanvas.addChild(pageContainer);
+				testPage = new PageFlipping();
+				readBox.visible = false;
+				pageContainer.addChild(testPage);
+				testPage.xmlData(arr);
+				
+				
+			}
+			public function extractWordList(str:String):void{
+				sndVolumn.volume = 1;
+				SoundMixer.stopAll();
+				trace("abel:"+contentXML.literacy.word.(@caption==str).@src);
+				checkState(literacyCanvas);
+				var swf:String = String(contentXML.literacy.word.(@caption==str).@src);
+				var wordLoader:SWFLoader = new SWFLoader();
+				wordLoader.source = swf;
+				wordLoader.autoLoad = true;
+				if(literacyBox.visible){
+					
+					literacyBox.visible = false;
+					
+				}
+				literacyCanvas.addChild(wordLoader);
+				trace("abel:"+literacyCanvas.numChildren);
+			}
+			private function loadGame1():void{
+				sndVolumn.volume = 1;
+				SoundMixer.stopAll();
+				returnBtn.styleName = "xbStyle";
+				returnBtn.visible = true;
+				returnBtn.x =510;
+				returnBtn.y =554;
+				returnBtn.width = 80;
+				returnBtn.height = 37;
+				returnBtn.removeEventListener(MouseEvent.MOUSE_OVER,playGame3Snd);
+				returnBtn.addEventListener(MouseEvent.MOUSE_OVER,playSnd);
+				checkState(gameCanvas);
+				var sourceLoader:SWFLoader = new SWFLoader();
+				sourceLoader.source = "assets/game1.swf";
+				
+				if(gameBox.visible){
+					
+					gameBox.visible = false;
+					
+				}
+				gameCanvas.addChild(sourceLoader);
+				
+			}
+			private function loadGame2():void{
+				sndVolumn.volume = 1;
+				SoundMixer.stopAll();
+				returnBtn.styleName = "dgzStyle";
+				returnBtn.visible = true;
+				returnBtn.x =510;
+				returnBtn.y =554;
+				returnBtn.width = 80;
+				returnBtn.height = 37;
+				returnBtn.removeEventListener(MouseEvent.MOUSE_OVER,playGame3Snd);
+				returnBtn.addEventListener(MouseEvent.MOUSE_OVER,playSnd);
+				checkState(gameCanvas);
+				var sourceLoader:SWFLoader = new SWFLoader();
+				sourceLoader.source = "assets/game2.swf";
+				if(gameBox.visible){
+					
+					gameBox.visible = false;
+					
+				}
+				gameCanvas.addChild(sourceLoader);
+				
+			}
+			private function loadGame3():void{
+				sndVolumn.volume = 1;
+				SoundMixer.stopAll();
+				returnBtn.styleName = "zjdStyle";
+				returnBtn.visible = true;
+				returnBtn.x = 800;
+				returnBtn.height = 26;
+				returnBtn.y = 565;
+				returnBtn.removeEventListener(MouseEvent.MOUSE_OVER,playSnd);
+				returnBtn.addEventListener(MouseEvent.MOUSE_OVER,playGame3Snd);
+				checkState(gameCanvas);
+				var sourceLoader:SWFLoader = new SWFLoader();
+				sourceLoader.source = "assets/game3.swf";
+				if(gameBox.visible){
+					
+					gameBox.visible = false;
+					
+				}
+				gameCanvas.addChild(sourceLoader);
+				
+			}
+			private function checkState(obj:Canvas):void{
+				trace(obj.numChildren);
+				for(var i:uint=uint(obj.numChildren-1); i>0;i--){
+					trace(i);
+					if(obj.getChildAt(i) is Box){
+						
+						obj.getChildAt(i).visible = true;
+						
+					}else{
+						
+						if(!((obj.getChildAt(i) as SWFLoader).content is AVM1Movie)){
+						
+							((obj.getChildAt(i) as SWFLoader).content as MovieClip).stop();
+							
+						}
+						(obj.getChildAt(i) as SWFLoader).unloadAndStop();
+						obj.removeChildAt(i);
+						obj.getChildAt(0).visible = true;
+						
+					}
+					
+				}
+				
+			}
+			private function flipUp():void{
+				
+				if(line>0){
+					
+					line--;
+					listViewStack.selectedIndex = line;
+					btnUp.visible = true;
+					btnDown.visible = true;
+					
+				}
+				if(line == 0){
+					
+					btnUp.visible = false;
+					
+				}
+				if(line == (listViewStack.numChildren-1)){
+					
+					line--;
+					listViewStack.selectedIndex = line;
+					btnUp.visible = true;
+					btnDown.visible = false;
+					
+				}
+					
+			}
+			private function flipDown():void{
+				
+				line++;
+				if(line>0){
+					
+					listViewStack.selectedIndex = line;
+					btnDown.visible = true;
+					btnUp.visible = true;
+					
+				}
+				if(line == 0){
+					
+					listViewStack.selectedIndex = line;
+					btnDown.visible = true;
+					btnUp.visible = false;
+					
+				}
+				if(line == (listViewStack.numChildren-1)){
+					
+					btnDown.visible = false;
+					btnUp.visible = true;
+					
+				}
+				
+			}
+			private function removeBook():void{
+				
+				if(pageContainer){
+					
+					if(pageContainer.numChildren){
+					
+						(pageContainer.getChildAt(0) as PageFlipping).stopMotion();
+						pageContainer.removeChildAt(0);
+						
+					}
+					
+				}
+				
+			}
+		]]>
+	</mx:Script>
+	<mx:states>
+		<mx:State name="defaultInterface">
+		<mx:AddChild>
+			<mx:Canvas width="660" height="500" x="344" y="98" backgroundColor="0xffffff">
+					<mx:Box backgroundImage="@Embed(source='assets/skin.swf',symbol='zhiyingLogo')" width="210" height="222" verticalCenter="0" horizontalCenter="0"/>
+			</mx:Canvas>
+		</mx:AddChild>
+		</mx:State>
+		<mx:State name="literacyInter">
+			<mx:AddChild>
+				<mx:Canvas width="660" height="500" x="344" y="98" backgroundColor="0xffffff" id="literacyCanvas">
+					<mx:Box backgroundImage="@Embed(source='assets/skin.swf',symbol='zhiyingLogo')" width="210" height="222" verticalCenter="0" horizontalCenter="0" id="literacyBox"/>
+				</mx:Canvas>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:Button x="260" y="140" click="flipUp()" styleName="upBtnStyle" buttonMode="true" id="btnUp"/>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:Button x="260" y="540" click="flipDown()" styleName="downBtnStyle" buttonMode="true" id="btnDown"/>
+			</mx:AddChild>
+			<mx:AddChild>
+			<mx:ViewStack id="listViewStack" x="210" width="300" y="180">
+			</mx:ViewStack>
+			</mx:AddChild>
+		</mx:State>
+		
+		<!--read interface-->
+		
+		<mx:State name="readInter" exitState="removeBook()">
+			<mx:AddChild>
+				<mx:Canvas width="660" height="500" x="344" y="98" backgroundColor="0xffffff" id="readCanvas">
+					<mx:Box backgroundImage="@Embed(source='assets/skin.swf',symbol='zhiyingLogo')" width="210" height="222" verticalCenter="0" horizontalCenter="0" id="readBox"/>
+				</mx:Canvas>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:Button x="260" y="140" click="{readingList.selectedIndex=0}" id="prePage" styleName="upBtnStyle" buttonMode="true"/>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:Button x="260" y="540" click="{readingList.selectedIndex=1}" id="nextPage" styleName="downBtnStyle" buttonMode="true"/>
+			</mx:AddChild>
+			<mx:AddChild>
+			<mx:ViewStack id="readingList" x="230" width="80" height="340" y="180">
+			</mx:ViewStack>
+			</mx:AddChild>
+		</mx:State>
+		
+		<!--game interface-->
+		
+		<mx:State name="gameInter">
+			<mx:AddChild>
+				<mx:Canvas width="660" height="500" x="344" y="98" backgroundColor="0xffffff" id="gameCanvas">
+					<mx:Box backgroundImage="@Embed(source='assets/skin.swf',symbol='zhiyingLogo')" width="210" height="222" verticalCenter="0" horizontalCenter="0" id="gameBox"/>
+				</mx:Canvas>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:Button x="510" y="554" click="returnBack()" id="returnBtn" mouseDown="playSnd(event)" buttonMode="true" mouseOut="resumeBtn(event)" width="80" height="37"/>
+			</mx:AddChild>
+			<mx:AddChild>
+			<mx:VBox id="gameBtn0" x="220" width="69" height="102" y="160">
+				<mx:Button upSkin="@Embed(source='assets/skin.swf',symbol='gameBtn1')" overSkin="@Embed(source='assets/skin.swf',symbol='gameUp1')" downSkin="@Embed(source='assets/skin.swf',symbol='gameBtn1')" buttonMode="true" click="loadGame1()"/>
+			</mx:VBox>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:VBox id="gameBtn1" x="250" y="290" width="73" height="117">
+					<mx:Button upSkin="@Embed(source='assets/skin.swf',symbol='gameBtn2')" overSkin="@Embed(source='assets/skin.swf',symbol='gameUp2')" downSkin="@Embed(source='assets/skin.swf',symbol='gameBtn2')" buttonMode="true" click="loadGame2()"/>
+				</mx:VBox>
+			</mx:AddChild>
+			<mx:AddChild>
+				<mx:VBox id="gameBtn2" x="220" y="440" width="76" height="115">
+					<mx:Button upSkin="@Embed(source='assets/skin.swf',symbol='gameBtn3')" overSkin="@Embed(source='assets/skin.swf',symbol='gameUp3')" downSkin="@Embed(source='assets/skin.swf',symbol='gameBtn3')" buttonMode="true" click="loadGame3()"/>
+				</mx:VBox>
+			</mx:AddChild>
+		</mx:State>
+	</mx:states>
+	<mx:SWFLoader source="assets/learningSkin.swf" id="learningInterface" width="100%" height="100%" horizontalAlign="center" verticalAlign="top" showBusyCursor="true" creationComplete="addDefault()"/>
+	<mx:Button id="literacyB" styleName="literacyBtnPos" buttonMode="true" horizontalCenter="-430" verticalCenter="-150" click="literacyC()"/>
+	<mx:Button id="readB" styleName="readBtnPos" buttonMode="true" x="74" y="233" click="readC()"/>
+	<mx:Button id="gameB" styleName="gameBtnPos" buttonMode="true" x="27" y="425" click="gameC()"/>
+	<mx:Button id="btnExit" styleName="exitBtnStyle" buttonMode="true" x="527" y="57" width="50.3" height="29.2" click="exitSystem()"/>
+	<mx:Button id="btnReturn" styleName="returnBtnStyle" buttonMode="true" x="610" y="58" width="56.26667" height="30.866665" click="exitSystem()"/>
+</mx:Application>

@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%"
+		  xmlns:modules="modules.*" creationComplete="vgroup1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.data.MicroBlogUsersRelationship;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import localManager.LocalDataManager;
+			
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _userTxt:String="";
+			
+			[Bindable]
+			private var _txt:String="";
+			
+			[Bindable]
+			private var _path:String;
+			
+			[Bindable]
+			private var _uuid:String;
+			
+			[Bindable]
+			private var _username:String;
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			[Bindable]
+			private var _sex:Class;
+			
+			[Bindable]
+			private var _location:String;
+			
+			[Bindable]
+			private var _controlTxt:String = "processing";
+			
+			[Bindable]
+			
+			private var _curInterface:String;
+			
+//			private var purename:String;
+
+			public function avatar(url:String, uID:String):void{
+				
+				_path = url;
+				_uuid = uID;
+				
+			}
+			public function set setTxt(str:String):void{
+				
+				_txt = str;
+				
+			}
+			public function set setUserText(str:String):void
+			{
+				_userTxt = str;
+			}
+			public function set username(str:String):void{
+				
+				_username = str;
+				
+			}
+			public function set isVerified(bool:Boolean):void{
+				
+				_isVerified = bool;
+				
+			}
+			public function set pureName(str:String):void{
+				
+//				purename = str;
+				
+			}
+			public function set sex(s:String):void{
+				
+				_sex = s == "m" ? ResCenter.BoyIcon : ResCenter.GirlIcon;
+				
+			}
+			public function set location(str:String):void{
+				
+				_location = str;
+				
+			}
+			
+			public function set controlTxt(str:String):void{
+				
+				_controlTxt = str;
+				
+			}
+
+			public function set curInterface(str:String):void{
+				
+				_curInterface = str;
+				
+			}
+			
+			public function get uuid():String
+			{
+				return _uuid;
+			}
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				_sex = null;
+				
+			}
+
+			protected function nameBox_creationCompleteHandler(event:FlexEvent):void
+			{
+				nameBox.removeOper();
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(_curInterface == InterfaceState.FANS_LIST){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+					DataCenter.microAPI.follow(null, _uuid);
+					
+				}else{
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+					DataCenter.microAPI.cancelFollowing(null, _uuid);
+					
+				}
+			}
+			
+			private function cancelFollow_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.CANCEL_FOLLOWING_RESULT, cancelFollow_resultHandler);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 取消关注" + _username + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(-1);
+				_controlTxt = "+ 加关注";
+				
+			}
+			
+			private function followResult_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.FOLLOW_RESULT, followResult_handler);
+				LocalDataManager.spliceData([event.result as MicroBlogUser], DataCenter.FansListFileName);
+				DataCenter.alertTip._fsize = 14;
+				DataCenter.alertTip._text = "提示: 关注" + _username + "成功！";
+				DataCenter.mainPanel.showAlertTip();
+				DataCenter.mainPanel.changeFollowNum(1);
+				_controlTxt = "取消关注";
+				
+			}
+
+
+			protected function avatar_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.startToCount(true);
+				nameBox.userNameLabel.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="100%" mouseEnabled="false" id="mainBox">
+		<s:VGroup horizontalAlign="center" verticalAlign="top" paddingLeft="2" paddingRight="2" id="outBox" gap="0" mouseEnabled="false">
+			<modules:AvatarModule path="{_path}" uuid="{_uuid}" size="50" click="avatar_clickHandler(event)" />
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" mouseEnabled="false">
+			<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle">
+				<modules:NameBox x="92" y="35" username="{_username}" uuid="{_uuid}"
+								 isVerified="{_isVerified}" operVisible="false" id="nameBox" creationComplete="nameBox_creationCompleteHandler(event)" />
+				<s:VGroup mouseEnabled="false" id="relationBox">
+					<s:Button skinClass="skins.MewButtonBase" fontSize="12" height="27" label="{_controlTxt}" click="button1_clickHandler(event)" />
+				</s:VGroup>
+			</s:HGroup>
+			<mx:Button icon="{_sex}" label="{_location}" skin="{null}" mouseEnabled="false" mouseChildren="false" paddingLeft="2" />
+			<mx:Text width="100%" htmlText="{_txt}" fontWeight="normal" leading="5" minHeight="0" height="{chunkInfo.textHeight}" id="chunkInfo" />
+		</s:VGroup>
+	</s:HGroup>
+	<modules:HDashBord />
+</s:VGroup>

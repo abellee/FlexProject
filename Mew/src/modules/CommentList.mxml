@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" mouseEnabled="false" horizontalAlign="center" gap="0" creationComplete="vgroup1_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.StringDetect;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			import skins.CheckBoxClass;
+			import skins.FaceBtnSkin;
+			import skins.MewButtonBase;
+			
+			private var curPage:int = 1;
+			
+			private var commentArr:Array;
+			
+			private var cid:String = "0";
+			public var sid:String = "0";
+			private var isLoading:Boolean = false;
+			private var count:uint = 0;
+			private var total:uint = 0;
+			
+			public function addComment(id:String, num:uint):void{
+				
+				sid = id + "";
+				isLoading = true;
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOAD_COMMENTS_RESULT, commentLoaded);
+				DataCenter.microAPI.loadCommentList(id + "", num, curPage);
+				
+			}
+			private function commentLoaded(event:MicroBlogEvent):void{
+				
+				isLoading = false;
+				var arr:Array = event.result as Array;
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.LOAD_COMMENTS_RESULT, commentLoaded);
+				if(!arr || !arr.length){
+					
+					curPage --;
+					return;
+					
+				}
+				commentList.removeAllElements();
+				commentArr = [];
+				var len:int = arr.length;
+				total = len;
+				for(var i:int = 0; i < len; i++){
+					
+					var item:CommentItem = new CommentItem();
+					var status:MicroBlogComment = arr[i] as MicroBlogComment;
+					var createTime:Date = status.createdAt;
+					var now:Date = new Date();
+					item.setAvtar(status.user.profileImageUrl, status.user.id);
+					var str:String;
+					if((now.time - createTime.time) / 1000 / 60 < 59){
+						
+						str = int((now.time - createTime.time) / 1000 / 60 + 1) + "分钟前";
+						
+					}else{
+						
+						str = "今天 " + (createTime.getHours() < 10 ? ("0"+createTime.getHours()):createTime.getHours())+":"
+							+(createTime.getMinutes() < 10 ? ("0"+createTime.getMinutes()) : createTime.getMinutes());
+						
+					}
+					item.setText(StringDetect.setURL(status.text)+"("+str+")", "");
+					if(status.status.user.id == DataCenter.user.id || status.user.id == DataCenter.user.id){
+						
+						item._isOwn = true;
+						item.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+						
+					}
+					item.cid = status.id;
+					item.sid = status.status.id;
+					item.username = "<font color='#2d6a9c'><b>"+status.user.name+":</b></font>";
+					item.pureName = status.user.name;
+					item.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					item.addEventListener(WindowEvent.UPDATE_COMPLETE, updateComplete_handler);
+					commentList.addElement(item);
+					commentArr.push(item);
+					this.dispatchEvent(new Event(Event.RENDER));
+					
+				}
+				
+			}
+			
+			private function updateComplete_handler(event:WindowEvent):void{
+				
+				var item:CommentItem = event.target as CommentItem;
+				item.removeEventListener(WindowEvent.UPDATE_COMPLETE, updateComplete_handler);
+				count ++;
+				if(count == total){
+					
+					this.dispatchEvent(new WindowEvent(WindowEvent.UPDATE_COMPLETE));
+					count = 0;
+					total = 0;
+					return;
+					
+				}
+				
+			}
+			
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				var id:String = (event.target as CommentItem).cid;
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteStataus_successHandler);
+				DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteStatus_failedHandler);
+				DataCenter.microAPI.deleteComment(id);
+				
+			}
+			
+			private function deleteStataus_successHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteStataus_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteStatus_failedHandler);
+				removeItem((event.result as MicroBlogComment).id);
+				
+			}
+			
+			private function removeItem(id:String):void{
+				
+				var len:uint = commentArr.length;
+				for (var i:uint = 0; i < len; i++){
+					
+					if((commentArr[i] as CommentItem).cid == id){
+						
+						(commentArr[i] as CommentItem).removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+						(commentArr[i] as CommentItem).removeEventListener(WindowEvent.UPDATE_COMPLETE, updateComplete_handler);
+						commentList.removeElement(commentArr[i]);
+						commentArr.splice(i, 1);
+						return;
+						
+					}
+					
+				}
+				
+			}
+			
+			private function deleteStatus_failedHandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteStataus_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteStatus_failedHandler);
+				
+				DataCenter.alertTip._text = "提示: 删除评论失败!";
+				DataCenter.mainPanel.showAlertTip();
+				
+			}
+			
+			private function commentStatus_handler(event:WindowEvent):void{
+				
+				var item:CommentItem = event.target as CommentItem;
+				var e:WindowEvent = new WindowEvent(WindowEvent.ADD_COMMENT_TEXT);
+				e.dispatcher = {};
+				e.dispatcher.name = item.pureName;
+				e.dispatcher.cid = item.cid;
+				e.dispatcher.sid = item.sid;
+				this.dispatchEvent(e);
+				
+			}
+			
+			protected function indexBtn_clickHandler(event:MouseEvent):void
+			{
+				if(curPage <= 1 || isLoading){
+					
+					return;
+					
+				}
+				curPage = 1;
+				addComment(sid, DataCenter.commentCount);
+			}
+
+			public function addNewComment(status:MicroBlogComment):void{
+				
+				if(!commentArr){
+					
+					commentArr = [];
+					
+				}
+				if(commentArr && commentArr.length >= DataCenter.commentCount){
+					
+					commentList.removeElement(commentArr[commentArr.length - 1]);
+					commentArr.splice(commentArr.length - 1, 1);
+					
+				}
+				
+				var item:CommentItem = new CommentItem();
+				var createTime:Date = status.createdAt;
+				var now:Date = new Date();
+				item.setAvtar(status.user.profileImageUrl, status.user.id);
+				var str:String;
+				if((now.time - createTime.time) / 1000 / 60 < 59){
+					
+					str = int((now.time - createTime.time) / 1000 / 60 + 1) + "分钟前";
+					
+				}else{
+					
+					str = "今天 " + (createTime.getHours() < 10 ? ("0"+createTime.getHours()):createTime.getHours())+":"
+						+(createTime.getMinutes() < 10 ? ("0"+createTime.getMinutes()) : createTime.getMinutes());
+					
+				}
+				item.setText(StringDetect.setURL(status.text)+"("+str+")", "");
+				if(status.status.user.id == DataCenter.user.id || status.user.id == DataCenter.user.id){
+					
+					item._isOwn = true;
+					item.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					
+				}
+				item.username = "<font color='#2d6a9c'><b>"+status.user.name+":</b></font>";
+				item.pureName = status.user.name;
+				item.cid = status.id;
+				item.sid = status.status.id;
+				item.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+				item.addEventListener(WindowEvent.UPDATE_COMPLETE, updateComplete_handler);
+				commentList.addElementAt(item, 0);
+				commentArr.splice(0, 0 , item);
+				total ++;
+				this.dispatchEvent(new Event(Event.RENDER));
+				
+			}
+			
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				for each(var item:CommentItem in commentArr){
+					
+					item.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					item.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+					item.removeEventListener(WindowEvent.UPDATE_COMPLETE, updateComplete_handler);
+					
+				}
+				commentArr = null;
+				
+			}
+
+			protected function preBtn_clickHandler(event:MouseEvent):void
+			{
+				if(curPage <= 1 || isLoading){
+					
+					return;
+					
+				}
+				curPage --;
+				addComment(sid, DataCenter.commentCount);
+			}
+			private function nextBtn_clickHandler(event:MouseEvent):void{
+				
+				if(isLoading){
+					
+					return;
+					
+				}
+				curPage ++;
+				addComment(sid, DataCenter.commentCount);
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="100%" mouseEnabled="false" cornerRadius="8" backgroundColor="#d2e9f5" backgroundAlpha=".6" borderVisible="false">
+		<s:layout>
+			<s:VerticalLayout paddingBottom="10" paddingLeft="10" paddingRight="10" gap="0" horizontalAlign="center" />
+		</s:layout>
+		<s:VGroup width="100%" height="100%" mouseEnabled="false" id="commentList" />
+		<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center" mouseEnabled="false" id="pageFlip" visible="true" paddingBottom="10" paddingTop="10">
+			<s:Button skinClass="skins.IndexFlipBtn" id="indexBtn" mouseChildren="false" buttonMode="true" toolTip="跳转至第一页" click="indexBtn_clickHandler(event)" />
+			<s:Button skinClass="skins.PrePageBtn" id="preBtn" mouseChildren="false" buttonMode="true" toolTip="上一页" click="preBtn_clickHandler(event)" />
+			<s:Button skinClass="skins.PrePageBtn" scaleX="-1" id="nextBtn" mouseChildren="false" buttonMode="true" toolTip="下一页" click="nextBtn_clickHandler(event)" />
+		</s:HGroup>
+	</s:BorderContainer>
+</s:VGroup>

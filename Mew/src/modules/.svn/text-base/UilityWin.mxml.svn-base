@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="140" systemChrome="none" transparent="true"
+		  showStatusBar="false" backgroundAlpha="0" xmlns:modules="modules.*"
+		  creationComplete="window1_creationCompleteHandler(event)" mouseOver="window1_mouseOverHandler(event)" mouseOut="window1_mouseOutHandler(event)" alpha="0">
+	<fx:Script>
+		<![CDATA[
+			import com.greensock.TweenLite;
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.data.MicroBlogDirectMessage;
+			import com.sina.microblog.data.MicroBlogStatus;
+			import com.sina.microblog.data.MicroBlogUser;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.StringDetect;
+			import functional.Utils;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _path:String;
+			
+			[Bindable]
+			private var _uuid:String;
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			[Bindable]
+			private var _operVisible:Boolean = false;
+			
+			[Bindable]
+			private var _username:String = "";
+			
+			[Bindable]
+			private var _repostNum:String = "";
+			
+			[Bindable]
+			private var _commentNum:String = "";
+			
+			[Bindable]
+			private var _isOwn:Boolean = false;
+			
+			[Bindable]
+			private var _txt:String;
+			
+			[Bindable]
+			private var _fromTime:String;
+			
+			[Bindable]
+			private var _infoText:String = "您有新的微博";
+			
+			private var _isOpen:Boolean = false;
+			
+			private var tw:TweenLite;
+
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(Capabilities.os.substr(0,3) == "Mac"){
+					
+					this.nativeWindow.x = Screen.mainScreen.visibleBounds.width - this.nativeWindow.width - 10;
+					this.nativeWindow.y = Screen.mainScreen.visibleBounds.y;
+					
+				}else{
+					
+					this.nativeWindow.x = Screen.mainScreen.visibleBounds.width - this.nativeWindow.width - 10;
+					this.nativeWindow.y = Screen.mainScreen.visibleBounds.height - this.nativeWindow.height;
+					
+				}
+				_isOpen = true;
+				showIt();
+				
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(tw){
+					
+					tw.kill();
+					tw = null;
+					
+				}
+				this.removeAllElements();
+				
+			}
+			public function showIt():void{
+				
+				this.visible = true;
+				if(this.alpha < 1){
+					
+					this.alpha = 0;
+					
+				}
+				this.stage.frameRate = 30;
+				TweenLite.to(this, 1, {alpha:1, onComplete:fadeOutAndClose});
+				
+			}
+			private function fadeOutAndClose():void{
+				
+				tw = TweenLite.to(this, 1, {alpha:0, delay:5, onComplete:closeWindow});
+				
+			}
+			private function closeWindow():void{
+				
+				this.mouseEnabled = false;
+				this.mouseChildren = false;
+				closeBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				
+			}
+			public function setStatus(obj:*):void{
+				
+				var createTime:Date;
+				var timeStr:String;
+				if(obj is MicroBlogStatus){
+					
+					_path = (obj as MicroBlogStatus).user.profileImageUrl;
+					_uuid = (obj as MicroBlogStatus).user.id;
+					
+					_isVerified = (obj as MicroBlogStatus).user.isVerified;
+					_username = "<font color='#2d6a9c'><b>" + (obj as MicroBlogStatus).user.name + "</b></font>";
+					
+					_txt = StringDetect.setURL((obj as MicroBlogStatus).text);
+					createTime = (obj as MicroBlogStatus).createdAt;
+					timeStr = Utils.dataTransfer(createTime);
+					_fromTime = "<font color='#2d6a9c'>"+timeStr+"</font>	<font color='#6d6969'>来自</font><u><font color='#2d6a9c'>"+(obj as MicroBlogStatus).source+"</font></u>";
+					_infoText = "您有新的微博!";
+					
+				}else if(obj is MicroBlogComment){
+					
+					_path = (obj as MicroBlogComment).user.profileImageUrl;
+					_uuid = (obj as MicroBlogComment).user.id;
+					
+					_isVerified = (obj as MicroBlogComment).user.isVerified;
+					_username = "<font color='#2d6a9c'><b>" + (obj as MicroBlogComment).user.name + "</b></font>";
+					
+					_txt = StringDetect.setURL((obj as MicroBlogComment).text);
+					createTime = (obj as MicroBlogComment).createdAt;
+					timeStr = Utils.dataTransfer(createTime);
+					_fromTime = "<font color='#2d6a9c'>"+timeStr+"</font>";
+					_infoText = "您有新的评论!";
+					
+				}else if(obj is MicroBlogDirectMessage){
+					
+					_path = (obj as MicroBlogDirectMessage).sender.profileImageUrl;
+					_uuid = (obj as MicroBlogDirectMessage).sender.id;
+					
+					_isVerified = (obj as MicroBlogDirectMessage).sender.isVerified;
+					_username = "<font color='#2d6a9c'><b>" + (obj as MicroBlogDirectMessage).sender.name + "</b></font>";
+					
+					_txt = StringDetect.setURL((obj as MicroBlogDirectMessage).text);
+					createTime = (obj as MicroBlogDirectMessage).createdAt;
+					timeStr = Utils.dataTransfer(createTime);
+					_fromTime = "<font color='#2d6a9c'>"+timeStr+"</font>";
+					
+					_infoText = "您有新的私信!";
+					
+				}else if(obj is MicroBlogUser){
+					
+					_path = (obj as MicroBlogUser).profileImageUrl;
+					_uuid = (obj as MicroBlogUser).id;
+					
+					_isVerified = (obj as MicroBlogUser).isVerified;
+					_username = "<font color='#2d6a9c'><b>" + (obj as MicroBlogUser).name + "</b></font>";
+					
+					_txt = "<font color='#2d6a9c'><b>" + (obj as MicroBlogUser).name + "</b></font>";
+					
+					_infoText = "您有新的粉丝!";
+					
+				}
+				
+				_operVisible = false;
+				
+			}
+
+			protected function namebox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				nameBox.removeOper();
+			}
+
+			protected function window1_mouseOverHandler(event:MouseEvent):void
+			{
+				_operVisible = true;
+				box.alpha = 1;
+				if(tw){
+					
+					tw.pause();
+					
+				}
+			}
+
+			protected function window1_mouseOutHandler(event:MouseEvent):void
+			{
+				_operVisible = false;
+				if(tw){
+					
+					tw.restart(true);
+					
+				}
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(tw){
+					
+					tw.kill();
+					tw = null;
+					
+				}
+				if(DataCenter.mainPanel.isActivate){
+					
+					this.stage.frameRate = 30;
+					
+				}else{
+					
+					this.stage.frameRate = 1;
+					
+				}
+				this.close();
+				DataCenter.newMB = null;
+			}
+			public function set isOpen(bool:Boolean):void{
+				
+				_isOpen = bool;
+				
+			}
+			public function get isOpen():Boolean{
+				
+				return _isOpen;
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="100%" height="100%" backgroundColor="#d2e9f6" backgroundAlpha=".8" borderWeight="2" borderColor="#327395"
+					   cornerRadius="5" id="box">
+		<s:BitmapImage source="{ResCenter.UilityMew}" width="39" height="21" x="5" y="5" />
+		<s:Label id="infoType" text="{_infoText}" x="50" y="6" mouseEnabled="false" mouseChildren="false"
+				 fontSize="12" fontWeight="bold" color="#2d6a9c" />
+		<s:Button skinClass="skins.CloseBtnBase" mouseChildren="false" right="0" width="22" height="22" id="closeBtn" click="button1_clickHandler(event)" />
+		<s:VGroup verticalAlign="top" horizontalAlign="center" width="100%" height="100%" mouseEnabled="false"
+				  paddingLeft="10" paddingRight="10" paddingTop="10" paddingBottom="10" y="22">
+			<s:HGroup width="100%" height="100%" mouseEnabled="false">
+				<modules:AvatarModule path="{_path}" uuid="{_uuid}" size="50" />
+				<s:VGroup width="100%" height="100%" mouseEnabled="false" gap="2">
+					<modules:NameBox creationComplete="namebox1_creationCompleteHandler(event)"
+									 isVerified="{_isVerified}" username="{_username}" operVisible="false"
+									 repostNum="{_repostNum}" commentNum="{_commentNum}"
+									 deleteBtnVisible="{_isOwn}" id="nameBox" />
+					<mx:Text width="100%" htmlText="{_txt}" fontWeight="normal" leading="5" height="100%" />
+				</s:VGroup>
+			</s:HGroup>
+			<mx:Text htmlText="{_fromTime}" width="100%" height="20" selectable="false" />
+		</s:VGroup>
+	</s:BorderContainer>
+</s:Window>

@@ -1,0 +1,102 @@
+package remoteManager
+{
+	import MewEvent.WindowEvent;
+	
+	import air.update.events.DownloadErrorEvent;
+	import air.update.events.StatusUpdateEvent;
+	import air.update.events.UpdateEvent;
+	
+	import com.iabel.nativeApplicationUpdater.NativeApplicationUpdater;
+	
+	import dataCenter.DataCenter;
+	
+	import flash.desktop.NativeApplication;
+	import flash.desktop.Updater;
+	import flash.events.ProgressEvent;
+	import flash.filesystem.File;
+	
+	import modules.UpdateDescriptor;
+
+	public class MewUpdater
+	{
+		private var updater:NativeApplicationUpdater = new NativeApplicationUpdater();
+		private var updatePath:String = "http://mew.iabel.com/MewUpdater.xml";
+		public function MewUpdater()
+		{
+			updater.updateURL = updatePath;
+			updater.addEventListener(UpdateEvent.INITIALIZED, onUpdateInitializedHandler);
+			updater.addEventListener(StatusUpdateEvent.UPDATE_STATUS, showUpdateInfo);
+			updater.addEventListener(UpdateEvent.CHECK_FOR_UPDATE, checkForUpdateRun);
+			updater.addEventListener(ProgressEvent.PROGRESS, updateDownload_progressHandler);
+			updater.addEventListener(UpdateEvent.DOWNLOAD_COMPLETE, updateDownload_completeHandler);
+			updater.initialize();
+		}
+		private function showUpdateInfo(event:StatusUpdateEvent):void
+		{
+			var xmlns:Namespace = new Namespace(NativeApplication.nativeApplication.applicationDescriptor.namespace());
+			var updator:NativeApplicationUpdater = event.target as NativeApplicationUpdater;
+			var curVersion:String = NativeApplication.nativeApplication.applicationDescriptor.xmlns::versionNumber;
+			if(updator.updateVersion == curVersion){
+				
+				DataCenter.mainPanel.dispatchEvent(new WindowEvent(WindowEvent.NO_UPDATE));
+				this.clearSelf();
+				return;
+				
+			}
+			if(!DataCenter.updateDescriptor){
+				
+				DataCenter.updateDescriptor = new UpdateDescriptor();
+				
+			}
+			DataCenter.updateDescriptor.newVersionText = "<font size=\"16\"><b>Mew微博有新版本啦～！</b></font><br><br>Mew微博"
+				+ updator.updateVersion + "版本可更新，您当前的Mew微博版本为" + curVersion + "，您是否愿意更新Mew微博至最新版本?";
+			DataCenter.updateDescriptor.updateDescription = updator.updateDescription;
+			DataCenter.updateDescriptor.open();
+		}
+		private function checkForUpdateRun(event:UpdateEvent):void{
+			
+			event.preventDefault();
+			updater.checkForUpdate();
+			
+		}
+		private function onUpdateInitializedHandler(event:UpdateEvent):void{
+			
+			updater.removeEventListener(UpdateEvent.INITIALIZED, onUpdateInitializedHandler);
+			updater.checkNow();
+			
+		}
+		private function updateDownload_progressHandler(event:ProgressEvent):void
+		{
+			if(DataCenter.updateDescriptor){
+				
+				DataCenter.updateDescriptor.showDownloadingPercent(uint(event.bytesLoaded / event.bytesTotal * 100));
+				
+			}
+		}
+		private function updateDownload_completeHandler(event:UpdateEvent):void
+		{
+			if(updater)
+			{
+				updater.removeEventListener(ProgressEvent.PROGRESS, updateDownload_progressHandler);
+				updater.removeEventListener(UpdateEvent.DOWNLOAD_COMPLETE, updateDownload_completeHandler);
+			}
+			updater.installUpdate();
+		}
+		public function update():void
+		{
+			updater.downloadUpdate();
+		}
+		public function clearSelf():void
+		{
+			if(updater)
+			{
+				updater.removeEventListener(UpdateEvent.INITIALIZED, onUpdateInitializedHandler);
+				updater.removeEventListener(StatusUpdateEvent.UPDATE_STATUS, showUpdateInfo);
+				updater.removeEventListener(UpdateEvent.CHECK_FOR_UPDATE, checkForUpdateRun);
+				updater.removeEventListener(ProgressEvent.PROGRESS, updateDownload_progressHandler);
+				updater.removeEventListener(UpdateEvent.DOWNLOAD_COMPLETE, updateDownload_completeHandler);
+			}
+			updater = null;
+		}
+	}
+}

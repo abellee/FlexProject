@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="100%" height="100%" horizontalAlign="right" gap="0" xmlns:modules="modules.*"
+		 rollOver="vgroup1_rollOverHandler(event)" rollOut="vgroup1_rollOutHandler(event)" creationComplete="vgroup1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _text:String;
+			
+			[Bindable]
+			private var _path:String;
+			
+			[Bindable]
+			private var _uuid:String;
+			
+			[Bindable]
+			private var _username:String;
+			
+			[Bindable]
+			private var _isVerified:Boolean = false;
+			
+			[Bindable]
+			private var _operVisible:Boolean = false;
+			
+			[Bindable]
+			private var _repostNum:String = "";
+			
+			[Bindable]
+			private var _commentNum:String = "";
+			
+			public var cid:String = ""; //评论ID
+			public var sid:String = ""; //评论所属的微博id
+			
+			[Bindable]
+			public var _isOwn:Boolean = false;
+			
+			public var reTxt:String;
+			
+			public var pureName:String;
+			public var isDirectFace:Boolean = false;
+			
+			public function setAvtar(str:String, uuid:String):void{
+				
+				_path = str;
+				_uuid = uuid;
+				
+			}
+			public function setText(txt:String, retxt:String):void{
+				
+				_text = txt;
+				reTxt = retxt;
+				
+			}
+			public function set username(str:String):void{
+				
+				_username = str;
+				
+			}
+			protected function namebox1_creationCompleteHandler(event:FlexEvent):void
+			{
+				nameBox.removeRepostBtn();
+				nameBox.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				nameBox.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+			}
+			
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				this.dispatchEvent(event);
+				
+			}
+			
+			private function commentStatus_handler(event:WindowEvent):void{
+				
+				if(isDirectFace){
+					
+					DataCenter.mainPanel.resetPublishPanel();
+					DataCenter.sendPanel.sendDirect(pureName, _uuid);
+					return;
+					
+				}
+				this.dispatchEvent(event);
+				
+			}
+
+			protected function vgroup1_rollOverHandler(event:MouseEvent):void
+			{
+				_operVisible = true;
+			}
+
+			protected function vgroup1_rollOutHandler(event:MouseEvent):void
+			{
+				_operVisible = false;
+			}
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				nameBox.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+				nameBox.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+				this.removeAllElements();
+				
+			}
+
+			protected function text1_linkHandler(event:TextEvent):void
+			{
+				var e:WindowEvent = new WindowEvent(WindowEvent.TARGET_USER_DATA);
+				e.dispatcher = {};
+				e.dispatcher.name = event.text;
+				DataCenter.mainPanel.dispatchEvent(e);
+			}
+
+			protected function text1_updateCompleteHandler(event:FlexEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.UPDATE_COMPLETE));
+			}
+
+			protected function avatar_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.startToCount(true);
+				nameBox.userNameLabel.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="100%" mouseEnabled="false" paddingBottom="5">
+		<s:VGroup horizontalAlign="center" verticalAlign="top" paddingLeft="2" paddingRight="2" id="outBox" gap="0" mouseEnabled="false">
+			<modules:AvatarModule id="avatar" path="{_path}" uuid="{_uuid}" size="50"
+								  click="avatar_clickHandler(event)" />
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" mouseEnabled="false" id="mainBox">
+			<modules:NameBox x="92" y="35" username="{_username}"
+							 isVerified="{_isVerified}" operVisible="{_operVisible}"
+							 repostNum="{_repostNum}" commentNum="{_commentNum}" uuid="{_uuid}"
+							 deleteBtnVisible="{_isOwn}"
+							 creationComplete="namebox1_creationCompleteHandler(event)" id="nameBox"
+							 collectionBtnVisible="false" />
+			<mx:Text width="100%" htmlText="{_text}" fontWeight="normal" leading="5" link="text1_linkHandler(event)" updateComplete="text1_updateCompleteHandler(event)" />
+		</s:VGroup>
+	</s:HGroup>
+	<modules:HDashBord />
+</s:VGroup>

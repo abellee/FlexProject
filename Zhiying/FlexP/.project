@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>FlexP</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>com.adobe.flexbuilder.project.flexbuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>com.adobe.flexbuilder.project.flexnature</nature>
+		<nature>com.adobe.flexbuilder.project.actionscriptnature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>bin-release2</name>
+			<type>2</type>
+			<location>/Users/abellee/Desktop/zh</location>
+		</link>
+		<link>
+			<name>bin-release1</name>
+			<type>2</type>
+			<location>/Users/abellee/Desktop/整合</location>
+		</link>
+	</linkedResources>
+</projectDescription>

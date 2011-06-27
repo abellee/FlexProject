@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 minHeight="0" minWidth="0" borderColor="#327395" borderAlpha=".8" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.EffectCenter;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			private var _uuid:String;
+			private var _isMini:Boolean;
+			
+			[Bindable]
+			private var _path:String;
+			
+			[Bindable]
+			private var _size:uint;
+			
+			private var realHead:Image;
+			
+			public function set path(str:String):void{
+				
+				_path = str;
+				if(headerBox){
+					
+					loadAvatar(str);
+					
+				}
+				
+			}
+			public function get path():String{
+				
+				return _path;
+				
+			}
+			public function set size(s:uint):void{
+				
+				_size = s;
+				
+			}
+			public function set uuid(id:String):void{
+				
+				_uuid = id;
+				
+			}
+			public function get uuid():String{
+				
+				return _uuid;
+				
+			}
+			private function loadAvatar(path:String):void{
+				
+				realHead = new Image();
+				realHead.load(path);
+				realHead.mouseChildren = false;
+				realHead.width = realHead.height = _size;
+				realHead.addEventListener(Event.COMPLETE, avatarLoad_completeHandler);
+				realHead.addEventListener(IOErrorEvent.IO_ERROR, reloadImg);
+				
+			}
+			private function avatarLoad_completeHandler(event:Event):void{
+				
+				realHead.removeEventListener(Event.COMPLETE, avatarLoad_completeHandler);
+				realHead.removeEventListener(IOErrorEvent.IO_ERROR, reloadImg);
+				
+				headerBox.removeEventListener(FlexEvent.CREATION_COMPLETE, headerBox_creationCompleteHandler);
+				headerBox.source = null;
+				EffectCenter.fadeOut(headerBox, .3, 0, showRealHead);
+				
+			}
+			private function reloadImg(event:IOErrorEvent):void{
+				
+				realHead.load(path);
+				
+			}
+			private function showRealHead():void{
+				
+				avatarBox.removeElement(headerBox);
+				headerBox = null;
+				
+				if(realHead){
+					
+					avatarBox.addElement(realHead);
+					EffectCenter.fadeIn(avatarBox, .5);
+					
+				}
+				
+			}
+			
+			protected function headerBox_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(!realHead){
+					
+					loadAvatar(_path);
+					
+				}
+			}
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				realHead.removeEventListener(Event.COMPLETE, avatarLoad_completeHandler);
+				realHead.removeEventListener(IOErrorEvent.IO_ERROR, reloadImg);
+				realHead = null;
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" paddingBottom="2" paddingLeft="2" paddingRight="2" paddingTop="2" gap="0" id="avatarBox" mouseEnabled="false">
+		<mx:Image source="{ResCenter.Default50}" width="{_size}" height="{_size}" mouseChildren="false"
+				  id="headerBox" creationComplete="headerBox_creationCompleteHandler(event)" />
+	</s:HGroup>
+</s:BorderContainer>

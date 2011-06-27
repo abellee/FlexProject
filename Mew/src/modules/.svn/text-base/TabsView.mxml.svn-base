@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" mouseEnabled="false"
+		 paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" creationComplete="vgroup1_creationCompleteHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			protected function bordercontainer1_mouseOverHandler(event:MouseEvent):void
+			{
+				var bc:BorderContainer = event.target as BorderContainer;
+				bc.setStyle("borderAlpha", 1.0);
+			}
+
+			protected function bordercontainer1_mouseOutHandler(event:MouseEvent):void
+			{
+				var bc:BorderContainer = event.target as BorderContainer;
+				bc.setStyle("borderAlpha", .2);
+			}
+			public function setScreenShot(bd:BitmapData,type:String):void{
+				
+				var bc:BitmapImage = this[type] as BitmapImage;
+				bc.source = bd;
+				
+			}
+
+
+			protected function vgroup1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%" mouseEnabled="false">
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myIndex" />
+			</s:BorderContainer>
+			<s:Label text="我的首页" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myWeiBox" />
+			</s:BorderContainer>
+			<s:Label text="我的微博" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%" mouseEnabled="false">
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myAt" />
+			</s:BorderContainer>
+			<s:Label text="@提到我的" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myComment" />
+			</s:BorderContainer>
+			<s:Label text="我的评论" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+	</s:HGroup>
+	<s:HGroup horizontalAlign="center" verticalAlign="middle" width="100%" height="100%" mouseEnabled="false">
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myPerson" />
+			</s:BorderContainer>
+			<s:Label text="我的私信" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+		<s:VGroup width="100%" height="100%" gap="0" mouseEnabled="false">
+			<s:BorderContainer width="100%" height="100%" borderWeight="2" borderColor="#427087" mouseChildren="false" borderAlpha=".2"
+							   cornerRadius="5" mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)">
+				<s:layout>
+					<s:VerticalLayout horizontalAlign="center" verticalAlign="middle" paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5" />
+				</s:layout>
+				<s:BitmapImage id="myCollection" />
+			</s:BorderContainer>
+			<s:Label text="我的收藏" mouseEnabled="false" mouseChildren="false" width="100%" textAlign="center" lineHeight="24" />
+		</s:VGroup>
+	</s:HGroup>
+</s:VGroup>

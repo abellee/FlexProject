@@ -1,0 +1,333 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="500" height="320"
+		 creationComplete="module1_creationCompleteHandler(event)">
+	
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.MicroBlog;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import skins.LoginBtnClass;
+			
+			private var count:int = 0;
+			
+			protected function linkbutton1_clickHandler(event:MouseEvent):void
+			{
+				navigateToURL(new URLRequest("http://login.sina.com.cn/cgi/getpwd/getpwd0.php?entry=sso"));
+			}
+			
+			protected function btn_mini_clickHandler(event:MouseEvent):void
+			{
+				this.dispatchEvent(new WindowEvent(WindowEvent.MINI));
+			}
+			
+			protected function btn_close_clickHandler(event:MouseEvent):void
+			{
+				NativeApplication.nativeApplication.exit();
+//				this.dispatchEvent(new WindowEvent(WindowEvent.CLOSE));
+			}
+			
+			protected function label1_mouseOverHandler(event:MouseEvent):void
+			{
+				var label:Label = event.target as Label;
+				label.setStyle("backgroundColor",0xffffff);
+			}
+			
+			protected function label1_mouseOutHandler(event:MouseEvent):void
+			{
+				var label:Label = event.target as Label;
+				label.setStyle("backgroundColor",undefined);
+			}
+			
+			protected function label2_mouseOverHandler(event:MouseEvent):void
+			{
+				var label:Label = event.target as Label;
+				label.setStyle("backgroundColor",0xffffff);
+				label.setStyle("color",0x000000);
+			}
+			
+			protected function label2_mouseOutHandler(event:MouseEvent):void
+			{
+				var label:Label = event.target as Label;
+				label.setStyle("backgroundColor",undefined);
+				label.setStyle("color",0xffffff);
+			}
+			
+			protected function label2_clickHandler(event:MouseEvent):void
+			{
+				if(this.currentState == "loginState"){
+					
+					this.currentState = "oauthState";
+					
+				}else{
+					
+					this.currentState = "loginState";
+					
+				}
+			}
+			private function reg_click_handler(event:MouseEvent):void{
+				
+				navigateToURL(new URLRequest("http://t.sina.com.cn/reg.php?ps=u3"));
+				
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.VERIFY_CREDENTIALS_RESULT,userLogin_handler);
+				DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.VERIFY_CREDENTIALS_ERROR,userLogin_error_handler);
+				if(this.currentState == "loginState"){
+					
+					if(username.text == "" || password.text == ""){
+						
+						showAlert("您输入用户名与密码不完整!");
+						return;
+						
+					}
+					DataCenter.microAPI.source = DataCenter.appKey;
+					this.currentState = "loginProcess";
+					
+					if(!DataCenter.userOper){
+						
+						DataCenter.userOper = new OperationProgressBar();
+						
+					}
+					DataCenter.userOper.buttonMode = true;
+					DataCenter.userOper.doubleClickEnabled = true;
+					DataCenter.userOper.addEventListener(MouseEvent.DOUBLE_CLICK, cancelLogin);
+					this.addElement(DataCenter.userOper);
+					DataCenter.userOper.x = 240;
+					DataCenter.userOper.y = 175;
+					DataCenter.loginType = "basic";
+					DataCenter.microAPI.login(username.text,password.text);
+					
+				}else{
+					
+					if(pinCode.text == ""){
+						
+						showAlert("请输入新浪认证登录码!");
+						return;
+						
+					}
+					DataCenter.loginType = "oauth";
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.OAUTH_CERTIFICATE_ERROR,oauthLogin_error_handler);
+					DataCenter.microAPI.pin = pinCode.text;
+					
+				}
+			}
+			private function oauthCetificate_resultHandler(event:MicroBlogEvent):void
+			{
+				
+			}
+			private function deleteStatus(event:WindowEvent):void{
+				
+				DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+				DataCenter.confirmPanel.hide();
+				
+			}
+			
+			private function cancelLogin(event:MouseEvent):void{
+				
+				this.removeElementAt(this.numElements - 1);
+				this.currentState = "loginState";
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.VERIFY_CREDENTIALS_RESULT,userLogin_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.VERIFY_CREDENTIALS_ERROR,userLogin_error_handler);
+				DataCenter.microAPI.logout();
+				
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.OAUTH_CERTIFICATE_RESULT, oauthCetificate_resultHandler);
+				DataCenter.microAPI.addEventListener(MicroBlogEvent.LOGIN_RESULT, loginResult);
+				DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.OAUTH_CERTIFICATE_ERROR, oauthError);
+				DataCenter.microAPI.consumerKey = DataCenter.appKey;
+				DataCenter.microAPI.consumerSecret = DataCenter.appSecret;
+				DataCenter.microAPI.login();
+			}
+			private function loginResult(event:MicroBlogEvent):void
+			{
+				
+			}
+			private function oauthError(event:MicroBlogErrorEvent):void
+			{
+				trace(event.message);
+			}
+			protected function module1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.currentState = "oauthState";
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(!DataCenter.microAPI){
+					
+					DataCenter.microAPI = new MicroBlog();
+					
+				}
+				var so:SharedObject = SharedObject.getLocal("userInfo");
+				if(so.data.username){
+					
+					username.text = so.data.username;
+					password.text = so.data.password;
+					remember_user.selected = true;
+					
+				}
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				DataCenter.userOper.removeEventListener(MouseEvent.DOUBLE_CLICK, cancelLogin);
+				this.removeAllElements();
+				
+			}
+			private function userLogin_handler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.VERIFY_CREDENTIALS_RESULT,userLogin_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.VERIFY_CREDENTIALS_ERROR,userLogin_error_handler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.OAUTH_CERTIFICATE_ERROR,oauthLogin_error_handler);
+				var user:MicroBlogUser = MicroBlogUser(event.result);
+				if(remember_user.selected){
+					
+					var so:SharedObject = SharedObject.getLocal("userInfo");
+					if(so.data.username && so.data.username != username.text){
+						
+						so.data.times = 0;
+						
+					}
+					so.data.username = username.text;
+					so.data.password = password.text;
+					if(!so.data.times){
+						
+						so.data.times = 0;
+						
+					}
+					if(so.data.times < 4){
+						
+						so.data.times += 1;
+						
+					}
+					DataCenter.loginTimes = so.data.times;
+					so.flush();
+					
+				}
+				
+				DataCenter.userOper.label = "";
+				DataCenter.userOper.toolTip = "";
+				DataCenter.userOper.percentWidth = 100;
+				DataCenter.userOper.alpha = 0;
+				DataCenter.userOper.x = 0;
+				DataCenter.userOper.y = 100;
+				
+				var loginEvent:WindowEvent = new WindowEvent(WindowEvent.LOGIN_SUCCESS);
+				loginEvent.dispatcher = user;
+				this.dispatchEvent(loginEvent);
+				
+			}
+			private function userLogin_error_handler(event:MicroBlogErrorEvent):void{
+				
+				if(count == 2){
+					
+					showAlert("可能是\"新浪微博API\"出现故障,请稍候再登录!\n			Mew微博感谢您的理解!");
+					removeProgressBar();
+					return;
+					
+				}
+				count++;
+				if(this.currentState == "loginProcess"){
+					
+					showAlert("请确认您输入的帐号&密码是否正确!");
+					
+				}else if(this.currentState == "oauthState"){
+					
+					showAlert("请确认您输入的pin码是否正确!");
+					
+				}
+				removeProgressBar();
+				
+			}
+			private function showAlert(str:String):void{
+				
+				if(!DataCenter.confirmPanel){
+					
+					DataCenter.confirmPanel = new ConfirmPanel();
+					
+				}
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+				DataCenter.confirmPanel.txt = str;
+				DataCenter.confirmPanel.noLabel = "";
+				DataCenter.confirmPanel.show(this);
+				
+			}
+			private function oauthLogin_error_handler(event:MicroBlogErrorEvent):void{
+				
+				showAlert("认证失败,请重新提取认证码!");
+				removeProgressBar();
+				
+			}
+			private function removeProgressBar():void{
+				
+				if(DataCenter.userOper){
+					
+					DataCenter.userOper.dispatchEvent(new MouseEvent(MouseEvent.DOUBLE_CLICK));	
+					
+				}
+				
+			}
+			
+			protected function bc_bk_creationCompleteHandler(event:FlexEvent):void
+			{
+				var we:WindowEvent = new WindowEvent(WindowEvent.BACKGROUND_COMPLETE);
+				we.dispatcher = bc_bk;
+				this.dispatchEvent(we);
+				trace(we);
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:states>
+		<s:State name="loginState" />
+		<s:State name="oauthState" />
+		<s:State name="loginProcess" />
+	</s:states>
+	<mx:Image source="resource/login.jpg" id="bc_bk" mouseChildren="false" width="100%" height="100%" creationComplete="bc_bk_creationCompleteHandler(event)" />
+	<s:Button cornerRadius="10" label="注册新用户" skinClass="skins.RegistBtn" width="80" height="25" x="403" y="50" fontWeight="bold"
+			  click="reg_click_handler(event)" />
+	<s:Label text="用户名:" x="233" y="95" fontSize="14" color="#12174c" fontWeight="bold" mouseEnabled="false" includeIn="loginState, loginProcess" />
+	<s:TextInput x="287" y="91" skinClass="skins.TextInputClass" width="155" height="22" fontSize="14" fontWeight="bold" includeIn="loginState, loginProcess"
+				 id="username" enabled.loginProcess="false" />
+	<s:Label text="密　码:" x="233" y="140" fontSize="14" color="#12174c" fontWeight="bold" mouseEnabled="false" includeIn="loginState, loginProcess" />
+	<s:TextInput x="287" y="135" skinClass="skins.TextInputClass" width="155" height="22" fontSize="14" fontWeight="bold"
+				 displayAsPassword="true" includeIn="loginState, loginProcess" id="password" enabled.loginProcess="false" />
+	<s:HGroup verticalAlign="middle" x="230" y="170" mouseEnabled="false" includeIn="loginState">
+		<s:CheckBox label="记住密码" skinClass="skins.CheckBoxClass" fontWeight="bold" id="remember_user" />
+		<s:Label text="找回密码" fontWeight="bold" click="linkbutton1_clickHandler(event)"
+				 paddingBottom="2" paddingLeft="2" paddingRight="2" paddingTop="2"
+				 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" />
+	</s:HGroup>
+	<!--<s:Label text.loginState="选择新浪认证登录(推荐)" text.oauthState="使用传统方式登录" color="#ffffff" x="228" y="200" fontWeight="bold"
+			 paddingBottom="2" paddingLeft="2" paddingRight="2" paddingTop="2"
+			 mouseOver="label2_mouseOverHandler(event)" mouseOut="label2_mouseOutHandler(event)" click="label2_clickHandler(event)" 
+			 x.oauthState="250" y.oauthState="188" excludeFrom="loginProcess" />-->
+	<s:Button label="登 录" width="60" height="50" x="383" y="170" skinClass="skins.LoginBtnClass" fontSize="16"
+			  fontWeight="bold" click="button1_clickHandler(event)" excludeFrom="loginProcess" />
+	<s:Button label="点击获取新浪认证登录码" skinClass="skins.LoginBtnClass" fontWeight="bold" x="260" y="100" includeIn="oauthState"
+			  click="button2_clickHandler(event)" />
+	<s:TextInput skinClass="skins.TextInputClass" width="155" height="22" fontSize="14" fontWeight="bold" includeIn="oauthState"
+				 x="264" y="130" textAlign="center" restrict="0-9" id="pinCode" />
+	<s:Label text="Mew微博 http://mew.iabel.com" x="290" y="296" color="#ffffff" fontWeight="bold" mouseEnabled="false" />
+	<s:Button width="15" height="15" skinClass="skins.MiniBtnClass" x="464" y="0" id="btn_mini" mouseChildren="false" click="btn_mini_clickHandler(event)" />
+	<s:Button width="16" height="15" skinClass="skins.MiniBtnClass1" x="480" y="0" id="btn_close" mouseChildren="false" click="btn_close_clickHandler(event)" />
+</s:Group>

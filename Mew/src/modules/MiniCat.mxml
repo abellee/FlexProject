@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" systemChrome="none" transparent="true" showStatusBar="false"
+		  backgroundAlpha="0" width="60" height="60" creationComplete="window1_creationCompleteHandler(event)"
+		  mouseChildren="false" mouseDown="window1_mouseDownHandler(event)" doubleClickEnabled="true" doubleClick="window1_doubleClickHandler(event)">
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					this.filters = myFilters;
+					
+				}
+				this.nativeWindow.x = Screen.mainScreen.visibleBounds.width - this.nativeWindow.width - 40;
+				this.nativeWindow.y = Screen.mainScreen.visibleBounds.height = this.nativeWindow.height - 30;
+			}
+			
+			private function clearSelf(event:Event):void
+			{
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+			}
+
+			protected function window1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+
+			protected function window1_doubleClickHandler(event:MouseEvent):void
+			{
+				DataCenter.mainPanel.showMainPanelHideMini();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:Image source="{DataCenter.user.profileImageUrl}" mouseEnabled="false" mouseChildren="false" />
+</s:Window>

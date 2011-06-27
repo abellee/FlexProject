@@ -1,0 +1,500 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" systemChrome="none" x="0" y="0"
+		  transparent="true" showStatusBar="false" backgroundAlpha="0" creationComplete="window1_creationCompleteHandler(event)"
+		  alpha="0" mouseDown="window1_mouseDownHandler(event)" rightClick="window1_rightClickHandler(event)">
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import org.bytearray.gif.player.GIFPlayer;
+			
+			import resource.ResCenter;
+			
+			private var fileRef:FileReference;
+			private var _originImg:String;
+			[Bindable]
+			private var _midImg:String;
+			
+			private var explicitH:uint;
+			private var explicitW:uint;
+			private var rotateTime:uint;
+			
+			private var gifPlayer:GIFPlayer;
+			
+			private var loadingTxt:TextField;
+			private var txtFormat:TextFormat;
+			
+			private var img:UIComponent;
+			
+			private var loader:Loader;
+			private var urlPath:URLRequest;
+			
+			public var isOpen:Boolean = false;
+			
+			[Bindable]
+			private var imgBoxW:uint;
+			
+			[Bindable]
+			private var imgBoxH:uint;
+			
+			private var imageType:String = "jpg";
+			
+			protected function image1_clickHandler(event:MouseEvent):void
+			{
+//				if(!fileRef){
+//					
+//					fileRef = new FileReference();
+//					
+//				}
+//				var now:Date = new Date();
+//				fileRef.addEventListener(Event.SELECT, startDownloading);
+//				fileRef.addEventListener(Event.COMPLETE, completeDownload);
+//				fileRef.download(new URLRequest(_originImg), "img" + now.getFullYear() + (now.getMonth()+1) + now.getDate() + now.getHours() + now.getMinutes() + now.getSeconds() + "." + imageType);
+				navigateToURL(new URLRequest(_originImg));
+			}
+			private function startDownloading(event:Event):void{
+				
+				
+				
+			}
+			private function completeDownload(event:Event):void{
+				
+				fileRef.removeEventListener(Event.SELECT, startDownloading);
+				fileRef.removeEventListener(Event.COMPLETE, completeDownload);
+				fileRef = null;
+				
+			}
+			public function loadImage(img:String, type:String, w:uint, h:uint):void{
+				
+				_midImg = img;
+				imageType = type;
+				imgBoxW = w;
+				imgBoxH = h;
+				
+			}
+			
+			public function set bigImg(img:String):void{
+				
+				_originImg = img;
+				
+			}
+
+			public function get midImg():String{
+				
+				return _midImg;
+				
+			}
+			public function get bigImg():String{
+				
+				return _originImg;
+				
+			}
+			
+			private function loadStaticImage():void{
+				
+				gifPlayer = null;
+				if(!loader){
+					
+					loader = new Loader();
+					
+				}
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, imageLoad_completeHandler);
+				loader.contentLoaderInfo.addEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+				loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+				loader.load(new URLRequest(_midImg));
+				
+			}
+			
+			private function loadGifImage():void{
+				
+				loader = null;
+				if(!gifPlayer){
+					
+					gifPlayer = new GIFPlayer();
+					
+				}
+				gifPlayer.addEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+				gifPlayer.addEventListener(Event.COMPLETE, gifImageLoad_completeHandler);
+				gifPlayer.load(new URLRequest(_midImg));
+				
+			}
+			
+			private function imageIOError_handler(event:IOErrorEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.IMAGE_FRAME_LOAD_FAILED));
+				
+			}
+			
+			private function addLoadingTxt():void{
+				
+				if(!loadingTxt){
+					
+					txtFormat = new TextFormat();
+					txtFormat.size = 12;
+					txtFormat.color = 0x000000;
+					
+					loadingTxt = new TextField();
+					loadingTxt.selectable = false;
+					loadingTxt.mouseEnabled = false;
+					loadingTxt.autoSize = TextFieldAutoSize.LEFT;
+					loadingTxt.defaultTextFormat = txtFormat;
+					
+					img = new UIComponent();
+					
+				}
+				img.addChild(loadingTxt);
+				img.mouseChildren = false;
+				imgBox.addElement(img);
+				
+			}
+			
+			private function imageLoad_progressHandler(event:ProgressEvent):void{
+				
+				loadingTxt.text = "正在加载图片..." + uint((event.bytesLoaded / event.bytesTotal) * 100) + "%";
+				img.width = loadingTxt.textWidth;
+				img.height = loadingTxt.textHeight;
+				img.x = (imgBox.width - loadingTxt.textWidth) / 2;
+				
+			}
+			
+			private function gifImageLoad_completeHandler(event:Event):void{
+				
+				gifPlayer.removeEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+				gifPlayer.removeEventListener(Event.COMPLETE, gifImageLoad_completeHandler);
+				loadingTxt.text = "";
+				img.removeChild(loadingTxt);
+				img.addChild(gifPlayer);
+				img.width = this.imgBoxW;
+				img.height = this.imgBoxH;
+				imgBox.addElement(img);
+				
+			}
+			
+			private function imageLoad_completeHandler(event:Event):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.IMAGE_FRAME_LOAD_COMPLETE));
+				
+				loader.contentLoaderInfo.removeEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+				loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, imageLoad_completeHandler);
+				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+				loader = null;
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				var bitmap:Bitmap = loaderInfo.content as Bitmap;
+				imgBox.addElement(img);
+				loadingTxt.text = "";
+				img.removeChild(loadingTxt);
+				img.addChild(bitmap);
+				img.width = bitmap.width;
+				img.height = bitmap.height;
+				
+			}
+			
+			private function setImageType(type:String):void{
+				
+				switch(type){
+					
+					case "image/png":
+						imageType = "PNG";
+						break;
+					case "image/jpeg":
+						imageType = "JPG";
+						break;
+					case "image/gif":
+						imageType = "GIF";
+						break;
+					case "image/bmp":
+						imageType = "BMP";
+						break;
+					case "application/x-shockwave-flash":
+						imageType = "SWF";
+						break;
+					default:
+						imageType = "JPG";
+						break;
+					
+				}
+				
+			}
+
+			protected function imgBox_completeHandler(event:Event):void
+			{
+				/* img.height = img.contentHeight;
+				img.width = img.contentWidth;
+				explicitW = img.width;
+				explicitH = img.height;
+				
+				imgBox.width = getWidth(img.width);
+				imgBox.height = getHeight(img.height);
+				
+				this.nativeWindow.width = imgBox.width + 10;
+				this.nativeWindow.height = imgBox.height + 50;
+					
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.height) / 2;
+				TweenLite.to(this, .5, {alpha:1});
+				trace(mainBox.width, mainBox.height); */
+			}
+
+
+			protected function bordercontainer1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+
+
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				fileRef = null;
+				if(img && img.numChildren){
+					
+					img.removeChildAt(0);
+					img = null;
+					
+				}
+				
+			}
+
+			protected function closeBtn_clickHandler(event:MouseEvent):void
+			{
+				easeToClose();
+			}
+			
+			public function easeToClose():void{
+				
+				TweenLite.to(this, .2, {alpha:0, onComplete:closeWindow});
+				
+			}
+			
+			private function closeWindow():void{
+				
+				this._midImg = "";
+				this._originImg = "";
+				if(gifPlayer){
+					
+					gifPlayer.removeEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+					gifPlayer.removeEventListener(Event.COMPLETE, gifImageLoad_completeHandler);
+					gifPlayer.dispose();
+					gifPlayer = null;
+					
+				}
+				if(loader){
+					
+					loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+					loader.contentLoaderInfo.removeEventListener(ProgressEvent.PROGRESS, imageLoad_progressHandler);
+					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, imageLoad_completeHandler);
+					loader = null;
+					
+				}
+				if(img.numChildren){
+					
+					img.removeChildAt(0);
+					
+				}
+				isOpen = false;
+				this.close();
+				
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				rotateTime = Math.abs(-- rotateTime);
+				img.rotation -= 90;
+				resetImg();
+			}
+
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				rotateTime = Math.abs(++ rotateTime);
+				img.rotation += 90;
+				resetImg();
+			}
+			
+			private function resetImg():void{
+				
+				var targetW:uint;
+				var targetH:uint;
+				var newW:uint;
+				var newH:uint;
+				if(!(rotateTime % 2)){
+					
+					newW = this.explicitW;
+					newH = this.explicitH;
+					
+				}else{
+					
+					newW = this.explicitH;
+					newH = this.explicitW;
+					
+				}
+				imgBox.width = getWidth(newW);
+				imgBox.height = getHeight(newH);
+				targetW = imgBox.width + 30;
+				targetH = imgBox.height + 70;
+				TweenLite.to(this.nativeWindow, .3, {width:targetW, onComplete:resetWindowXPos});
+				TweenLite.to(this.nativeWindow, .3, {height:targetH});
+				TweenLite.to(mainBox, .3, {width:targetW - 20});
+				TweenLite.to(mainBox, .3, {height:targetH - 20});
+				
+			}
+			
+			private function resetWindowXPos():void{
+				
+				var newPos:uint = (Screen.mainScreen.visibleBounds.width - this.width) / 2;
+				TweenLite.to(this.nativeWindow, .2, {x: newPos, onComplete:resetWindowYPos});
+				
+			}
+			private function resetWindowYPos():void{
+				
+				var newPos:uint = (Screen.mainScreen.visibleBounds.height - this.height) / 2;
+				TweenLite.to(this.nativeWindow, .2, {y: newPos});
+				
+			}
+			
+			private function getWidth(w:Number):uint{
+				
+				if(w < 280){
+					
+					return 300;
+					
+				}else if(w > 780){
+					
+					return 800;
+					
+				}else{
+					
+					return w + 30;
+					
+				}
+				
+			}
+			private function getHeight(h:Number):uint{
+				
+				if(h < 80){
+					
+					return 100;
+					
+				}else if(h > 580){
+					
+					return 600;
+					
+				}else{
+					
+					return h + 20;
+					
+				}
+				
+			}
+
+			protected function imgBox_creationCompleteHandler(event:FlexEvent):void
+			{
+				explicitW = imgBoxW;
+				explicitH = imgBoxH;
+				imgBox.width = getWidth(imgBoxW);
+				imgBox.height = getHeight(imgBoxH);
+				this.nativeWindow.width = imgBox.width + 30;
+				this.nativeWindow.height = imgBox.height + 70;
+				mainBox.width = this.nativeWindow.width - 20;
+				mainBox.height = this.nativeWindow.height - 20;
+				mainBox.x = 10;
+				mainBox.y = 10;
+				
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					mainBox.filters = myFilters;
+					
+				}
+				
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				addLoadingTxt();
+				isOpen = true;
+				this.alpha = 0;
+				TweenLite.to(this, .5, {alpha:1});
+				
+				switch(imageType){
+					
+					case "jpg":
+					case "bmp":
+					case "png":
+						loadStaticImage();
+						break;
+					case "gif":
+						loadGifImage();
+						break;
+					case "swf":
+						return;
+						break;
+					default:
+						loadStaticImage();
+						break;
+					
+				}
+			}
+
+			protected function window1_mouseDownHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					
+				}
+			}
+
+			protected function window1_rightClickHandler(event:MouseEvent):void
+			{
+				closeBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer borderColor="#47809b" borderWeight="1" backgroundColor="#f2fbfe" cornerRadius="5" width="100%" height="100%" id="mainBox">
+		<s:BorderContainer width="100%" height="30" mouseChildren="false" borderVisible="false" backgroundAlpha="0"
+						   mouseDown="bordercontainer1_mouseDownHandler(event)" >
+			<s:Rect topLeftRadiusX="5" topLeftRadiusY="5" topRightRadiusX="5" topRightRadiusY="5" width="100%" height="30">
+				<s:fill>
+					<s:SolidColor color="#84bedc" />
+				</s:fill>
+			</s:Rect>
+		</s:BorderContainer>
+		<s:HGroup width="100%" height="30" mouseEnabled="false" horizontalAlign="right" verticalAlign="middle" paddingRight="5">
+			<s:Button skinClass="skins.LeftArrow" mouseChildren="false" toolTip="向左旋转90度" buttonMode="true" click="button1_clickHandler(event)" />
+			<s:Button skinClass="skins.LeftArrow" mouseChildren="false" toolTip="向右旋转90度" buttonMode="true" click="button2_clickHandler(event)" scaleX="-1" />
+			<s:Button skinClass="skins.CloseBtn0" mouseChildren="false" toolTip="关闭" buttonMode="true" click="closeBtn_clickHandler(event)" id="closeBtn" />
+		</s:HGroup>
+		<s:Button skinClass="skins.HighQBtn" click="image1_clickHandler(event)" top="6" left="10" toolTip="点击查看高清原图" mouseChildren="false" />
+		<s:Scroller width="100%" height="100%" y="40" skinClass="skins.ScrollerSkin" id="scroller">
+			<s:HGroup horizontalAlign="center" verticalAlign="middle"
+					  paddingLeft="10" paddingRight="10" paddingBottom="10" paddingTop="5" id="imgBox" mouseChildren="false"
+					  creationComplete="imgBox_creationCompleteHandler(event)" toolTip="右键点击关闭" />
+		</s:Scroller>
+	</s:BorderContainer>
+</s:Window>

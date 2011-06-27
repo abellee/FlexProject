@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Skin xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		xmlns:s="library://ns.adobe.com/flex/spark" 
+		xmlns:mx="library://ns.adobe.com/flex/mx">
+	<!-- host component -->
+	<fx:Metadata>
+		[HostComponent("spark.components.Button")]
+	</fx:Metadata>
+	
+	<fx:Script>
+		<![CDATA[
+			import resource.ResCenter;
+		]]>
+	</fx:Script>
+	<!-- states -->
+	<s:states>
+		<s:State name="disabled" />
+		<s:State name="down" />
+		<s:State name="over" />
+		<s:State name="up" />
+	</s:states>
+	
+	<!-- SkinParts
+	name=labelDisplay, type=spark.components.supportClasses.TextBase, required=false
+	-->
+	<s:BitmapImage source="{ResCenter.CancelButtonUp}" includeIn="up" />
+	<s:BitmapImage source="{ResCenter.CancelButtonOver}" includeIn="over" />
+	<s:BitmapImage source="{ResCenter.CancelButtonDown}" includeIn="down, disabled" />
+	
+	<s:Label id="labelDisplay"
+			 textAlign="center"
+			 verticalAlign="middle"
+			 maxDisplayedLines="1"
+			 horizontalCenter="0" verticalCenter="-1"
+			 right="10" left="10">
+	</s:Label>
+</s:Skin>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="427" height="310" systemChrome="none" transparent="true" showStatusBar="false"
+		  backgroundAlpha="0" creationComplete="window1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import remoteManager.RemoteConnecting;
+			
+			import spark.components.TextSelectionHighlighting;
+
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					this.filters = myFilters;
+					
+				}
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(txt.text != ""){
+					
+					var remote:RemoteConnecting = new RemoteConnecting();
+					remote.submitBugs(txt.text);
+					cancelBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+					
+				}
+			}
+
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(DataCenter.bugsSubmit){
+					
+					DataCenter.bugsSubmit = null;
+					
+				}
+				this.close();
+			}
+
+			protected function image1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:Image source="resource/bugs.png" x="20" y="20" mouseDown="image1_mouseDownHandler(event)" />
+	<s:TextArea selectionHighlighting="{TextSelectionHighlighting.ALWAYS}" id="txt" x="140" y="102" width="241" height="130"
+				focusAlpha="0" borderVisible="false" verticalScrollPolicy="off" contentBackgroundAlpha="0" lineHeight="25"/>
+	<s:HGroup width="240" x="140" y="250" horizontalAlign="center" verticalAlign="middle" mouseEnabled="false" gap="10">
+		<s:Button skinClass="skins.ButtonSend" label="发 送" color="0xffffff" fontSize="13" click="button1_clickHandler(event)" />
+		<s:Button skinClass="skins.ButtonCancel" label="取 消" color="0xffffff" fontSize="13" click="button2_clickHandler(event)" id="cancelBtn" />
+	</s:HGroup>
+</s:Window>

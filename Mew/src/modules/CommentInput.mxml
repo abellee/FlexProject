@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" horizontalAlign="center" verticalAlign="top" gap="0" mouseEnabled="false" xmlns:modules="modules.*">
+	
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.StringDetect;
+			import functional.Utils;
+			
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			import skins.FaceBtnSkin;
+			import skins.MewButtonBase;
+			
+			public var sid:String = "";
+			public var cid:String = "0";
+			public var ownerName:String = "";
+			public var curText:String = "";
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(DataCenter.emotionWindow){
+					
+					DataCenter.emotionWindow.close();
+					DataCenter.emotionWindow = null;
+					return;
+					
+				}
+				DataCenter.emotionWindow = new EmotionsWindow();
+				DataCenter.emotionWindow.alwaysInFront = true;
+				DataCenter.emotionWindow.open();
+				var nx:Number;
+				var ny:Number;
+				if(!DataCenter.commentListWindow.entryHeight){
+					
+					nx = DataCenter.commentListWindow.nativeWindow.x - DataCenter.emotionWindow.width + 20;
+					ny = DataCenter.commentListWindow.nativeWindow.y + DataCenter.emotionWindow.height;
+					
+				}else{
+					
+					nx = DataCenter.commentListWindow.nativeWindow.x - DataCenter.emotionWindow.width + 20;
+					ny = DataCenter.commentListWindow.nativeWindow.y + DataCenter.commentListWindow.entryHeight;
+					
+				}
+				DataCenter.emotionWindow.setPos(nx, ny, this);
+			}
+			protected function commentTxt_changeHandler(event:Event):void
+			{
+				commentTxt.text = commentTxt.text.substr(0, 140);
+				commentTxt.height = (commentTxt.textHeight + 5) < 24 ? 24 : (commentTxt.textHeight + 5);
+			}
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				var str:String = StringDetect.trim(commentTxt.text);
+				str = StringDetect.replaceEnter(str);
+				if(str != ""){
+					
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.COMMENT_STATUS_RESULT, commentStatus_resultHandler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.COMMENT_STATUS_ERROR, commentStatus_errorHandler);
+					DataCenter.microAPI.commentStatus(sid, str, cid);
+					commentTxt.text = "";
+					commentTxt.height = 24;
+					
+					if(publishStatus.selected){
+						
+						if(curText != "" && Utils.countWordsNum(str + "//" + curText)){
+							
+							str = str + "//" + curText;
+							
+						}
+						DataCenter.microAPI.addEventListener(MicroBlogEvent.REPOST_STATUS_RESULT, DataCenter.mainPanel.updateStatus_handler);
+						DataCenter.microAPI.repostStatus(sid, str);
+						publishStatus.selected = false;
+						
+					}
+					
+				}
+			}
+			
+			private function commentStatus_resultHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.COMMENT_STATUS_RESULT, commentStatus_resultHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.COMMENT_STATUS_ERROR, commentStatus_errorHandler);
+				
+				var e:WindowEvent = new WindowEvent(WindowEvent.COMMENT_SUCCESS);
+				e.dispatcher = event.result as MicroBlogComment;
+				this.dispatchEvent(e);
+				
+			}
+			private function commentStatus_errorHandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.COMMENT_STATUS_RESULT, commentStatus_resultHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.COMMENT_STATUS_ERROR, commentStatus_errorHandler);
+				trace(event.message);
+				DataCenter.alertTip._text = "提示: 发布评论失败!";
+				DataCenter.mainPanel.showAlertTip();
+				
+			}
+			public function set commentInitTxt(str:String):void{
+				
+				commentTxt.text = "回复@" + str + ":";
+				
+			}
+			
+			protected function titleTxt_creationCompleteHandler(event:FlexEvent):void
+			{
+				titleTxt.text = "评论给 " + ownerName;
+			}
+			
+			public function insertEmotion(str:String):void{
+				
+				commentTxt.text = commentTxt.text.substring(0, commentTxt.selectionBeginIndex) + str + commentTxt.text.substr(commentTxt.selectionBeginIndex + 1)
+				
+			}
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BitmapImage source="{ResCenter.TriangleUp}" />
+	<s:BorderContainer width="100%" mouseEnabled="false" backgroundColor="#d2e9f5" backgroundAlpha=".6" borderVisible="false">
+		<s:layout>
+			<s:VerticalLayout horizontalAlign="center" verticalAlign="top" gap="5" paddingLeft="10" paddingRight="10" paddingTop="10" />
+		</s:layout>
+		<s:Label mouseChildren="false" mouseEnabled="false" id="titleTxt"
+				 creationComplete="titleTxt_creationCompleteHandler(event)" paddingBottom="10" fontWeight="bold" />
+		<s:HGroup width="100%" verticalAlign="top" mouseEnabled="false">
+			<s:Button skinClass="skins.FaceBtnSkin" mouseChildren="false" click="button1_clickHandler(event)" toolTip="添加表情" buttonMode="true" />
+			<mx:TextArea width="100%" borderAlpha=".5" id="commentTxt" height="24" wordWrap="true"
+						 verticalScrollPolicy="off" change="commentTxt_changeHandler(event)" verticalCenter="0" />
+			<s:Button label="回 复" skinClass="skins.MewButtonBase" mouseChildren="false" height="24" click="button2_clickHandler(event)" />
+		</s:HGroup>
+		<s:HGroup mouseEnabled="false" width="100%" verticalAlign="middle" paddingLeft="23">
+			<s:CheckBox skinClass="skins.CheckBoxClass" label="同时转发到我的微博" mouseChildren="false" id="publishStatus" />
+		</s:HGroup>
+	</s:BorderContainer>
+</s:VGroup>

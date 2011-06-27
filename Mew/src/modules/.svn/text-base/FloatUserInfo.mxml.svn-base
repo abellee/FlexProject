@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="200" height="265" mouseEnabled="false" mouseChildren="false"
+				   backgroundColor="#f0fbfe" borderAlpha=".5" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout horizontalAlign="center" verticalAlign="top" paddingTop="10" />
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.controls.Image;
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+
+			[Bindable]
+			private var _username:String = "";
+			
+			private var _isVerified:Boolean;
+			
+			[Bindable]
+			private var _sex:Class;
+			
+			[Bindable]
+			private var _location:String = "";
+			
+			[Bindable]
+			private var _follow:String = "";
+			
+			[Bindable]
+			private var _fans:String = "";
+			
+			[Bindable]
+			private var _micro:String = "";
+			
+			private var vicon:BitmapImage;
+			
+			private var loader:Loader;
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					this.filters = myFilters;
+					
+				}
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			public function easeToClose():void{
+				
+				TweenLite.to(this, .3, {alpha: 0});
+				
+			}
+			private function clearSelf(event:Event):void
+			{
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				if(vicon){
+					
+					vicon.source = null;
+					vicon = null;
+					
+				}
+			}
+			public function set avatar(str:String):void{
+				
+				var pattern:RegExp = /\/50\//;
+				str = str.replace(pattern,"/180/");
+				if(!loader){
+					
+					loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE, avatarLoad_completeHandler);
+					loader.load(new URLRequest(str));
+					
+				}
+				
+			}
+			private function avatarLoad_completeHandler(event:Event):void{
+				
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(Event.COMPLETE, avatarLoad_completeHandler);
+				var bitmap:Bitmap = loaderInfo.content as Bitmap;
+				userAvatar.source = bitmap;
+				userAvatar.alpha = 0;
+				TweenLite.to(userAvatar, .5, {alpha:1});
+				
+			}
+			public function set isVerified(bool:Boolean):void{
+				
+				_isVerified = bool;
+				
+			}
+			public function set sex(s:String):void{
+				
+				_sex = s == "m" ? ResCenter.BoyIcon : ResCenter.GirlIcon;
+				
+			}
+			public function set location(l:String):void{
+				
+				_location = l;
+				
+			}
+
+			protected function nameBox_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(_isVerified){
+					
+					vicon = new BitmapImage();
+					vicon.source = ResCenter.VIPIcon;
+					vicon.minHeight = 0;
+					vicon.minWidth = 0;
+					nameBox.addElement(vicon);
+					
+				}
+			}
+			public function set username(str:String):void
+			{
+				_username = str;
+			}
+			
+			public function set follow(num:Number):void
+			{
+				_follow = "关注" + transformNum(num);
+			}
+			public function set fans(num:Number):void
+			{
+				_fans = "粉丝" + transformNum(num);
+			}
+			public function set micro(num:Number):void
+			{
+				_micro = "微博" + transformNum(num);;
+			}
+			private function transformNum(num:Number):String
+			{
+				var str:String = num + "";
+				if(num >= 1000000)
+				{
+					str = uint(num / 10000) + "万";
+				}
+				return str;
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BitmapImage id="userAvatar" width="180" height="180" source="resource/default180.jpg" />
+	<s:HGroup width="100%" mouseEnabled="false" verticalAlign="middle" horizontalAlign="center" gap="0" id="nameBox" creationComplete="nameBox_creationCompleteHandler(event)">
+		<s:Label text="{_username}" fontWeight="bold" />
+	</s:HGroup>
+	<mx:Button icon="{_sex}" label="{_location}" skin="{null}" mouseEnabled="false" mouseChildren="false" paddingLeft="2" />
+	<s:HGroup width="100%" mouseEnabled="false" mouseChildren="false" horizontalAlign="center">
+		<s:Label text="{_follow}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" id="followTxt" />
+		<s:Label text="{_fans}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" id="fansTxt" />
+		<s:Label text="{_micro}" fontSize="12" fontWeight="bold" paddingLeft="2" paddingRight="2" color="#0f73a4" id="microTxt" />
+	</s:HGroup>
+</s:BorderContainer>

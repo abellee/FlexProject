@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" systemChrome="none" transparent="true" showStatusBar="false"
+		  backgroundAlpha="0" creationComplete="window1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:BasicLayout/>
+	</s:layout>
+	<fx:Script>
+		<![CDATA[
+			import dataCenter.DataCenter;
+			
+			import functional.GuideTipMask;
+			
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+
+			private var ui:UIComponent = new UIComponent();
+			private var mx:uint;
+			private var my:uint;
+			private var sp:Sprite = new Sprite();
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.stage.addEventListener(KeyboardEvent.KEY_DOWN, window1_keyDownHandler);
+				this.nativeWindow.width = Screen.mainScreen.bounds.width;
+				this.nativeWindow.height = Screen.mainScreen.bounds.height;
+				this.nativeWindow.x = 0;
+				this.nativeWindow.y = 0;
+				
+				var gtm:GuideTipMask = new GuideTipMask(this.nativeWindow.width, this.nativeWindow.height);
+				gtm.mouseChildren = false;
+				
+				ui.addChild(gtm);
+				ui.width = gtm.width;
+				ui.height = gtm.height;
+				this.addElement(ui);
+				ui.addEventListener(MouseEvent.MOUSE_DOWN, readyDrawRect);
+				ui.addEventListener(MouseEvent.MOUSE_UP, stopDrawRect);
+			}
+			private function readyDrawRect(event:MouseEvent):void{
+				
+				mx = ui.mouseX;
+				my = ui.mouseY;
+				ui.addEventListener(MouseEvent.MOUSE_MOVE, startDrawRect);
+				
+			}
+			private function startDrawRect(event:MouseEvent):void{
+				
+				sp.graphics.clear();
+				sp.graphics.lineStyle(2, 0xffffff);
+				sp.graphics.drawRect(mx, my, ui.mouseX - mx, ui.mouseY - my); 
+				sp.graphics.endFill();
+				ui.addChild(sp);
+				var gtm:GuideTipMask = ui.getChildAt(0) as GuideTipMask;
+				if(gtm){
+					
+					gtm.masker(new Rectangle(mx, my, ui.mouseX - mx, ui.mouseY - my));
+					
+				}
+				
+			}
+			private function stopDrawRect(event:MouseEvent):void{
+				
+				ui.removeEventListener(MouseEvent.MOUSE_MOVE, startDrawRect);
+				DataCenter.sendPanel.shotForWindow(new Rectangle(mx, my, ui.mouseX - mx, ui.mouseY - my));
+				DataCenter.sendPanel.clearSSF();
+				
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.stage.removeEventListener(KeyboardEvent.KEY_DOWN, window1_keyDownHandler);
+				if(ui && ui.numChildren){
+					
+					ui.removeChildAt(0);
+					ui = null;
+					
+				}
+				sp.graphics.clear();
+				sp = null;
+				
+			}
+			protected function window1_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ESCAPE){
+					
+					this.close();
+					
+				}
+			}
+
+		]]>
+	</fx:Script>
+</s:Window>

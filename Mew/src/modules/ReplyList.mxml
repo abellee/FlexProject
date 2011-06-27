@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="utf-8"?>
+<modules:AbstractList xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%"
+		  mouseEnabled="false"
+		  paddingBottom="5" paddingLeft="5" paddingRight="5" paddingTop="5"
+		  xmlns:modules="modules.*" creationComplete="abstractlist1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.data.MicroBlogComment;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogErrorEvent;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import functional.Confirm;
+			import functional.StringDetect;
+			import functional.Utils;
+			
+			import mx.events.FlexEvent;
+			
+			import phase.InterfaceState;
+			
+			private var curPage:uint = 1;
+			
+			public function setReplyList(arr:Array, mode:String = "normal"):void{
+				
+				if(!arr || arr.length == 0){
+					
+					return;
+					
+				}
+				var num:uint = arr.length;
+				for (var i:int = 0; i < num; i++){
+					
+					var item:CommentItem = new CommentItem();
+					var msg:MicroBlogComment = arr[i] as MicroBlogComment;
+					var createTime:Date = msg.createdAt;
+					var user:MicroBlogUser = msg.user;
+					item.setAvtar(user.profileImageUrl, user.id);
+					var timeStr:String = Utils.dataTransfer(createTime);
+					var replyTxt:String = "";
+					if(msg.replyComments && msg.replyComments.length){
+						
+						replyTxt = (msg.replyComments[0] as MicroBlogComment).text;
+						replyTxt = "<br><font color='#2d6a9c'>回复" + (msg.replyComments[0] as MicroBlogComment).user.name + "的评论:</font> " + StringDetect.setURL(replyTxt);
+						
+					}else if(msg.status){
+						
+						replyTxt = msg.status.text;
+						replyTxt = "<br><font color='#2d6a9c'>回复" + msg.status.user.name + "的评论:</font> " + StringDetect.setURL(replyTxt);
+						
+					}
+					if(msg.status.id == DataCenter.user.id || msg.user.id == DataCenter.user.id){
+						
+						item._isOwn = true;
+						item.addEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+						
+					}
+					item.cid = msg.id;
+					item.sid = msg.status.id;
+					item.pureName = user.name;
+					item.setText(msg.text +"(" + timeStr + ")<br>" + replyTxt, msg.text);
+					item.username = "<font color='#2d6a9c'><b>"+user.name+":</b></font>";
+					item.addEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					if(mode == "update" && replyList.numElements >= DataCenter.count){
+						
+						replyList.removeElementAt(DataCenter.count - 1);
+						
+					}
+					replyList.addElement(item);
+					this.dispatchEvent(new Event(Event.RENDER));
+					
+				}
+				
+			}
+			private function deleteStatus_handler(event:WindowEvent):void{
+				
+				var id:String = (event.target as CommentItem).cid;
+				if(!DataCenter.confirmPanel){
+					
+					DataCenter.confirmPanel = new ConfirmPanel();
+					
+				}
+				if(DataCenter.confirmPanel.hasEventListener(WindowEvent.CONFIRM_YES)){
+					
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+					
+				}
+				var deleteStatus:Function = function(event:WindowEvent):void{
+					
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+					DataCenter.confirmPanel.hide();
+					DataCenter.microAPI.addEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteComment_successHandler);
+					DataCenter.microAPI.addEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteComment_errorHandler);
+					DataCenter.microAPI.deleteComment(id);
+					
+				}
+				var removeConfirm:Function = function(event:WindowEvent):void{
+					
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+					DataCenter.confirmPanel.removeEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+					DataCenter.confirmPanel.hide();
+					
+				}
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_YES, deleteStatus);
+				DataCenter.confirmPanel.addEventListener(WindowEvent.CONFIRM_NO, removeConfirm);
+				DataCenter.confirmPanel.txt = "是否确定删除此条评论?";
+				DataCenter.confirmPanel.noLabel = Confirm.NO;
+				DataCenter.confirmPanel.show(DataCenter.mainPanel, false);
+				
+			}
+			private function deleteComment_successHandler(event:MicroBlogEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteComment_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteComment_errorHandler);
+				var id:String = (event.result as MicroBlogComment).id;
+				DataCenter.mainPanel.refreshLocalCommentTimeline();
+				DataCenter.alertTip._text = "提示: 删除评论成功！";
+				DataCenter.mainPanel.showAlertTip();
+				removeItem(id);
+				
+			}
+			private function deleteComment_errorHandler(event:MicroBlogErrorEvent):void{
+				
+				DataCenter.microAPI.removeEventListener(MicroBlogEvent.DELETE_COMMENT_RESULT, deleteComment_successHandler);
+				DataCenter.microAPI.removeEventListener(MicroBlogErrorEvent.DELETE_COMMENT_ERROR, deleteComment_errorHandler);
+				
+				DataCenter.alertTip._text = "提示: 删除评论失败!";
+				DataCenter.mainPanel.showAlertTip();
+				
+			}
+			private function commentStatus_handler(event:WindowEvent):void{
+				
+				DataCenter.mainPanel.resetPublishPanel();
+				
+				var item:CommentItem = event.target as CommentItem;
+				DataCenter.sendPanel.repostAddText = "回复@" + item.pureName + ":";
+				DataCenter.sendPanel.comment(item.reTxt, item.pureName, item.sid, item.cid);
+				
+			}
+			private function removeItem(id:String):void{
+				
+				var len:uint = replyList.numElements;
+				for (var i:uint = 0; i < len; i++){
+					
+					var item:CommentItem = replyList.getElementAt(i) as CommentItem;
+					if(item){
+						
+						if(item.cid == id){
+							
+							item.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+							if(item._isOwn){
+								
+								item.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+								
+							}
+							replyList.removeElement(item);
+							return;
+							
+						}
+						
+					}
+					
+				}
+				
+			}
+			public function removeAll():void{
+				
+				for each(var item:CommentItem in replyList){
+					
+					if(item._isOwn){
+						
+						item.removeEventListener(WindowEvent.DELETE_STATUS, deleteStatus_handler);
+						
+					}
+					item.removeEventListener(WindowEvent.COMMENT_STATUS, commentStatus_handler);
+					
+				}
+				replyList.removeAllElements();
+				
+			}
+			
+
+			protected function abstractlist1_creationCompleteHandler(event:FlexEvent):void
+			{
+				//this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup id="replyList" width="100%" height="100%" horizontalAlign="left" verticalAlign="top" mouseEnabled="false" />
+</modules:AbstractList>

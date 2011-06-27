@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx"
+				   borderWeight="1" backgroundColor="#ffffff"
+				   borderColor="#327395" minHeight="0" minWidth="0" borderVisible="true" backgroundAlpha="1"
+				   creationComplete="bordercontainer1_creationCompleteHandler(event)" mouseChildren="false"
+				   click="thumbImage_mouseClick_handler(event)" rightClick="bordercontainer1_rightClickHandler(event)" toolTip="点击打开大图 | 右键下载原图">
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import air.desktop.URLFilePromise;
+			
+			import com.controls.Spinner;
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			import spark.primitives.Rect;
+			
+			private var _midImg:String;
+			private var _bigImg:String;
+			private var _thumbImg:String;
+			
+			private var fileRef:FileReference;
+			
+			private var loader:Loader;
+			
+			private var spinner:Loading;
+			
+			private var imgName:String = "default";
+
+			public function setURL(timg:String, mimg:String, bimg:String):void
+			{
+				_thumbImg = timg;
+				_midImg = mimg;
+				_bigImg = bimg;
+				
+				imgName = _bigImg.substr(_bigImg.lastIndexOf("/") + 1);
+				
+				if(imgBox){
+					
+					loadImg(_thumbImg);
+					
+				}
+			}
+			public function get midImg():String{
+				
+				return _midImg;
+				
+			}
+			public function get bigImg():String{
+				
+				return _bigImg;
+				
+			}
+			public function get thumbImg():String{
+				
+				return _thumbImg;
+				
+			}
+			private function loadImg(str:String):void{
+				
+				loader = new Loader();
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, realImage_loadCompleteHandler);
+				loader.load(new URLRequest(str));
+				
+			}
+			private function realImage_loadCompleteHandler(event:Event):void{
+				
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(Event.COMPLETE, realImage_loadCompleteHandler);
+				var bitmap:Bitmap = loaderInfo.content as Bitmap;
+				loaderInfo = null;
+				loader = null;
+				
+				TweenLite.to(imgBox, .3, {alpha:0, onComplete:showRealImg, onCompleteParams:[bitmap]});
+				
+			}
+			private function showRealImg(bitmap:Bitmap):void{
+				
+				imgBox.source = bitmap;
+				imgBox.width = bitmap.width;
+				imgBox.height = bitmap.height;
+				this.width = imgBox.width + 4;
+				this.height = imgBox.height + 4;
+				TweenLite.to(imgBox, .5, {alpha: 1});
+				
+			}
+			private function reloadImg(event:IOErrorEvent):void{
+				
+				loadImg(_thumbImg);
+				
+			}
+			private function thumbImage_mouseClick_handler(event:MouseEvent):void{
+				
+				if(_midImg && _bigImg){
+					
+					if(loader){
+						
+						return;
+						
+					}else{
+						
+						addSpinner();
+						loader = new Loader();
+						loader.contentLoaderInfo.addEventListener(Event.INIT, imageInit_loadHandler);
+						loader.contentLoaderInfo.addEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+						loader.load(new URLRequest(_midImg));
+						
+					}
+					
+				}
+				
+			}
+			
+			private function addSpinner():void
+			{
+				if(!spinner){
+					
+					spinner = new Loading();
+					spinner.mouseEnabled = false;
+					spinner.mouseChildren = false;
+					
+					if(Capabilities.os != "Linux"){
+						
+						var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+						var myFilters:Array = new Array();
+						myFilters.push(filter);
+						spinner.filters = myFilters;
+						
+					}
+					this.addElement(spinner);
+					spinner.x = (this.width - spinner.width) / 2;
+					spinner.y = (this.height - spinner.height) / 2; 
+					
+				}
+			}
+			
+			private function imageInit_loadHandler(event:Event):void{
+				
+				loader.contentLoaderInfo.removeEventListener(Event.INIT, imageInit_loadHandler);
+				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				var w:uint = loaderInfo.width;
+				var h:uint = loaderInfo.height;
+				var thumbEvent:WindowEvent = new WindowEvent(WindowEvent.MIDDLE_IMG);
+				thumbEvent.dispatcher = {};
+				thumbEvent.dispatcher.width = w;
+				thumbEvent.dispatcher.height = h;
+				thumbEvent.dispatcher.type = getImageType(loaderInfo.contentType);
+				thumbEvent.dispatcher.midImg = _midImg;
+				thumbEvent.dispatcher.bigImg = _bigImg;
+				DataCenter.mainPanel.dispatchEvent(thumbEvent);
+				loader = null;
+				
+				removeSpinner();
+				
+			}
+			
+			private function removeSpinner():void
+			{
+				if(spinner)
+				{
+					this.removeElement(spinner);
+					spinner = null;
+				}
+			}
+			
+			private function imageIOError_handler(event:IOErrorEvent):void{
+				
+				loader.contentLoaderInfo.removeEventListener(Event.INIT, imageInit_loadHandler);
+				loader.contentLoaderInfo.removeEventListener(IOErrorEvent.IO_ERROR, imageIOError_handler);
+				loader = null;
+				
+			}
+			
+			private function getImageType(type:String):String{
+				
+				switch(type){
+					
+					case "image/png":
+						return "png";
+						break;
+					case "image/jpeg":
+						return "jpg";
+						break;
+					case "image/gif":
+						return "gif";
+						break;
+					case "image/bmp":
+						return "bmp";
+						break;
+					case "application/x-shockwave-flash":
+						return "swf";
+						break;
+					default:
+						return "jpg";
+						break;
+					
+				}
+				
+			}
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				loadImg(_thumbImg);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.removeAllElements();
+				/* img = null; */
+				if(loader){
+					
+					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, realImage_loadCompleteHandler);
+					loader.unloadAndStop();
+					loader = null;
+					
+				}
+				
+			}
+
+			/**
+			 * TMD不知道为什么 URLPromise在Mac OS X下可以用 到了Windows底下就不行
+			 * 文件拖到桌面后就创建了一个temporary image 然后就不往里面写数据 以至于图片一直是zero byte 然后把各种事件都添加上了 娘的 一点事件也没有
+			 * 还TM跨平台 脚步迈大了 扯着蛋了吧？
+			 */
+			/* protected function bordercontainer1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.addEventListener(MouseEvent.MOUSE_MOVE, startDragImage);
+			}
+			
+			private function startDragImage(event:MouseEvent):void{
+				
+				this.removeEventListener(MouseEvent.MOUSE_MOVE, startDragImage);
+				var clip:Clipboard = new Clipboard();
+				var bp:URLFilePromise = new URLFilePromise();
+				bp.relativePath = imgName;
+				bp.request = new URLRequest(this._bigImg);
+				clip.setData(ClipboardFormats.FILE_PROMISE_LIST_FORMAT, [bp], false);
+				NativeDragManager.doDrag(this, clip);
+				
+			} */
+
+			protected function bordercontainer1_rightClickHandler(event:MouseEvent):void
+			{
+				if(!fileRef){
+					
+					fileRef = new FileReference();
+					fileRef.addEventListener(ProgressEvent.PROGRESS, imageDownload_progressHandler);
+					fileRef.addEventListener(Event.COMPLETE, imageLoad_completeHandler);
+					fileRef.addEventListener(Event.CANCEL, cancelDownload_imageHandler);
+					fileRef.download(new URLRequest(_bigImg), imgName);
+					
+				}
+			}
+			private function cancelDownload_imageHandler(event:Event):void
+			{
+				fileRef.removeEventListener(ProgressEvent.PROGRESS, imageDownload_progressHandler);
+				fileRef.removeEventListener(Event.COMPLETE, imageLoad_completeHandler);
+				fileRef = null;
+			}
+			private function imageDownload_progressHandler(event:ProgressEvent):void
+			{
+				addSpinner();
+			}
+			private function imageLoad_completeHandler(event:Event):void
+			{
+				fileRef.removeEventListener(ProgressEvent.PROGRESS, imageDownload_progressHandler);
+				fileRef.removeEventListener(Event.COMPLETE, imageLoad_completeHandler);
+				removeSpinner();
+				fileRef = null;
+				DataCenter.alertTip._fsize = 18;
+				DataCenter.alertTip._text = "提示: 图片下载成功!";
+				DataCenter.mainPanel.showAlertTip();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BitmapImage source="{ResCenter.DefaultImg}" id="imgBox" left="2" right="2" top="2" bottom="2" />
+</s:BorderContainer>

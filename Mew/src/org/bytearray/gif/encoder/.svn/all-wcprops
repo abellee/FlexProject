@@ -1,0 +1,23 @@
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/svn/!svn/ver/6/trunk/Flex%20Project/Mew/src/org/bytearray/gif/encoder
+END
+NeuQuant.as
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/!svn/ver/6/trunk/Flex%20Project/Mew/src/org/bytearray/gif/encoder/NeuQuant.as
+END
+GIFEncoder.as
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/!svn/ver/6/trunk/Flex%20Project/Mew/src/org/bytearray/gif/encoder/GIFEncoder.as
+END
+LZWEncoder.as
+K 25
+svn:wc:ra_dav:version-url
+V 84
+/svn/!svn/ver/6/trunk/Flex%20Project/Mew/src/org/bytearray/gif/encoder/LZWEncoder.as
+END

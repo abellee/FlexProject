@@ -1,0 +1,377 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   showStatusBar="false" width="540" height="360" backgroundAlpha="0" usePreloader="false" mouseEnabled="false" xmlns:modules="modules.*">
+	<s:layout>
+		<s:VerticalLayout verticalAlign="middle" horizontalAlign="center" />
+	</s:layout>
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		@font-face {
+			src: url("font/digit.ttf");
+			fontFamily: "Digit";
+		}
+		.macStyle{
+			
+			/* fontFamily:"华文黑体"; */
+			/* fontSize:13; */
+			
+		}
+		.win7Style{
+			
+			/* fontFamily:"微软雅黑"; */
+			fontSize:13;
+			
+		}
+		.xpStyle{
+			
+			/* fontFamily:"宋体"; */
+			 fontSize:13; 
+			
+		}
+		mx|ToolTip{
+			
+			fontSize:13;
+			color:#ffffff;
+			backgroundColor:#327395;
+			
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.sina.microblog.MicroBlog;
+			import com.sina.microblog.data.MicroBlogUser;
+			import com.sina.microblog.events.MicroBlogEvent;
+			
+			import dataCenter.DataCenter;
+			import dataCenter.DataPreloader;
+			
+			import flash.display.NativeWindow;
+			import flash.filters.BitmapFilter;
+			import flash.filters.BitmapFilterQuality;
+			import flash.filters.GlowFilter;
+			
+			import functional.EffectCenter;
+			import functional.Utils;
+			
+			import modules.LoginPanel;
+			import modules.MainPanel;
+			
+			import mx.controls.Alert;
+			import mx.controls.Button;
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			import mx.effects.Effect;
+			import mx.events.FlexEvent;
+			import mx.events.ModuleEvent;
+			import mx.events.ResizeEvent;
+			import mx.modules.Module;
+			
+			import org.osmf.events.TimeEvent;
+			
+			import spark.components.BorderContainer;
+			import spark.components.Window;
+			
+			private var window:NativeWindow;
+			private var background:Image;
+			private var curState:String = "login";
+			
+			private var iconImg:Array = [
+				"icon/16.png",
+				"icon/32.png",
+				"icon/48.png",
+				"icon/128.png"];
+			
+			private var icons:Array = [];
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				window = this.nativeWindow;
+				window.x = (Screen.mainScreen.visibleBounds.width - window.width) / 2;
+				window.y = (Screen.mainScreen.visibleBounds.height - window.height) / 2;
+				switch(Capabilities.os){
+					
+					case "Windows 7":
+						DataCenter.CurrentSystem = "win7";
+						this.styleName = "win7Style";
+						break;
+					case "Windows XP":
+						DataCenter.CurrentSystem = "winXP";
+						this.styleName = "xpStyle";
+						break;
+					default:
+						DataCenter.CurrentSystem = "others";
+						this.styleName = "xpStyle";
+						break;
+					
+				}
+				if(Capabilities.os.indexOf("Mac") != -1){
+					
+					DataCenter.CurrentSystem = "mac";
+					this.styleName = "macStyle";
+					
+				}
+				loadIcons();
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					loginWin.filters = myFilters;
+					
+				}
+				openMainPanel();
+				
+			}
+			
+			private function loadIcons(event:Event = null):void{
+				
+				if(event != null){
+					
+					(event.target as LoaderInfo).removeEventListener(Event.COMPLETE,loadIcons);
+					icons.push(event.target.content.bitmapData);
+					iconImg.shift();
+					
+				}
+				if(iconImg.length>0){
+					
+					var urlString:String = iconImg[0];
+					var loader:Loader = new Loader();
+					loader.contentLoaderInfo.addEventListener(Event.COMPLETE,loadIcons);
+					loader.load(new URLRequest(urlString));
+					
+				}else{
+					
+					(event.target as LoaderInfo).removeEventListener(Event.COMPLETE,loadIcons);
+					iconImg = null;
+					NativeApplication.nativeApplication.icon.bitmaps = icons;
+					if(NativeApplication.supportsSystemTrayIcon){
+						
+						var systemTrayIcon:SystemTrayIcon = NativeApplication.nativeApplication.icon as SystemTrayIcon;
+						systemTrayIcon.tooltip = "Mew";
+						var iconMenu:NativeMenu = new NativeMenu();
+						var showPanelCmd:NativeMenuItem = iconMenu.addItem(new NativeMenuItem("显示Mew主界面"));
+						var exitCommand:NativeMenuItem = iconMenu.addItem(new NativeMenuItem("退出Mew"));
+						exitCommand.addEventListener(Event.SELECT,closeWindowByDock);
+						showPanelCmd.addEventListener(Event.SELECT,showMewPanel);
+						systemTrayIcon.addEventListener(ScreenMouseEvent.CLICK,showMewPanel);
+						systemTrayIcon.menu = iconMenu;
+						
+					}
+					if(NativeApplication.supportsDockIcon){
+						
+						var dockIcon:DockIcon = NativeApplication.nativeApplication.icon as DockIcon;
+						var dockMenu:NativeMenu = new NativeMenu();
+						var setCmd:NativeMenuItem = dockMenu.addItem(new NativeMenuItem("显示Mew主界面"));
+						setCmd.addEventListener(Event.SELECT,mewSetter);
+						NativeApplication.nativeApplication.addEventListener(InvokeEvent.INVOKE, showMewPanelForMac);
+						dockIcon.menu = dockMenu;
+						
+					}
+					
+				}
+				
+			}
+			private function showMewPanelForMac(event:InvokeEvent):void{
+				
+				var arr:Array = NativeApplication.nativeApplication.openedWindows;
+				for each(var win:NativeWindow in arr){
+					
+					if(win){
+						
+						win.activate();
+						
+					}
+					
+				}
+				
+			}
+			private function login_success_handler(event:WindowEvent):void{
+				
+				DataCenter.user = event.dispatcher as MicroBlogUser;
+//				DataCenter.curUserId = DataCenter.user.id;
+				background.removeEventListener(MouseEvent.MOUSE_DOWN,dragLoginPanel);
+				background.unloadAndStop();
+				background.source = null;
+				background = null;
+				loginWin.removeEventListener(WindowEvent.BACKGROUND_COMPLETE,setDragger);
+				loginWin.removeEventListener(WindowEvent.CLOSE,closeWindow);
+				loginWin.removeEventListener(WindowEvent.MINI,miniWindow);
+				loginWin.removeEventListener(WindowEvent.LOGIN_SUCCESS,login_success_handler);
+				loginWin.filters = null;
+				this.removeAllElements();
+				loginWin = null;
+				
+				DataCenter.dataPreloader.preloadFriendTimeLine(); 
+				DataCenter.dataPreloader.preloadUserTimeLine();
+				DataCenter.dataPreloader.preloadAtList();
+				DataCenter.dataPreloader.preloadCommentList();
+				DataCenter.dataPreloader.preloadPersonReceiveList();
+				DataCenter.dataPreloader.preloadFansList();
+				DataCenter.dataPreloader.preloadFollowList();
+				DataCenter.dataPreloader.preloadPersonSendList();
+				DataCenter.dataPreloader.preloadCollectionList();  
+				
+				DataCenter.mainPanel.init();
+				this.close();
+				
+			}
+			private function openMainPanel():void{
+				
+				var w:uint = 420;
+				var h:uint = 740;
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				if(so){
+					
+					if(so.data.width){
+						
+						w = so.data.width;
+						DataCenter.windowWidth = w;
+						
+					}
+					if(so.data.height){
+						
+						h = so.data.height;
+						DataCenter.windowHeight = h;
+						
+					}
+					
+				}
+				
+				DataCenter.mainPanel = new MainPanel();
+				DataCenter.mainPanel.width = w;
+				DataCenter.mainPanel.height = h;
+				DataCenter.mainPanel.minWidth = 420;
+				DataCenter.mainPanel.minHeight = 740;
+				DataCenter.mainPanel.type = NativeWindowType.LIGHTWEIGHT;
+				DataCenter.mainPanel.open();
+				DataCenter.mainPanel.alwaysInFront = DataCenter.alwaysInfront;
+				
+			}
+			private function closeWindowByDock(event:Event):void{
+				
+				/* if(DataCenter.mainPanel){
+					
+					DataCenter.mainPanel.close();
+					return;
+					
+				}
+				this.exit(); */
+				NativeApplication.nativeApplication.exit();
+				
+			}
+			private function miniWindow(event:WindowEvent):void{
+				
+				if(DataCenter.CurrentSystem == "mac"){
+					
+					this.nativeWindow.minimize();
+					
+				}else{
+					
+					this.nativeWindow.visible = false;
+					
+				}
+				
+			}
+			private function closeWindow(event:WindowEvent):void{
+				
+				NativeApplication.nativeApplication.exit();
+				
+			}
+			private function showMewPanel(event:Event):void{
+				
+				var arr:Array = NativeApplication.nativeApplication.openedWindows;
+				for each(var win:NativeWindow in arr){
+					
+					if(win){
+						
+						win.activate();
+						win.alwaysInFront = true;
+						win.alwaysInFront = DataCenter.alwaysInfront;
+						
+					}
+					
+				}
+				
+			}
+			private function mewSetter(event:Event):void{
+				
+				if(this.closed){
+					
+					this.nativeWindow.activate();
+					return;
+					
+				}
+				this.nativeWindow.activate();
+				
+			}
+			private function setDragger(event:WindowEvent):void{
+				
+				background = event.dispatcher as Image;
+				background.addEventListener(MouseEvent.MOUSE_DOWN,dragLoginPanel);
+				
+			}
+			private function dragLoginPanel(event:MouseEvent):void{
+				
+				window.startMove();
+				
+			}
+
+			protected function loginWin_initializeHandler(event:FlexEvent):void
+			{
+				loginWin.addEventListener(WindowEvent.BACKGROUND_COMPLETE,setDragger);
+				loginWin.addEventListener(WindowEvent.CLOSE,closeWindow);
+				loginWin.addEventListener(WindowEvent.MINI,miniWindow);
+				loginWin.addEventListener(WindowEvent.LOGIN_SUCCESS,login_success_handler);
+			}
+
+			protected function loginWin_updateCompleteHandler(event:FlexEvent):void
+			{
+				DataCenter.init();
+				
+				var so:SharedObject = SharedObject.getLocal("mewSettingInfo");
+				if(so && so.data.refreshDelay){
+					
+					DataCenter.refreshDelay = so.data.refreshDelay;
+					DataCenter.count = so.data.blogNumPerPage;
+					DataCenter.commentCount = so.data.commentNumPerPage;
+					DataCenter.autoRun = so.data.autoRun;
+					DataCenter.alwaysInfront = so.data.alwaysInFront;
+					DataCenter.showSystemTrayIcon = so.data.showSystemTrayIcon;
+					DataCenter.isVoice = so.data.isVoice;
+					DataCenter.isNotice = so.data.isNotice;
+					DataCenter.weiboNotice = so.data.weiboNotice;
+					DataCenter.commentNotice = so.data.commentNotice;
+					DataCenter.atNotice = so.data.atNotice;
+					DataCenter.fansNotice = so.data.fansNotice;
+					DataCenter.personalNotice = so.data.personalNotice;
+					DataCenter.autoHideByEdge = so.data.isAutoHide;
+					DataCenter.hideNotClose = so.data.hideNotClose;
+					DataCenter.miniNotHide = so.data.miniNotHide;
+					if(!so.data.updateDelay){
+						
+						DataCenter.updateDelay = 1;
+						
+					}else{
+						
+						DataCenter.updateDelay = so.data.updateDelay;
+						
+					}
+					
+				}
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<modules:LoginPanel id="loginWin" mouseEnabled="false" initialize="loginWin_initializeHandler(event)" creationComplete="loginWin_updateCompleteHandler(event)" />
+</s:WindowedApplication>

@@ -1,0 +1,65 @@
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/svn/!svn/ver/189/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data
+END
+MicroBlogDirectMessage.as
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/svn/!svn/ver/97/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogDirectMessage.as
+END
+MicroBlogRelationshipDescriptor.as
+K 25
+svn:wc:ra_dav:version-url
+V 107
+/svn/!svn/ver/159/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogRelationshipDescriptor.as
+END
+MicroBlogComment.as
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/!svn/ver/97/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogComment.as
+END
+MicroBlogStatus.as
+K 25
+svn:wc:ra_dav:version-url
+V 91
+/svn/!svn/ver/187/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogStatus.as
+END
+MicroBlogUsersRelationship.as
+K 25
+svn:wc:ra_dav:version-url
+V 102
+/svn/!svn/ver/159/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogUsersRelationship.as
+END
+MicroBlogProfileUpdateParams.as
+K 25
+svn:wc:ra_dav:version-url
+V 104
+/svn/!svn/ver/159/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogProfileUpdateParams.as
+END
+MicroBlogDataUtil.as
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/!svn/ver/162/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogDataUtil.as
+END
+MicroBlogCount.as
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/!svn/ver/159/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogCount.as
+END
+MicroBlogRateLimit.as
+K 25
+svn:wc:ra_dav:version-url
+V 94
+/svn/!svn/ver/159/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogRateLimit.as
+END
+MicroBlogUser.as
+K 25
+svn:wc:ra_dav:version-url
+V 89
+/svn/!svn/ver/189/trunk/src/api/MicroBlogAPI/src/com/sina/microblog/data/MicroBlogUser.as
+END

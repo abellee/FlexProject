@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" mouseEnabled="false" width="200" height="150"
+				   creationComplete="group1_creationCompleteHandler(event)" rightClick="group1_rightClickHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.BitmapPromise;
+			import functional.EffectCenter;
+			
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			
+			import resource.ResCenter;
+			
+			[Bindable]
+			private var _thumbnail:ByteArray = null;
+			
+			private var _size:Point;
+			
+			private var fileRef:FileReference;
+			
+			public function set thumbnail(str:ByteArray):void{
+				
+				if(!str){
+					
+					this.dispatchEvent(new MouseEvent(MouseEvent.MOUSE_UP));
+					
+				}
+				this.visible = true;
+				if(imger.content){
+					
+					TweenLite.to(imger, .3, {alpha:0, onComplete:reloadImage, onCompleteParams:[str]});
+					
+				}else{
+					
+					_thumbnail = str;
+				
+				}
+					
+			}
+			
+			public function set size(s:Point):void{
+				
+				_size = s;
+				
+			}
+			
+			public function get thumbnail():ByteArray{
+				
+				return _thumbnail;
+				
+			}
+			
+			private function reloadImage(str:ByteArray):void{
+				
+				_thumbnail = str;
+				
+			}
+
+			protected function image1_completeHandler(event:Event):void
+			{
+				var imgHeight:uint = imger.content.height;
+				var imgWidth:uint = imger.content.width;
+				var scaleY:Number;
+				if(imgWidth >= imgHeight){
+					
+					scaleY = 200 / imgWidth;
+					
+				}else{
+					
+					scaleY = 150 / imgHeight;
+					
+				}
+				var tw:uint = imger.content.width * scaleY;
+				TweenLite.to(this, .3, {width:tw});
+				TweenLite.to(imger, .3, {alpha:1});
+			}
+
+
+			protected function group1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					this.filters = myFilters;
+					
+				}
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				if(_thumbnail){
+					
+					_thumbnail.clear();
+					_thumbnail = null;
+					
+				}
+				
+			}
+			/* private function thumbnail_mouseDownHandler(event:MouseEvent):void
+			{
+				
+				NativeDragManager.acceptDragDrop(imger);
+				
+				if(!loader){
+					
+					loader = new Loader();
+					
+				}
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, byteArray_loadCompleteHandler);
+				loader.loadBytes(_thumbnail);
+				
+			}
+			private function nativeDragImage(event:MouseEvent):void
+			{
+				if(!_thumbnail){
+					
+					return;
+					
+				}
+				this.removeEventListener(MouseEvent.MOUSE_MOVE, nativeDragImage);
+				
+				var bitmap:Bitmap = loader.content as Bitmap;
+				loader = null;
+				var clip:Clipboard = new Clipboard();
+				var bd:BitmapData = bitmap.bitmapData.clone();
+				var now:Date = new Date();
+				var bp:BitmapPromise = new BitmapPromise(bd, now.getFullYear() + "" + (now.getMonth() + 1) + now.getDate() + + now.getHours() + now.getMinutes() + now.getSeconds());
+				clip.setData(ClipboardFormats.FILE_PROMISE_LIST_FORMAT, [bp], false);
+				NativeDragManager.doDrag(imger, clip);
+				
+			}
+			private function byteArray_loadCompleteHandler(event:Event):void
+			{
+				this.addEventListener(MouseEvent.MOUSE_MOVE, nativeDragImage);
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(Event.COMPLETE, byteArray_loadCompleteHandler);
+				
+			} */
+
+			/* protected function group1_mouseUpHandler(event:MouseEvent):void
+			{
+				if(loader){
+					
+					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, byteArray_loadCompleteHandler);
+					loader = null;
+					
+				}
+				this.removeEventListener(MouseEvent.MOUSE_MOVE, nativeDragImage);
+			} */
+
+
+			protected function group1_rightClickHandler(event:MouseEvent):void
+			{
+				if(!fileRef){
+					
+					fileRef = new FileReference();
+					var now:Date = new Date();
+					fileRef.addEventListener(Event.COMPLETE, fileSave_completeHandler);
+					fileRef.save(this._thumbnail, now.getFullYear() + "" + (now.getMonth() + 1) + now.getDate() + + now.getHours() + now.getMinutes() + now.getSeconds() + ".jpg");
+					
+				}
+			}
+			private function fileSave_completeHandler(event:Event):void
+			{
+				fileRef.removeEventListener(Event.COMPLETE, fileSave_completeHandler);
+				fileRef = null;
+				DataCenter.alertTip._fsize = 18;
+				DataCenter.alertTip._text = "提示: 图片保存成功!";
+				DataCenter.mainPanel.showAlertTip();
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer width="100%" height="135" backgroundColor="#d2e9f5" cornerRadius="5" borderVisible="false" minWidth="0">
+		<s:layout>
+			<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" paddingTop="5" paddingBottom="5" paddingLeft="5" paddingRight="5" />
+		</s:layout>
+		<mx:Image source="{_thumbnail}" width="100%" height="100%" horizontalAlign="center" verticalAlign="middle"
+				  scaleContent="true" complete="image1_completeHandler(event)" alpha="0" id="imger" />
+	</s:BorderContainer>
+	<s:BitmapImage source="{ResCenter.TriangleUp}" y="150" right="10" scaleY="-1" />
+</s:Group>

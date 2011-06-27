@@ -1,0 +1,120 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Window xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="640" height="440" systemChrome="none" transparent="true" showStatusBar="false"
+		 backgroundAlpha="0" creationComplete="window1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.greensock.TweenLite;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+			
+			import skins.MewButtonBase;
+
+			[Bindable]
+			private var _newVersionText:String;
+			
+			[Bindable]
+			private var _updateDescription:String;
+			
+			protected function window1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void
+			{
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				mewImg.unloadAndStop();
+				mewImg.source = null;
+				updatingMotion.unloadAndStop();
+				updatingMotion.source = null;
+				this.removeAllElements();
+			}
+			public function set newVersionText(str:String):void
+			{
+				_newVersionText = str;
+			}
+			public function set updateDescription(str:String):void
+			{
+				_updateDescription = str;
+			}
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(Capabilities.os != "Linux"){
+					
+					var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+					var myFilters:Array = new Array();
+					myFilters.push(filter);
+					this.filters = myFilters;
+					
+				}
+			}
+			
+			private function startMove(event:MouseEvent):void
+			{
+				this.nativeWindow.startMove();
+			}
+			
+			private function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				DataCenter.updateDescriptor = null;
+				DataCenter.mewUpdater.clearSelf();
+				DataCenter.mewUpdater = null;
+				this.close();
+			}
+			private function updateBtn_clickHandler(event:MouseEvent):void
+			{
+				this.removeElement(updateContainer);
+				this.removeElement(back);
+				mewImg.unloadAndStop();
+				mewImg.source = null;
+				this.nativeWindow.width = 340;
+				this.nativeWindow.height = 240;
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				updatingMotion.source = "resource/loading0.swf";
+				DataCenter.mewUpdater.update();
+			}
+			public function showDownloadingPercent(num:uint):void{
+				
+				loadingText.text = num + "%";
+				
+			}
+
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer cornerRadius="10" width="600" height="400" backgroundColor="#83bddc" borderColor="#427087" borderWeight="2"
+					   creationComplete="bordercontainer1_creationCompleteHandler(event)" mouseDown="startMove(event)" x="20" y="20" id="back" />
+	<mx:SWFLoader id="updatingMotion" x="20" y="20" />
+	<s:HGroup width="300" x="20" y="178" horizontalAlign="center" verticalAlign="middle">
+		<s:Label id="loadingText" />
+	</s:HGroup>
+	<s:HGroup horizontalAlign="center" verticalAlign="top"
+			  paddingLeft="20" paddingBottom="15" paddingRight="20" paddingTop="15" gap="15" width="600" height="400" x="20" y="20" id="updateContainer">
+		<mx:Image source="resource/about.png" mouseEnabled="false" mouseChildren="false" id="mewImg" />
+		<s:VGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="top">
+			<mx:Text width="100%" htmlText="{_newVersionText}" color="0x333333" />
+			<mx:Text fontSize="14" fontWeight="bold" text="版本更新内容" paddingTop="8" color="0x333333" width="100%" textAlign="left" />
+			<s:BorderContainer backgroundColor="0xf0fbfe" width="100%" height="100%" borderAlpha=".6">
+				<mx:TextArea paddingLeft="10" paddingBottom="10" paddingRight="10" paddingTop="10" width="100%" height="100%"
+						 htmlText="{_updateDescription}" color="0x333333" editable="false" />
+			</s:BorderContainer>
+			<s:HGroup width="100%" horizontalAlign="right" verticalAlign="middle">
+				<s:Button skinClass="skins.MewButtonBase" label="取消" width="50" height="30" fontSize="12" click="cancelBtn_clickHandler(event)" />
+				<s:Button skinClass="skins.MewButtonBase" label="更新" width="50" height="30" fontSize="12" click="updateBtn_clickHandler(event)" />
+			</s:HGroup>
+		</s:VGroup>
+	</s:HGroup>
+</s:Window>

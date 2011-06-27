@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="100" height="200"
+		 cornerRadius="5" borderWeight="2" borderColor="#ffffff" backgroundColor="#327395" mouseEnabled="false" creationComplete="bordercontainer1_creationCompleteHandler(event)">
+	<s:layout>
+		<s:VerticalLayout gap="0" paddingTop="5" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import MewEvent.WindowEvent;
+			
+			import dataCenter.DataCenter;
+			
+			import flash.filters.BitmapFilter;
+			
+			import functional.EffectCenter;
+			
+			import mx.events.FlexEvent;
+			
+			public var isOpened:Boolean = false;
+			
+			protected function label1_mouseOverHandler(event:MouseEvent):void
+			{
+				var label:Label = event.currentTarget as Label;
+				label.setStyle("backgroundColor",0x82d1fa);
+				label.setStyle("backgroundAlpha", .8);
+				label.setStyle("color",0x327395);
+			}
+			private function label1_mouseOutHandler(event:MouseEvent):void{
+				
+				var label:Label = event.currentTarget as Label;
+				label.setStyle("backgroundColor",undefined);
+				label.setStyle("backgroundAlpha", undefined);
+				label.setStyle("color",0xffffff);
+				
+			}
+
+			protected function label1_clickHandler(event:MouseEvent):void
+			{
+				navigateToURL(new URLRequest("http://www.weibo.com"));
+				tellMainPanelRemove();
+			}
+			
+			private function label2_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.ABOUT_MEW));
+				tellMainPanelRemove();
+				
+			}
+			
+			private function label3_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.CHECK_UPDATE));
+				tellMainPanelRemove();
+				
+			}
+			
+			private function label4_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.BUGS_SUBMIT));
+				tellMainPanelRemove();
+				
+			}
+			
+			private function label5_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.USER_SUGGESTION));
+				tellMainPanelRemove();
+				
+			}
+			
+			private function label6_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.LOG_OUT));
+				tellMainPanelRemove();
+				
+			}
+			
+			private function label7_clickHandler(event:MouseEvent):void{
+				
+				this.dispatchEvent(new WindowEvent(WindowEvent.EXIT_MEW));
+				tellMainPanelRemove();
+				
+			}
+
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				var filter:BitmapFilter = EffectCenter.getBitmapFilter();
+				var myFilters:Array = new Array();
+				myFilters.push(filter);
+				this.filters = myFilters;
+				this.addEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+			}
+			private function clearSelf(event:Event):void{
+				
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, clearSelf);
+				this.filters = null;
+				this.removeAllElements();
+				
+			}
+			private function tellMainPanelRemove():void{
+				
+				DataCenter.mainPanel.removeComponents();
+				
+			}
+
+		]]>
+	</fx:Script>
+
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label text="新浪微博首页" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label1_clickHandler(event)" />
+	<s:Label text="关 于" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label2_clickHandler(event)" />
+	<s:Label text="在线更新" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label3_clickHandler(event)" />
+	<s:Label text="Bugs提交" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label4_clickHandler(event)" />
+	<s:Label text="用户意见" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label5_clickHandler(event)" />
+	<s:Label text="注 销" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label6_clickHandler(event)"
+			 mouseEnabled="false" enabled="false" alpha=".2" />
+	<s:Label text="退 出" paddingLeft="10" verticalAlign="middle" paddingTop="5" paddingBottom="5" color="#ffffff" fontWeight="bold"
+			 mouseOver="label1_mouseOverHandler(event)" mouseOut="label1_mouseOutHandler(event)" width="100%" click="label7_clickHandler(event)" />
+</s:BorderContainer>
