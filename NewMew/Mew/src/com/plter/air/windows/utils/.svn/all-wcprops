@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 63
+/svn/!svn/ver/12/trunk/AirUtils/src/com/plter/air/windows/utils
+END
+AirLauncher.as
+K 25
+svn:wc:ra_dav:version-url
+V 77
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/AirLauncher.as
+END
+ExplorerCommand.as
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/9/trunk/AirUtils/src/com/plter/air/windows/utils/ExplorerCommand.as
+END
+ScCommandCreateServiceError.as
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/ScCommandCreateServiceError.as
+END
+ScCommandCreateServiceStartOptions.as
+K 25
+svn:wc:ra_dav:version-url
+V 100
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/ScCommandCreateServiceStartOptions.as
+END
+ScCommand.as
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/ScCommand.as
+END
+NativeCommand.as
+K 25
+svn:wc:ra_dav:version-url
+V 80
+/svn/!svn/ver/12/trunk/AirUtils/src/com/plter/air/windows/utils/NativeCommand.as
+END
+ShutdownCommand.as
+K 25
+svn:wc:ra_dav:version-url
+V 81
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/ShutdownCommand.as
+END
+ScCommandCreateServiceType.as
+K 25
+svn:wc:ra_dav:version-url
+V 92
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/ScCommandCreateServiceType.as
+END
+ShowCmdWindow.as
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/svn/!svn/ver/9/trunk/AirUtils/src/com/plter/air/windows/utils/ShowCmdWindow.as
+END
+HideRun.exe
+K 25
+svn:wc:ra_dav:version-url
+V 75
+/svn/!svn/ver/12/trunk/AirUtils/src/com/plter/air/windows/utils/HideRun.exe
+END
+RegCommand.as
+K 25
+svn:wc:ra_dav:version-url
+V 76
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/utils/RegCommand.as
+END

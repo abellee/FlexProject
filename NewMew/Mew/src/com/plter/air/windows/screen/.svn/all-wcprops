@@ -1,0 +1,29 @@
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/svn/!svn/ver/12/trunk/AirUtils/src/com/plter/air/windows/screen
+END
+ScreenCapturer.exe
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/screen/ScreenCapturer.exe
+END
+ScreenCapturer.as
+K 25
+svn:wc:ra_dav:version-url
+V 82
+/svn/!svn/ver/12/trunk/AirUtils/src/com/plter/air/windows/screen/ScreenCapturer.as
+END
+ScreenCapturerEvent.as
+K 25
+svn:wc:ra_dav:version-url
+V 86
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/screen/ScreenCapturerEvent.as
+END
+ScreenCapturerErrorCode.as
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/svn/!svn/ver/8/trunk/AirUtils/src/com/plter/air/windows/screen/ScreenCapturerErrorCode.as
+END
