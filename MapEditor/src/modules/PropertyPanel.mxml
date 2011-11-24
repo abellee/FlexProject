@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical"
+				width="400" height="300" title="场景属性" textAlign="center" showCloseButton="true" titleStyleName="titleStyle"
+				close="titlewindow1_closeHandler(event)"
+				verticalAlign="top" paddingLeft="20" paddingBottom="20" paddingRight="20" paddingTop="20" verticalGap="20"
+				mouseDown="titlewindow1_mouseDownHandler(event)" mouseUp="titlewindow1_mouseUpHandler(event)">
+	<fx:Style source="css/css.css" />
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForPropertyPanel;
+			
+			import globalization.Globals;
+			
+			import mx.events.CloseEvent;
+			
+			public var delegate:IForPropertyPanel;
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				if(delegate) delegate.closePropertyPanel();
+			}
+			
+			protected function titlewindow1_mouseDownHandler(event:MouseEvent):void
+			{
+				this.startDrag();
+			}
+			
+			protected function titlewindow1_mouseUpHandler(event:MouseEvent):void
+			{
+				this.stopDrag();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label text="{'场景名称: ' + Globals.sceneName}" />
+	<s:HGroup width="100%" gap="50">
+		<s:Label text="{'场景宽度: ' + Globals.sceneWidth}" />
+		<s:Label text="{'场景高度: ' + Globals.sceneHeight}" />
+	</s:HGroup>
+	<s:HGroup width="100%" gap="50">
+		<s:Label text="{'水平格子数: ' + Globals.horizantolTiles}" />
+		<s:Label text="{'垂直格子数: ' + Globals.verticalTiles}" />
+	</s:HGroup>
+	<s:HGroup width="100%" gap="63">
+		<s:Label text="{'格子宽度: ' + (Globals.tileSize != null ? Globals.tileSize.width : 0)}" />
+		<s:Label text="{'格子高度: ' + (Globals.tileSize != null ? Globals.tileSize.height : 0)}" />
+	</s:HGroup>
+	<s:Label text="{'材质库: ' + (Globals.materialPath.length > 40 ? Globals.materialPath.substr(0, 40) + '...' : Globals.materialPath)}" />
+</mx:TitleWindow>

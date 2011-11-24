@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:Group xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="150">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			private var fileName:String		= "";
+			[Bindable]
+			private var progress:Number		= 0;
+			
+			private var curState:String		="loading";
+			
+			public function showLoadingFile(str:String):void
+			{
+				fileName = str;
+			}
+			
+			public function showProgress(value:Number):void
+			{
+				progress = value;
+				if(progressBar){
+					setProgressBar();
+				}
+			}
+			
+			protected function progressBar_creationCompleteHandler(event:FlexEvent):void
+			{
+				setProgressBar();	
+			}
+			
+			private function setProgressBar():void
+			{
+				progressBar.setProgress(progress, 100);
+				progressBar.label = progress + "%";
+			}
+			
+			public function changeButtonLabel(str:String):void
+			{
+				if(curState == "loading")
+					curState = "complete";
+				else
+					curState = "loading";
+				btn.label = str;
+			}
+			
+			protected function btn_clickHandler(event:MouseEvent):void
+			{
+				if(curState == "loading")
+					this.dispatchEvent(new Event(Event.CANCEL));
+				else
+					this.dispatchEvent(new Event(Event.COMPLETE));
+				
+				curState = "loading";
+				fileName = "";
+				progress = 0;
+				btn.label = "取消";
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:BorderContainer x="10" y="10" width="280" height="130" cornerRadius="10" backgroundColor="0xFFFFFF" dropShadowVisible="true">
+		<mx:ProgressBar x="35" y="59" id="progressBar" labelPlacement="center" mode="manual"
+						creationComplete="progressBar_creationCompleteHandler(event)" />
+		<s:Label id="curFile" x="19" y="23" width="240" maxDisplayedLines="10" text="{fileName}"
+				 textAlign="center"/>
+		<s:Button x="104" y="92" label="取消" id="btn" click="btn_clickHandler(event)" />
+	</s:BorderContainer>
+</s:Group>

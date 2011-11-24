@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="200" height="240" close="titlewindow1_closeHandler(event)" cornerRadius="5"
+				showCloseButton="true" textAlign="center" title="图 层" titleStyleName="titleStyle">
+	<fx:Style source="css/css.css" />
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForLayerPanel;
+			
+			import mx.events.CloseEvent;
+			
+			public var delegate:IForLayerPanel;
+			
+			[Bindable]
+			private var layers:Array = [{label:"网格层", action:"gridLayerVisible", index:0}, {label:"建筑层", action:"buildingLayerVisible", index:1},
+				{label:"地图层", action:"mapLayerVisible", index:2}];
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				if(delegate) delegate.hideLayerPanel();
+			}
+			
+			public function visibleChanged(bool:Boolean, index:int):void
+			{
+				if(delegate) delegate[layers[index].action](bool);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<mx:List width="100%" height="100%" dataProvider="{layers}" itemRenderer="modules.ListItemRenderer" />
+</mx:TitleWindow>

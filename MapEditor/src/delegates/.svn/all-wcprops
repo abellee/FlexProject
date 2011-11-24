@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 110
+/svn/webgame/!svn/ver/60/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates
+END
+IForNavigationPanel.as
+K 25
+svn:wc:ra_dav:version-url
+V 133
+/svn/webgame/!svn/ver/66/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForNavigationPanel.as
+END
+IForToolBar.as
+K 25
+svn:wc:ra_dav:version-url
+V 125
+/svn/webgame/!svn/ver/66/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForToolBar.as
+END
+IForLibraryPanel.as
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/webgame/!svn/ver/66/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForLibraryPanel.as
+END
+IForPropertyPanel.as
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/webgame/!svn/ver/66/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForPropertyPanel.as
+END
+IForCreateOrOpen.as
+K 25
+svn:wc:ra_dav:version-url
+V 130
+/svn/webgame/!svn/ver/60/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForCreateOrOpen.as
+END
+IForListItem.as
+K 25
+svn:wc:ra_dav:version-url
+V 126
+/svn/webgame/!svn/ver/60/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForListItem.as
+END
+IForCreationConfiguration.as
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/webgame/!svn/ver/60/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForCreationConfiguration.as
+END
+IForLayerPanel.as
+K 25
+svn:wc:ra_dav:version-url
+V 128
+/svn/webgame/!svn/ver/60/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/MapEditor/src/delegates/IForLayerPanel.as
+END

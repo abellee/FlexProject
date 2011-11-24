@@ -1,0 +1,6 @@
+/* CSS file */
+@namespace s "library://ns.adobe.com/flex/spark";
+@namespace mx "library://ns.adobe.com/flex/mx";
+.titleStyle{
+	fontSize	:14px;
+}

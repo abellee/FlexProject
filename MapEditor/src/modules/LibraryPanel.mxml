@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="200" height="400" title="库" textAlign="center" titleStyleName="titleStyle"
+		 showCloseButton="true" close="titlewindow1_closeHandler(event)">
+	<fx:Style source="css/css.css" />
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForLibraryPanel;
+			
+			import globalization.Globals;
+			
+			import lib.DraggingItem;
+			
+			import mx.collections.IList;
+			import mx.controls.Alert;
+			import mx.core.UITextField;
+			import mx.events.CloseEvent;
+			import mx.events.DragEvent;
+			import mx.events.FileEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			
+			import utils.WidgetGenerator;
+			
+			public var delegate:IForLibraryPanel;
+			private var file:File;
+			private var isDragging:Boolean = false;
+			private var preSelectedItem:Object = null;
+			
+			protected function viewImage_creationCompleteHandler(event:FlexEvent):void
+			{
+				viewImage.filters = [WidgetGenerator.getShadowFilter(0x000000, 0.8, 5, 5)];
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				if(delegate) delegate.hideLibraryPanel();
+			}
+			
+			protected function filesystemtree1_fileChooseHandler(event:FileEvent):void
+			{
+				file = event.file;
+				file.addEventListener(Event.COMPLETE, loadComplete);
+				file.load();
+			}
+			
+			protected function changeDirBtn_clickHandler(event:MouseEvent):void
+			{
+				if(!file) file = File.desktopDirectory;
+				file.addEventListener(Event.SELECT, onDirSelect);
+				file.browseForDirectory("请选择材质库...");
+			}
+			
+			private function onDirSelect(event:Event):void
+			{
+				file.removeEventListener(Event.SELECT, onDirSelect);
+				Globals.materialPath = file.nativePath;
+			}
+			
+			protected function loadComplete(event:Event):void
+			{
+				file.removeEventListener(Event.COMPLETE, loadComplete);
+				viewImage.source = file.data;
+				file = null;
+			}
+			
+			protected function editBtn_clickHandler(event:MouseEvent):void
+			{
+				if(!fileList.selectedItem || !(fileList.selectedItem as File) || (fileList.selectedItem as File).isDirectory)
+					Alert.show("未选中任何素材!");
+			}
+			
+			protected function fileList_mouseDownHandler(event:MouseEvent):void
+			{
+				fileList.addEventListener(MouseEvent.MOUSE_MOVE, onStartDrag);
+			}
+			
+			private function onStartDrag(event:MouseEvent):void
+			{
+				if(!isDragging){
+					isDragging = true;
+					var obj:Object = fileList.selectedItem;
+					if(obj is File && !(obj as File).isDirectory){
+						var draggingItem:DraggingItem = new DraggingItem();
+						draggingItem.data = obj;
+						if(delegate) delegate.dragItem(draggingItem);
+					}
+				}
+			}
+			
+			protected function fileList_mouseUpHandler(event:MouseEvent):void
+			{
+				fileList.removeEventListener(MouseEvent.MOUSE_MOVE, onStartDrag);
+				isDragging = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Image width="100%" height="110" id="viewImage" creationComplete="viewImage_creationCompleteHandler(event)" backgroundColor="0xFFFFFF" />
+	<mx:FileSystemTree width="100%" height="100%" directory="{new File(Globals.materialPath)}"
+					   extensions="['.png', '.jpg', '.jpeg', '.gif', '.swf']" textAlign="left" id="fileList"
+					   fileChoose="filesystemtree1_fileChooseHandler(event)" mouseDown="fileList_mouseDownHandler(event)" mouseUp="fileList_mouseUpHandler(event)" />
+	<s:HGroup width="100%" horizontalAlign="right">
+		<s:Button label="选择材质库" id="changeDirBtn" click="changeDirBtn_clickHandler(event)" />
+		<s:Button label="编辑" id="editBtn" click="editBtn_clickHandler(event)" />
+	</s:HGroup>
+</mx:TitleWindow>

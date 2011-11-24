@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="400" height="300" cornerRadius="10"
+				creationComplete="panel1_creationCompleteHandler(event)"
+				showCloseButton="true" textAlign="center" title="新建场景" titleStyleName="titleStyle" close="titlewindow1_closeHandler(event)">
+	<fx:Style source="css/css.css" />
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForCreationConfiguration;
+			
+			import globalization.Globals;
+			
+			import lib.Size;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.graphics.codec.PNGEncoder;
+			
+			import utils.WidgetGenerator;
+			
+			
+			public	var delegate			:IForCreationConfiguration;
+			private	var materialFile		:File; 
+			private var mapMaterialData		:ByteArray;
+			
+			protected function panel1_creationCompleteHandler(event:FlexEvent):void
+			{
+				
+			}
+			
+			protected function createBtn_clickHandler(event:MouseEvent):void
+			{
+				var sn:String = sceneName.text.replace(/\s/g, "");
+				var horizantolNum:int = int(horizontalTiles.text);
+				var verticalNum:int = int(verticalTiles.text);
+				var tileW:int = int(tileWidth.text);
+				var tileH:int = int(tileHeight.text);
+				if(delegate && sn != "" && horizantolNum && verticalNum && tileW && tileH){
+					Globals.sceneName = sn;
+					Globals.horizantolTiles = horizantolNum;
+					Globals.verticalTiles = verticalNum;
+					Globals.sceneWidth = Math.ceil(horizantolNum / 2) * tileW;
+					Globals.sceneHeight = Math.ceil(verticalNum / 2) * tileH;
+					Globals.tileSize = new Size(tileW, tileH);
+					if(materialPath.text != "请选择材质库...") Globals.materialPath = materialPath.text;
+					if(mapMaterial.text != "请地图材质..."){
+						var loader:Loader = new Loader();
+						var byteArray_loadComplete:Function = function(event:Event):void
+						{
+							loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, byteArray_loadComplete);
+							var bitmap:Bitmap = event.target.content as Bitmap;
+							Globals.mapMaterial = bitmap;
+							delegate.listGrids();
+						};
+						loader.contentLoaderInfo.addEventListener(Event.COMPLETE, byteArray_loadComplete);
+						loader.loadBytes(mapMaterialData);
+					}
+					delegate.create();
+				}else{
+					Alert.show("请将资料填写完整!");
+				}
+			}
+			
+			protected function cancelBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.cancel();
+			}
+			
+			protected function browseBtn_clickHandler(event:MouseEvent):void
+			{
+				if(!materialFile) materialFile = File.desktopDirectory;
+				materialFile.addEventListener(Event.SELECT, materialFile_selectHandler);
+				materialFile.browseForDirectory("请选择材质库...");
+			}
+			
+			protected function materialFile_selectHandler(event:Event):void
+			{
+				materialFile.removeEventListener(Event.SELECT, materialFile_selectHandler);
+				materialPath.text = materialFile.nativePath;
+				materialFile = null;
+			}
+			
+			protected function mapMaterial_clickHandler(event:MouseEvent):void
+			{
+				if(!materialFile) materialFile = File.desktopDirectory;
+				materialFile.addEventListener(Event.SELECT, mapMaterial_selectHandler);
+				materialFile.addEventListener(Event.COMPLETE, mapMaterial_loadCompleteHandler);
+				materialFile.browseForOpen("请选择地图材质", [new FileFilter("*.PNG", "*.png; *.jpg; *.gif")]);
+			}
+			
+			protected function mapMaterial_selectHandler(event:Event):void
+			{
+				mapMaterial.text = materialFile.nativePath;
+				materialFile.load();
+			}
+			
+			protected function mapMaterial_loadCompleteHandler(event:Event):void
+			{
+				materialFile.removeEventListener(Event.SELECT, mapMaterial_selectHandler);
+				materialFile.removeEventListener(Event.COMPLETE, mapMaterial_loadCompleteHandler);
+				var data:ByteArray = materialFile.data;
+				mapMaterialData = data;
+				thumbImg.source = data;
+				materialFile = null;
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				if(delegate) delegate.cancel();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" paddingLeft="25" verticalAlign="middle">
+	<s:Label text="场景名称:" />
+	<s:TextInput id="sceneName"	width="100" text="test" />
+	</s:HGroup>
+	<s:HGroup width="100%" paddingLeft="13" verticalAlign="middle">
+		<s:Label text="水平格子数:" />
+		<s:TextInput id="horizontalTiles" width="100" restrict="0-9" text="30" />
+		<s:Label text="垂直格子数:" paddingLeft="20" />
+		<s:TextInput id="verticalTiles" width="100" restrict="0-9" text="60" />
+	</s:HGroup>
+	<s:HGroup width="100%" paddingLeft="25" verticalAlign="middle">
+		<s:Label text="格子宽度:" />
+		<s:TextInput id="tileWidth" width="100" restrict="0-9" text="90" />
+		<s:Label text="格子高度:" paddingLeft="30" />
+		<s:TextInput id="tileHeight" width="100" restrict="0-9" text="45" />
+	</s:HGroup>
+	<mx:HRule width="100%" />
+	<s:HGroup width="100%" height="33" paddingLeft="35" verticalAlign="middle">
+		<s:Label text="材质库:" />
+		<s:TextInput text="请选择材质库..." color="0xaaaaaa" textAlign="left" editable="false" id="materialPath" click="browseBtn_clickHandler(event)" />
+		<s:Button label="浏览..." id="browseBtn"	click="browseBtn_clickHandler(event)" />
+	</s:HGroup>
+	<s:HGroup width="100%" paddingLeft="25" verticalAlign="middle">
+		<s:Label text="地图材质:" />
+		<s:TextInput text="请地图材质..." color="0xaaaaaa" textAlign="left" editable="false" id="mapMaterial" click="mapMaterial_clickHandler(event)" />
+		<s:Button label="浏览..." id="mapMaterialBrowse"	click="mapMaterial_clickHandler(event)" />
+	</s:HGroup>
+	<s:HGroup width="100%" paddingLeft="80" verticalAlign="middle">
+		<s:BorderContainer cornerRadius="4" width="80" height="60">
+			<s:layout>
+				<s:HorizontalLayout horizontalAlign="center" verticalAlign="middle" />
+			</s:layout>
+			<s:Image width="50" height="50" id="thumbImg" />
+		</s:BorderContainer>
+	</s:HGroup>
+	<s:HGroup width="100%" height="100%" horizontalAlign="center" verticalAlign="middle" gap="20">
+		<s:Button label="新建" id="createBtn" click="createBtn_clickHandler(event)" />
+		<s:Button label="取消" id="cancelBtn" click="cancelBtn_clickHandler(event)" />
+	</s:HGroup>
+</mx:TitleWindow>

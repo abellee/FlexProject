@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" layout="vertical" width="100" height="300"
+				title="工具栏" titleStyleName="titleStyle" textAlign="center" horizontalAlign="center" paddingTop="20" verticalGap="20">
+	<fx:Style source="css/css.css" />
+	
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForToolBar;
+			
+			import lib.EditState;
+			
+			public var delegate:IForToolBar;
+			
+			protected function unwalkableBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.changeState(EditState.UNWALKABLE);
+			}
+			
+			protected function shadowBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.changeState(EditState.SHADOW);
+			}
+			
+			protected function addBuilding_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+			protected function walkableBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.changeState(EditState.CLEAR_UNWALKABLE);
+			}
+			
+			protected function clearShadow_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.changeState(EditState.CLEAR_SHADOW);
+			}
+			
+			protected function deleteBuilding_clickHandler(event:MouseEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Button id="unwalkableBtn" label="添加阻挡" click="unwalkableBtn_clickHandler(event)" />
+	<s:Button id="shadowBtn" label="添加阴影" click="shadowBtn_clickHandler(event)" />
+	<s:Button id="addBuilding" label="添加建筑" click="addBuilding_clickHandler(event)" />
+	<s:Button id="walkableBtn" label="清除阻挡" click="walkableBtn_clickHandler(event)" />
+	<s:Button id="clearShadow" label="清除阴影" click="clearShadow_clickHandler(event)" />
+	<s:Button id="deleteBuilding" label="删除建筑" click="deleteBuilding_clickHandler(event)" />
+</mx:TitleWindow>

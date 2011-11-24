@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:modules="modules.*"
+					   width="1000" height="600" backgroundColor="0xaaaaaa"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   fontFamily="华文黑体" fontSize="12"
+					   implements="delegates.IForCreateOrOpen,
+					   				delegates.IForCreationConfiguration,
+					   				delegates.IForLayerPanel,
+					   				delegates.IForNavigationPanel,
+					   				delegates.IForPropertyPanel,
+					   				delegates.IForLibraryPanel,
+					   				delegates.IForToolBar"
+					   initialize="windowedapplication1_initializeHandler(event)"
+					   mouseChildren="true" mouseEnabled="true" showStatusBar="false">
+	<fx:Script>
+		<![CDATA[
+			import globalization.Globals;
+			
+			import layers.BuildingLayer;
+			import layers.GridLayer;
+			import layers.MapLayer;
+			
+			import lib.DraggingItem;
+			import lib.EditState;
+			import lib.Grid;
+			import lib.Rhombus;
+			import lib.RhombusType;
+			import lib.StageState;
+			
+			import modules.CreateOrOpen;
+			import modules.CreationConfiguration;
+			import modules.LayerPanel;
+			import modules.LibraryPanel;
+			import modules.NavigationPanel;
+			import modules.PropertyPanel;
+			import modules.ToolBar;
+			
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.DragEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.managers.DragManager;
+			import mx.managers.PopUpManager;
+			
+			import utils.Utils;
+			
+			private var createOrOpen			:CreateOrOpen;
+			private var creationConfiguration	:CreationConfiguration;
+			private var mapLayer				:MapLayer;
+			private var gridLayer				:GridLayer;
+			private var buildingLayer			:BuildingLayer;
+			private var propertyPanel			:PropertyPanel;
+			private var layerPanel				:LayerPanel;
+			private var naviPanel				:NavigationPanel;
+			private var libPanel				:LibraryPanel;
+			private var draggingItem			:DraggingItem;
+			private var toolBar					:ToolBar;
+			private var hitTestList				:Vector.<DisplayObjectContainer> = new Vector.<DisplayObjectContainer>();
+			
+			private var layer					:Sprite = new Sprite();
+			private var curState				:String = StageState.NORMAL;
+			private var file					:File;
+			
+			[Bindable]
+			private var menuData				:XML = new XML('<root>' +
+																'<menuitem label="文件" >' +
+																'<submenuitem label="新建" action="newScene" />' +
+																'<submenuitem label="打开" action="openScene" />' +
+																'<submenuitem label="关闭" action="closeScene" />' +
+																'<submenuitem label="保存" action="save" />' +
+																'<submenuitem label="另存为..." action="saveAs" />' +
+																'<submenuitem label="导出" action="export" />' +
+																'<submenuitem label="退出" action="exit" />' +
+																'</menuitem>' +
+																'<menuitem label="编辑" >' +
+																'<submenuitem label="删除" action="deleteSymbol"/>' +
+																'<submenuitem label="清空" action="clearScene"/>' +
+																'<submenuitem label="重置地图位置" action="resetMapPos" />' +
+																'</menuitem>' +
+																'<menuitem label="窗口">' +
+																'<submenuitem label="工具栏" type="check" toggled="true" action="toolBarVisible" />' +
+																'<submenuitem label="库面板" type="check" toggled="true" action="libVisible" />' +
+																'<submenuitem label="导航器" type="check" toggled="true" action="naviVisible" />' +
+																'<submenuitem label="图层面板" type="check" toggled="true" action="layerPanelVisible" />' +
+																'<submenuitem label="场景属性" type="check" toggled="false" action="openPropertyPanel" />' +
+																'</menuitem>' +
+																'</root>');
+			
+			private var curEditState:String = "";
+			private var unwalkable:Rhombus;
+			private var shadow:Rhombus;
+			private var walkable:Rhombus;
+			private var curRhombus:Rhombus;
+			private var repeatAdd:Boolean = false;
+			
+			/**************************************** Interface *****************************************/
+			/**
+			 * 选择打开场景
+			 */
+			public function openScene():void
+			{
+				file = File.desktopDirectory;
+				var sceneFilter:FileFilter = new FileFilter("Scene", "*.scene");
+				file.addEventListener(Event.SELECT, fileSelect_handler);
+				file.browseForOpen(".scene", [sceneFilter]);
+			}
+			
+			protected function fileSelect_handler(event:Event):void
+			{
+				// TODO Auto-generated method stub
+			}
+			
+			/**
+			 * 选择新建场景
+			 */
+			//TODO: 选择已存在的场景数据 恢复完成后需要做一些与"create()"相同的事情
+			public function newScene():void
+			{
+				removeCreateOrOpen();
+				creationConfiguration			= new CreationConfiguration();
+				creationConfiguration.delegate	= this;
+				PopUpManager.addPopUp(creationConfiguration, this, true);
+				PopUpManager.centerPopUp(creationConfiguration);
+			}
+			
+			/**
+			 * 新建场景
+			 */
+			public function create():void
+			{
+				removeCreationConfiguration();
+				if(!mapLayer) mapLayer = new MapLayer();
+				if(!gridLayer) gridLayer = new GridLayer();
+				if(!buildingLayer) buildingLayer = new BuildingLayer();
+				
+				layer.addChild(mapLayer);
+				layer.addChild(buildingLayer);
+				layer.addChild(gridLayer);
+				
+				istage.addChild(layer);
+				istage.addEventListener(MouseEvent.ROLL_OVER, istage_rollOverHandler);
+				istage.addEventListener(MouseEvent.ROLL_OUT, istage_rollOutHandler);
+				istage.addEventListener(MouseEvent.MOUSE_MOVE, istage_mouseMoveHandler);
+				istage.addEventListener(MouseEvent.CLICK, istage_clickHandler);
+				istage.addEventListener(MouseEvent.MOUSE_DOWN, istage_mouseDownHandler);
+				istage.addEventListener(MouseEvent.MOUSE_UP, istage_mouseUpHandler);
+				
+				gridLayer.listGrids();
+				
+				layer.addEventListener(MouseEvent.MOUSE_DOWN, mapLayer_mouseDownHandler);
+				layer.addEventListener(MouseEvent.MOUSE_UP, mapLayer_mouseUpHandler);
+				layer.addEventListener(MouseEvent.MOUSE_MOVE, showMousePoint);
+				
+				showPanels();
+				
+				if(!unwalkable) unwalkable = new Rhombus(Globals.tileSize.width, Globals.tileSize.height, RhombusType.UNWALKABLE);
+				if(!shadow) shadow = new Rhombus(Globals.tileSize.width, Globals.tileSize.height, RhombusType.SHADOWN);
+				if(!walkable) walkable = new Rhombus(Globals.tileSize.width, Globals.tileSize.height, RhombusType.NORMAL);
+			}
+			
+			/**
+			 * 返回选择界面
+			 */
+			public function cancel():void
+			{
+				removeCreationConfiguration();
+//				openCreateOrOpen();
+			}
+			
+			public function listGrids():void
+			{
+				mapLayer.listGrids();
+			}
+			
+			public function hideLayerPanel():void
+			{
+				layerPanel.visible = false;
+				unCheckmarkForWindows("窗口", "图层面板");
+			}
+			
+			public function layerPanelVisible():void
+			{
+				layerPanel.visible = !layerPanel.visible;
+			}
+			
+			public function gridLayerVisible(bool:Boolean):void
+			{
+				gridLayer.visible = bool;
+			}
+			
+			public function buildingLayerVisible(bool:Boolean):void
+			{
+				buildingLayer.visible = bool;
+			}
+			
+			public function mapLayerVisible(bool:Boolean):void
+			{
+				mapLayer.visible = bool;
+			}
+			
+			
+			public function hideNavigationPanel():void
+			{
+				naviPanel.visible = false;
+				unCheckmarkForWindows("窗口", "导航器");
+			}
+			
+			public function closePropertyPanel():void
+			{
+				if(propertyPanel.isPopUp){
+					PopUpManager.removePopUp(propertyPanel);
+					unCheckmarkForWindows("窗口", "场景属性");
+				}
+			}
+			
+			public function hideLibraryPanel():void
+			{
+				libPanel.visible = false;
+				unCheckmarkForWindows("窗口", "库面板");
+			}
+			
+			public function dragItem(item:DraggingItem):void
+			{
+				this.nativeWindow.stage.addChild(item);
+				draggingItem = item;
+				this.nativeWindow.stage.addEventListener(MouseEvent.MOUSE_MOVE, dragDragginItem);
+				this.nativeWindow.stage.addEventListener(MouseEvent.MOUSE_UP, dropDraggItem);
+			}
+			
+			public function changeState(state:String):void
+			{
+				if(curEditState == state) curEditState = EditState.NORMAL;
+				else curEditState = state;
+				curState = StageState.NORMAL;
+				setCurRhombus();
+			}
+			
+			/*******************************************************************************************/
+			
+			private function addToHitTestList(obj:DisplayObjectContainer):void
+			{
+				hitTestList.push(obj);
+			}
+			
+			private function showPanels():void
+			{
+				PopUpManager.addPopUp(libPanel, this, false);
+				PopUpManager.addPopUp(naviPanel, this, false);
+				PopUpManager.addPopUp(layerPanel, this, false);
+				PopUpManager.addPopUp(toolBar, this, false);
+			}
+			
+			private function locatePanels():void
+			{
+				layerPanel.x = 5;
+				layerPanel.y = this.nativeWindow.height - layerPanel.height - 30;
+				
+				toolBar.x = 5;
+				toolBar.y = 40;
+				
+				naviPanel.x = this.nativeWindow.width - naviPanel.width - 5;
+				naviPanel.y = 40;
+				
+				libPanel.x = this.nativeWindow.width - libPanel.width - 5;
+				libPanel.y = this.nativeWindow.height - libPanel.height - 30;
+			}
+			
+			private function naviVisible():void
+			{
+				naviPanel.visible = !naviPanel.visible;
+			}
+			
+			private function libVisible():void
+			{
+				libPanel.visible = !libPanel.visible;
+			}
+			
+			private function toolBarVisible():void
+			{
+				toolBar.visible = !toolBar.visible;
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				layerPanel = new LayerPanel();
+				layerPanel.delegate = this;
+				
+				naviPanel = new NavigationPanel();
+				naviPanel.delegate = this;
+				
+				libPanel = new LibraryPanel();
+				libPanel.delegate = this;
+				
+				toolBar = new ToolBar();
+				toolBar.delegate = this;
+				
+				locatePanels();
+				
+				this.nativeWindow.stage.addEventListener(KeyboardEvent.KEY_DOWN, onKeyboardEvent);
+				this.nativeWindow.stage.addEventListener(Event.RESIZE, onResize);
+				openCreateOrOpen();
+				
+				addToHitTestList(layerPanel);
+				addToHitTestList(naviPanel);
+				addToHitTestList(libPanel);
+				addToHitTestList(menuContainer);
+				addToHitTestList(toolBar);
+			}
+			
+			private function openCreateOrOpen():void
+			{
+				createOrOpen			= new CreateOrOpen();
+				createOrOpen.delegate	= this;
+				PopUpManager.addPopUp(createOrOpen, this, true);
+				PopUpManager.centerPopUp(createOrOpen);
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				Globals.screenWidth		= Screen.mainScreen.visibleBounds.width;
+				Globals.screenHeight	= Screen.mainScreen.visibleBounds.height;
+				this.nativeWindow.x		= (Globals.screenWidth - this.nativeWindow.width) / 2;
+				this.nativeWindow.y		= (Globals.screenHeight - this.nativeWindow.height) / 2;
+			}
+			
+			private function removeCreateOrOpen():void
+			{
+				if(createOrOpen){
+					PopUpManager.removePopUp(createOrOpen);
+					createOrOpen = null;
+				}
+			}
+			
+			private function removeCreationConfiguration():void
+			{
+				if(creationConfiguration){
+					PopUpManager.removePopUp(creationConfiguration);
+					creationConfiguration = null;
+				}
+			}
+			
+			protected function onKeyboardEvent(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.H){
+					if(curState == StageState.NORMAL){
+						changeState(curEditState);
+						curState = StageState.DRAG;
+					}
+				}
+				if(event.keyCode == Keyboard.V){
+					if(curState == StageState.DRAG){
+						curState = StageState.NORMAL;
+					}
+					changeState(curEditState);
+				}
+			}
+			
+			protected function mapLayer_mouseDownHandler(event:MouseEvent):void
+			{
+				if(curState == StageState.DRAG) layer.startDrag();
+			}
+			
+			protected function mapLayer_mouseUpHandler(event:MouseEvent):void
+			{
+				if(curState == StageState.DRAG) layer.stopDrag();
+			}
+			
+			protected function myMenuBar_itemClickHandler(event:MenuEvent):void
+			{
+				if(this[event.item.@action])
+					this[event.item.@action]();
+			}
+			
+			private function unCheckmarkForWindows(parentLabel:String, itemLabel:String):void
+			{
+				var xmlList:XMLList = menuData.menuitem.(@label == parentLabel);
+				var xml:XMLList = xmlList.children();
+				for each(var item:XML in xml){
+					if(item.@label == itemLabel){
+						item.@toggled = "false";
+						return;
+					}
+				}
+			}
+			
+			private function openPropertyPanel():void
+			{
+				if(!propertyPanel){
+					propertyPanel = new PropertyPanel();
+					propertyPanel.delegate = this;
+				}else if(propertyPanel && propertyPanel.isPopUp){
+					PopUpManager.removePopUp(propertyPanel);
+					return;
+				}
+				PopUpManager.addPopUp(propertyPanel, this, false);
+				PopUpManager.centerPopUp(propertyPanel);
+			}
+			
+			protected function showMousePoint(event:MouseEvent):void
+			{
+				var mousePoint:Point = new Point(layer.mouseX, layer.mouseY);
+				var tilePoint:Point = Utils.getTilePoint(Globals.tileSize, mousePoint);
+				if(naviPanel)
+					naviPanel.showCurrentPoint(tilePoint, mousePoint);
+			}
+			
+			override public function exit():void
+			{
+				Alert.yesLabel = "确定";
+				Alert.cancelLabel = "取消";
+				Alert.show("是否确定退出？", "请确保已保存", Alert.YES | Alert.CANCEL, this, determineExit);
+			}
+			
+			private function determineExit(evt:CloseEvent):void
+			{
+				if (evt.detail == Alert.YES)
+					super.exit();
+			}
+			
+			/**
+			 * MenuBar
+			 */
+			private function resetMapPos():void
+			{
+				layer.x = layer.y = 0;
+			}
+			
+			protected function libPanel_creationCompleteHandler(event:FlexEvent):void
+			{
+				PopUpManager.addPopUp(libPanel, this, false);
+			}
+			
+			protected function onResize(event:Event):void
+			{
+				locatePanels();
+			}
+			
+			protected function dragDragginItem(event:MouseEvent):void
+			{
+				if(draggingItem){
+					draggingItem.x = this.nativeWindow.stage.mouseX - draggingItem.width / 2;
+					draggingItem.y = this.nativeWindow.stage.mouseY - draggingItem.height / 2;
+				}
+			}
+			
+			protected function dropDraggItem(event:MouseEvent):void
+			{
+				this.nativeWindow.stage.removeEventListener(MouseEvent.MOUSE_MOVE, dragDragginItem);
+				this.nativeWindow.stage.removeEventListener(MouseEvent.MOUSE_UP, dropDraggItem);
+				checkMousePos();
+			}
+			
+			private function checkMousePos():void
+			{
+				var bool:Boolean = false;
+				for each(var obj:DisplayObjectContainer in hitTestList){
+					if(obj.hitTestPoint(stage.mouseX, stage.mouseY)){
+						bool = true;
+						break;
+					}
+				}
+				if(!bool){
+					if(draggingItem) buildingLayer.addBuilding(draggingItem.bitmap, Utils.getTilePoint(Globals.tileSize,
+						new Point(mapLayer.mouseX - draggingItem.width / 2, mapLayer.mouseY - draggingItem.height / 2)));
+				}
+				if(draggingItem && this.nativeWindow.stage.contains(draggingItem)){
+					this.nativeWindow.stage.removeChild(draggingItem);
+					draggingItem = null;
+				}
+			}
+			
+			protected function istage_rollOverHandler(event:MouseEvent):void
+			{
+				if(curRhombus){
+					istage.addChild(curRhombus);
+				}
+			}
+			
+			protected function istage_rollOutHandler(event:MouseEvent):void
+			{
+				if(curRhombus && istage.contains(curRhombus))
+					istage.removeChild(curRhombus);
+			}
+			
+			protected function istage_clickHandler(event:MouseEvent):void
+			{
+				if(curRhombus){
+					setGrid();
+				}
+			}
+			
+			private function setGrid():void
+			{
+				var pixelPoint:Point = new Point(layer.mouseX, layer.mouseY);
+				var tilePoint:Point = Utils.getTilePoint(Globals.tileSize, pixelPoint);
+				if(tilePoint.x < 0 || tilePoint.y < 0 || tilePoint.x >= Globals.horizantolTiles || tilePoint.y >= Globals.verticalTiles) return;
+				var grid:Grid = gridLayer.getGridByTilePoint(tilePoint);
+				switch(curEditState){
+					case EditState.NORMAL:
+						return;
+						break;
+					case EditState.SHADOW:
+						grid.setShadow(true);
+						break;
+					case EditState.UNWALKABLE:
+						grid.setWalkable(false);
+						break;
+					case EditState.CLEAR_SHADOW:
+						grid.setShadow(false);
+						break;
+					case EditState.CLEAR_UNWALKABLE:
+						grid.setWalkable(false);
+						break;
+				}
+			}
+			
+			protected function istage_mouseMoveHandler(event:MouseEvent):void
+			{
+				if(curRhombus){
+					curRhombus.x = istage.mouseX - curRhombus.width / 2;
+					curRhombus.y = istage.mouseY - curRhombus.height / 2;
+					if(repeatAdd){
+						setGrid();
+					}
+				}
+			}
+			
+			private function setCurRhombus():void
+			{
+				switch(curEditState){
+					case EditState.NORMAL:
+						if(curRhombus && istage.contains(curRhombus)) istage.removeChild(curRhombus);
+						curRhombus = null;
+						break;
+					case EditState.SHADOW:
+						curRhombus = shadow;
+						break;
+					case EditState.UNWALKABLE:
+						curRhombus = unwalkable;
+						break;
+					case EditState.CLEAR_SHADOW:
+					case EditState.CLEAR_UNWALKABLE:
+						curRhombus = walkable;
+						break;
+				}
+			}
+			
+			protected function istage_mouseDownHandler(event:MouseEvent):void
+			{
+				repeatAdd = true;
+			}
+			
+			protected function istage_mouseUpHandler(event:MouseEvent):void
+			{
+				repeatAdd = false;
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:SpriteVisualElement id="istage" width="100%" height="100%" y="37" />
+	<s:BorderContainer width="100%" backgroundColor="0xFFFFFF" height="32" id="menuContainer">
+		<s:Label textAlign="center" verticalAlign="middle" width="100%" height="100%" text="{Globals.sceneName}" mouseEnabled="false" mouseChildren="false" />
+		<mx:MenuBar dataProvider="{menuData}" id="myMenuBar" height="30" backgroundSkin="{null}" labelField="@label" showRoot="false" itemClick="myMenuBar_itemClickHandler(event)" />
+	</s:BorderContainer>
+</s:WindowedApplication>

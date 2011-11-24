@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:ItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				autoDrawBackground="true" implements="mx.controls.listClasses.IListItemRenderer" xmlns:modules="modules.*">
+	<s:layout>
+		<s:VerticalLayout paddingBottom="0" paddingLeft="0" paddingRight="0" paddingTop="0" />
+	</s:layout>
+	
+	
+	<fx:Script>
+		<![CDATA[
+			import lib.List;
+			protected function checkbox1_changeHandler(event:Event):void
+			{
+				(this.parentDocument as LayerPanel).visibleChanged(visibleCB.selected, data.index);
+			}
+		]]>
+	</fx:Script>
+	
+	<s:HGroup width="100%" verticalAlign="middle" height="30" paddingLeft="10">
+		<s:CheckBox skinClass="modules.LayerVisibleCheckBox" selected="true" change="checkbox1_changeHandler(event)" id="visibleCB" />
+		<s:Label text="{data.label}" paddingLeft="5" verticalAlign="middle"/>
+	</s:HGroup>
+	<mx:HRule width="100%" />
+	
+</s:ItemRenderer>

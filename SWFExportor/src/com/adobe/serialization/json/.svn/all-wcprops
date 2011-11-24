@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json
+END
+JSONParseError.as
+K 25
+svn:wc:ra_dav:version-url
+V 149
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONParseError.as
+END
+JSONDecoder.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONDecoder.as
+END
+JSONTokenizer.as
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONTokenizer.as
+END
+JSON.as
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSON.as
+END
+JSONEncoder.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONEncoder.as
+END
+JSONToken.as
+K 25
+svn:wc:ra_dav:version-url
+V 144
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONToken.as
+END
+JSONTokenType.as
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/adobe/serialization/json/JSONTokenType.as
+END

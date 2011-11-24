@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="300" height="200" backgroundColor="0xFFFFFF" cornerRadius="10"
+		  creationComplete="bordercontainer1_creationCompleteHandler(event)" removedFromStage="bordercontainer1_removedFromStageHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import delegates.IForCreateOrOpen;
+			
+			import mx.events.FlexEvent;
+			
+			import utils.WidgetGenerator;
+			
+			
+			public	var delegate			:IForCreateOrOpen;
+			
+			protected function bordercontainer1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.filters = [WidgetGenerator.getShadowFilter()];
+			}
+			
+			protected function bordercontainer1_removedFromStageHandler(event:Event):void
+			{
+				this.removeEventListener(FlexEvent.CREATION_COMPLETE, bordercontainer1_creationCompleteHandler);
+				this.removeEventListener(Event.REMOVED_FROM_STAGE, bordercontainer1_removedFromStageHandler);
+				this.filters = null;
+				delegate = null;
+			}
+			
+			protected function openBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.openScene();
+			}
+			
+			protected function createBtn_clickHandler(event:MouseEvent):void
+			{
+				if(delegate) delegate.newScene();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" gap="30" />
+	</s:layout>
+	<s:Button label="新建场景" width="100" height="50" id="createBtn" click="createBtn_clickHandler(event)" />
+	<s:Button label="打开场景" width="100" height="50" id="openBtn" click="openBtn_clickHandler(event)" />
+</s:BorderContainer>

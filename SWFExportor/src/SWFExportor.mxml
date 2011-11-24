@@ -1,0 +1,429 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="700" creationComplete="windowedapplication1_creationCompleteHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.core.UIComponent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.events.IndexChangeEvent;
+			
+			[Bindable]
+			private var schools				:ArrayCollection	= new ArrayCollection([	"第一门派",
+																						"第二门派",
+																						"第三门派",
+																						"第四门派",
+																						"第五门派"]);
+			[Bindable]
+			private var sex					:ArrayCollection	= new ArrayCollection(["男", "女"]);
+			
+			[Bindable]
+			private var file				:File;
+			
+			/**
+			 * 素材加载
+			 */
+			private var fileLoader			:File;
+			/**
+			 * 动画演示 暂定为40FPS，1秒播放40帧
+			 */
+			private var timer				:Timer				= new Timer(25);
+			/**
+			 * 素材路径
+			 */
+			private var dirs				:Array				= ["breathe", "run", "mount/breathe", "mount/run"];
+			/**
+			 * breathe路径索引
+			 */
+			private const BREATHE			:int				= 0;
+			/**
+			 * run路径索引
+			 */
+			private const RUN				:int				= 1;
+			/**
+			 * mouse/breathe路径索引
+			 */
+			private const MOUNT_BREATHE		:int				= 2;
+			/**
+			 * mount/run路径索引
+			 */
+			private const MOUNT_RUN			:int				= 3;
+			/**
+			 * 当前目录，与dirs索引对应
+			 */
+			private var curIndex			:int				= 0;
+			/**
+			 * 当前方向
+			 */
+			private var count				:int				= 0;
+			/**
+			 * 一共8个方向
+			 */
+			private var totalDirs			:int				= 8;
+			/**
+			 * 每个方向的帧数
+			 */
+			private var totalFrame			:int				= 2;
+			/**
+			 * 当前帧数
+			 */
+			private var curFrame			:int				= 0;
+			/**
+			 * 当前路径
+			 */
+			private var curPath				:String				= "";
+			/**
+			 * 是否中断加载
+			 */
+			private var stop				:Boolean			= false;
+			/**
+			 * 素材缓存
+			 */
+			private var bitmaps				:Object;
+			/**
+			 * 进度显示面板
+			 */
+			private var processPanel		:ProcessPanel		= new ProcessPanel();
+			/**
+			 * 动画显示容器
+			 */
+			private var roleContainer		:UIComponent		= new UIComponent();
+			
+			private var aaa:int = 0;
+			private var loader:Loader = new Loader();
+			private var v:Vector.<Bitmap> = new Vector.<Bitmap>();
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				loadBitmap();
+//				processPanel.addEventListener(Event.COMPLETE, processComplete);
+//				processPanel.addEventListener(Event.CANCEL, cancelProcess);
+//				timer.addEventListener(TimerEvent.TIMER, onTimer);
+			}
+			
+			private function loadBitmap():void
+			{
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, onComplete);
+				loadByIndex();
+			}
+			
+			private function loadByIndex():void
+			{
+				loader.load(new URLRequest(aaa + ".png"));
+			}
+			
+			private function onComplete(event:Event):void
+			{
+				var bitmap:Bitmap = event.target.content as Bitmap;
+				v.push(bitmap);
+				if(aaa >= 7){
+					var swfExport:SWFExport		= new SWFExport();
+					swfExport.createSWF(v, "tttt", File.desktopDirectory.nativePath, "aaaaaaaa");
+					return;
+				}
+				aaa++;
+				loadByIndex();
+			}
+			
+			protected function schoolSelector_creationCompleteHandler(event:FlexEvent):void
+			{
+				schoolSelector.textInput.editable = false;
+			}
+			
+			protected function sexSelector_creationCompleteHandler(event:FlexEvent):void
+			{
+				sexSelector.textInput.editable = false;
+			}
+			
+			private function setNameLabel():void
+			{
+				breatheName.text		= "character_breathe_" + schoolSelector.selectedIndex + "_" + sexSelector.selectedIndex + ".swf";
+				runName.text			= "character_run_" + schoolSelector.selectedIndex + "_" + sexSelector.selectedIndex + ".swf";
+				mountBreatheName.text	= "character_mount_breathe_" + schoolSelector.selectedIndex + "_" + sexSelector.selectedIndex + ".swf";
+				mountRunName.text		= "character_mount_run_" + schoolSelector.selectedIndex + "_" + sexSelector.selectedIndex + ".swf";
+			}
+			
+			protected function schoolSelector_changeHandler(event:IndexChangeEvent):void
+			{
+				setNameLabel();
+			}
+			
+			protected function sexSelector_changeHandler(event:IndexChangeEvent):void
+			{
+				setNameLabel();
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(!file) file = File.desktopDirectory;
+				file.browseForDirectory("选择素材目录...");
+				file.addEventListener(Event.SELECT, onDirectorySelecting);
+			}
+			
+			private function onDirectorySelecting(event:Event):void
+			{
+				path.text		= file.nativePath;
+				resetDefault();
+				showProcessPanel();
+				loadSource();
+			}
+			
+			private function loadSource():void
+			{
+				curPath = dirs[curIndex];
+				loadSourceWithRelativePath();
+			}
+			
+			private function loadSourceWithRelativePath():void
+			{
+				if(fileLoader){
+					fileLoader.removeEventListener(ProgressEvent.PROGRESS, sourceLoading);
+					fileLoader.removeEventListener(Event.COMPLETE, sourceLoadComplete);
+					fileLoader.removeEventListener(IOErrorEvent.IO_ERROR, onIOError);
+					fileLoader = null;
+				}
+				if(stop){
+					resetDefault();
+					return;
+				}
+				processPanel.showLoadingFile(file.resolvePath(curPath).resolvePath(count + "").resolvePath(curFrame + ".png").nativePath);
+				fileLoader = new File(file.resolvePath(curPath).resolvePath(count + "").resolvePath(curFrame + ".png").nativePath);
+				fileLoader.addEventListener(ProgressEvent.PROGRESS, sourceLoading);
+				fileLoader.addEventListener(Event.COMPLETE, sourceLoadComplete);
+				fileLoader.addEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				fileLoader.load();
+			}
+			
+			private function sourceLoading(event:ProgressEvent):void
+			{
+				processPanel.showProgress(Math.round(event.bytesLoaded / event.bytesTotal * 10000) / 100);
+			}
+			
+			private function sourceLoadComplete(event:Event):void
+			{
+				fileLoader.removeEventListener(ProgressEvent.PROGRESS, sourceLoading);
+				fileLoader.removeEventListener(Event.COMPLETE, sourceLoadComplete);
+				fileLoader.removeEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				
+				var ba:ByteArray = fileLoader.data;
+				var loader:Loader = new Loader();
+				var func:Function = function(event:Event):void
+				{
+					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, func);
+					
+					var bitmap:Bitmap = event.target.content as Bitmap;
+					
+					if(!bitmaps[curPath]){
+						bitmaps[curPath] = [];
+						bitmaps[curPath][count] = new Vector.<Bitmap>();
+					}else if(!bitmaps[curPath][count]){
+						bitmaps[curPath][count] = new Vector.<Bitmap>();
+					}
+					bitmaps[curPath][count][curFrame] = bitmap;
+					
+					curFrame++;
+					if(count >= 4 && curFrame >= totalFrame){
+						if(curIndex >= (dirs.length - 1)){
+							processPanel.changeButtonLabel("完成");
+							//完成
+							showDefault();
+							return;
+						}
+						curIndex++;
+						count = 0;
+						curFrame = 0;
+						loadSource();
+						return;
+					}else{
+						if(curFrame >= totalFrame){
+							count++;
+							curFrame = 0;
+						}
+					}
+					loadSourceWithRelativePath();
+				};
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, func);
+				loader.loadBytes(ba);
+			}
+			
+			private function onIOError(event:IOErrorEvent):void
+			{
+				Alert.show(file.resolvePath(curPath).resolvePath(count + ".png").nativePath + "文件不存在!");
+				fileLoader.removeEventListener(ProgressEvent.PROGRESS, sourceLoading);
+				fileLoader.removeEventListener(Event.COMPLETE, sourceLoadComplete);
+				fileLoader.removeEventListener(IOErrorEvent.IO_ERROR, onIOError);
+				resetDefault();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				var nameList:Array = ["character_breathe_", "character_run_", "character_mount_breathe_", "character_mount_run_"];
+				showProcessPanel();
+				processPanel.showProgress(100);
+				for(var i:int = 0; i<dirs.length; i++){
+					var bitmapList:Array		= bitmaps[dirs[i]];
+					processPanel.showLoadingFile("正在导出 " + nameList[i] + schoolSelector.selectedIndex
+						+ "_" + sexSelector.selectedIndex + ".swf");
+					var swfExport:SWFExport		= new SWFExport();
+					for(var j:int = 0; j<bitmapList.length; j++)
+						swfExport.createSWF(bitmapList[j], nameList[i] + schoolSelector.selectedIndex
+							+ "_" + sexSelector.selectedIndex + "_" + j, File.desktopDirectory.nativePath, "characterTesting");
+				}
+				processPanel.showLoadingFile("导出完毕!");
+				processPanel.changeButtonLabel("完成");
+			}
+			
+			private function showProcessPanel():void
+			{
+				PopUpManager.addPopUp(processPanel, this, true);
+				PopUpManager.centerPopUp(processPanel);
+			}
+			
+			private function hideProcessPanel():void
+			{
+				if(processPanel.isPopUp)
+					PopUpManager.removePopUp(processPanel);
+			}
+			
+			protected function processComplete(event:Event):void
+			{
+				hideProcessPanel();
+			}
+			
+			protected function cancelProcess(event:Event):void
+			{
+				hideProcessPanel();
+				stop = true;
+			}
+			
+			private function resetDefault():void
+			{
+				bitmaps		= {};
+				curIndex	= 0;
+				count		= 0;
+				curFrame	= 0;
+				curPath		= "";
+				stop		= false;
+				if(timer.running) timer.stop();
+			}
+			
+			private function showDefault():void
+			{
+				var bitmapList:Array		= bitmaps[dirs[BREATHE]];
+				var bp:Bitmap				= bitmapList[0][0];
+				roleContainer.addChild(bp);
+				bp.x = bp.y = 0;
+				roleContainer.width			= bp.width;
+				roleContainer.height		= bp.height;
+				scene.addElement(roleContainer);
+				count = 0;
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				curIndex = BREATHE;
+				resetTimer();
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				curIndex = RUN;
+				resetTimer();
+			}
+			
+			protected function button5_clickHandler(event:MouseEvent):void
+			{
+				curIndex = MOUNT_BREATHE;
+				resetTimer();
+			}
+			
+			protected function button6_clickHandler(event:MouseEvent):void
+			{
+				curIndex = MOUNT_RUN;
+				resetTimer();
+			}
+			
+			protected function button7_clickHandler(event:MouseEvent):void
+			{
+				count = (count + 1) % totalDirs;
+				resetTimer();
+			}
+			
+			private function resetTimer():void
+			{
+				if(timer.running) timer.stop();
+				curFrame = -1;
+				timer.reset();
+				timer.start();
+			}
+			
+			protected function onTimer(event:TimerEvent):void
+			{
+				curFrame = (curFrame + 1) % totalFrame;
+				roleContainer.removeChildAt(0);
+				var tempCount:int = count;
+				var opposite:Boolean = false;
+				if(count > 4 && count < 8){
+					tempCount = count - (count - 4) * 2;
+					opposite = true;
+				}
+				var bitmapList:Array = bitmaps[dirs[curIndex]];
+				var bp:Bitmap = bitmapList[tempCount][curFrame];
+				if(opposite){
+					bp.scaleX = -1;
+					bp.x = bp.width;
+				}else{
+					bp.scaleX = 1;
+					bp.x = 0;
+				}
+				roleContainer.addChild(bp);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:HGroup width="100%" height="40" paddingLeft="10" verticalAlign="middle">
+		<s:TextInput width="408" editable="false" id="path" />
+		<s:Button label="导入素材" click="button1_clickHandler(event)"/>
+		<s:Button label="导出素材" click="button2_clickHandler(event)"/>
+	</s:HGroup>
+	<s:HGroup verticalAlign="middle" horizontalAlign="left" width="100%" paddingLeft="10" height="40" y="40">
+		<s:Label text="选择门派:" paddingRight="10"/>
+		<s:ComboBox dataProvider="{schools}" selectedIndex="0" id="schoolSelector"
+					creationComplete="schoolSelector_creationCompleteHandler(event)" change="schoolSelector_changeHandler(event)" />
+		<s:Label text="选择性别:" paddingRight="10"/>
+		<s:ComboBox dataProvider="{sex}" selectedIndex="0" id="sexSelector"
+					creationComplete="sexSelector_creationCompleteHandler(event)" change="sexSelector_changeHandler(event)" />
+	</s:HGroup>
+	<s:VGroup verticalAlign="top" horizontalAlign="left" width="436" paddingLeft="10" height="102" y="90">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="普通呼吸状态文件名:" />
+			<s:Label text="" id="breatheName" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="普通跑步状态文件名:" />
+			<s:Label text="" id="runName" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="坐骑呼吸状态文件名:" />
+			<s:Label text="" id="mountBreatheName" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="坐骑跑步状态文件名:" />
+			<s:Label text="" id="mountRunName" />
+		</s:HGroup>
+	</s:VGroup>
+	<s:HGroup x="10" y="200" width="678" height="490" verticalAlign="middle" horizontalAlign="center" id="scene">
+	</s:HGroup>
+	<s:Button x="444" y="110" label="普通呼吸状态" click="button3_clickHandler(event)" />
+	<s:Button x="544" y="110" label="普通跑步状态" click="button4_clickHandler(event)" />
+	<s:Button x="444" y="139" label="坐骑呼吸状态" click="button5_clickHandler(event)" />
+	<s:Button x="544" y="139" label="坐骑跑步状态" click="button6_clickHandler(event)" />
+	<s:Label x="444" y="88" fontSize="14" fontWeight="bold" text="预览" />
+	<s:Button x="709" y="200" label="旋转"  click="button7_clickHandler(event)" />
+</s:WindowedApplication>
