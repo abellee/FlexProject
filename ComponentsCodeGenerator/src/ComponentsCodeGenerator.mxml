@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx">
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			[Bindable]
+			private var components:ArrayCollection = new ArrayCollection([{label:"Button", data:{property:[{label:"emphasized", selected:true},
+																										   {label:"toggle", selected:false},
+																										   {label:"mouseChildren", selected:true},
+																										   {label:"mouseEnabled", selected:false}],
+																								 skins:[{label:"upSkin", selected:true},
+																										{label:"overSkin", selected:true},
+																										{label:"downSkin", selected:true},
+																										{label:"disabledSkin", selected:true},
+																										{label:"selectedUpSkin", selected:true},
+																										{label:"selectedOverSkin", selected:true},
+																										{label:"selectedDownSkin", selected:true},
+																										{label:"selectedDisabledSkin", selected:true},
+																										{label:"focusRectSkin", selected:true},
+																										{label:"icon", selected:false},
+																										{label:"upIcon", selected:false},
+																										{label:"overIcon", selected:false},
+																										{label:"downIcon", selected:false},
+																										{label:"disabledIcon", selected:false},
+																										{label:"selectedUpIcon", selected:false},
+																										{label:"selectedOverIcon", selected:false},
+																										{label:"selectedDownIcon", selected:false},
+																										{label:"selectedDisabledIcon", selected:false}]}},
+																		  {label:"CheckBox", data:{property:[{label:"mouseChildren", selected:true},
+																			  								 {label:"mouseEnabled", selected:false}],
+																			  					   skins:[{label:"upIcon", selected:true},
+																									   	  {label:"overIcon", selected:true},
+																										  {label:"downIcon", selected:true},
+																										  {label:"disabledIcon", selected:true},
+																										  {label:"selectedUpIcon", selected:true},
+																										  {label:"selectedOverIcon", selected:true},
+																										  {label:"selectedDownIcon", selected:true},
+																										  {label:"selectedDisabledIcon", selected:true}]}},
+																		  {label:"ComboBox", data:{property:[{label:"editable", selected:false}],
+																			  					   skins:[{label:"cellRenderer", selected:false},
+																									   	  {label:"upSkin", selected:true},
+																										  {label:"overSkin", selected:true},
+																										  {label:"downSkin", selected:true},
+																										  {label:"disabledSkin", selected:true},
+																										  {label:"upArrowUpSkin", selected:true},
+																										  {label:"upArrowOverSkin", selected:true},
+																										  {label:"upArrowDownSkin", selected:true},
+																										  {label:"upArrowDisabledSkin", selected:true},
+																										  {label:"downArrowUpSkin", selected:true},
+																										  {label:"downArrowOverSkin", selected:true},
+																										  {label:"downArrowDownSkin", selected:true},
+																										  {label:"downArrowDisabledSkin", selected:true},
+																										  {label:"thumbArrowUpSkin", selected:true},
+																										  {label:"thumbArrowOverSkin", selected:true},
+																										  {label:"thumbArrowDownSkin", selected:true},
+																										  {label:"thumbArrowDisabledSkin", selected:true},
+																										  {label:"trackUpSkin", selected:true},
+																										  {label:"trackOverSkin", selected:true},
+																										  {label:"trackDownSkin", selected:true},
+																										  {label:"trackDisabledSkin", selected:true}]}},
+																		  {label:"DataGrid", data:{property:[{label:"resizableColumns", selected:false},
+																			  								 {label:"selectable", selected:false}],
+																			  					   skins:[{label:"cellRenderer", selected:false},
+																									   	  {label:"skin", selected:false},
+																										  {label:""}]}},
+																		  {label:"List"},
+																		  {label:"NumbericStepper"}, 
+																		  {label:"ProgressBar"},
+																		  {label:"RadioButton"},
+																		  {label:"ScrollBar"},
+																		  {label:"SelectableList"},
+																		  {label:"Slider"},
+																		  {label:"TextArea"},
+																		  {label:"TextInput"},
+																		  {label:"TileList"},
+																		  {label:"UIScrollBar"}]);
+			private var emptyPattern:RegExp = /\s+/g;
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var str:String = normalResourceName.text.replace(emptyPattern, "");
+				if(str == ""){
+					Alert.show("请输入普通状态资源名!");
+					return;
+				}
+				
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%" height="100%" gap="10" paddingBottom="20" paddingLeft="20"
+			  paddingRight="20" paddingTop="20">
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="普通状态资源名:" />
+			<s:TextInput id="normalResourceName" />
+		</s:HGroup>
+		<s:HGroup width="100%" verticalAlign="middle">
+			<s:Label text="选择组件:" />
+			<s:DropDownList id="componentList" dataProvider="{components}" />
+			<s:Button label="生成代码" click="button1_clickHandler(event)" />
+		</s:HGroup>
+		<s:TileGroup id="skinOption" width="100%" orientation="rows" />
+		<s:TextArea id="codeArea" width="100%" height="100%" />
+	</s:VGroup>
+</s:WindowedApplication>
