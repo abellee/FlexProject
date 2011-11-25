@@ -6,6 +6,7 @@
 		<![CDATA[
 			public var isProperty:Boolean = false;
 			public var data:String = "";
+			public var index:int = 0;
 		]]>
 	</fx:Script>
 	<fx:Declarations>

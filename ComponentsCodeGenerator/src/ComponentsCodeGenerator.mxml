@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx">
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false">
 	<fx:Script>
 		<![CDATA[
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.events.IndexChangedEvent;
+			
+			import spark.events.IndexChangeEvent;
 			[Bindable]
 			private var components:ArrayCollection = new ArrayCollection([{label:"Button", data:{property:[{label:"emphasized", selected:true},
 																										   {label:"toggle", selected:false},
-																										   {label:"mouseChildren", selected:true},
-																										   {label:"mouseEnabled", selected:false}],
+																										   {label:"mouseChildren", selected:false},
+																										   {label:"mouseEnabled", selected:true}],
 																								 skins:[{label:"upSkin", selected:true},
 																										{label:"overSkin", selected:true},
 																										{label:"downSkin", selected:true},
@@ -29,8 +33,8 @@
 																										{label:"selectedOverIcon", selected:false},
 																										{label:"selectedDownIcon", selected:false},
 																										{label:"selectedDisabledIcon", selected:false}]}},
-																		  {label:"CheckBox", data:{property:[{label:"mouseChildren", selected:true},
-																			  								 {label:"mouseEnabled", selected:false}],
+																		  {label:"CheckBox", data:{property:[{label:"mouseChildren", selected:false},
+																			  								 {label:"mouseEnabled", selected:true}],
 																			  					   skins:[{label:"upIcon", selected:true},
 																									   	  {label:"overIcon", selected:true},
 																										  {label:"downIcon", selected:true},
@@ -39,7 +43,9 @@
 																										  {label:"selectedOverIcon", selected:true},
 																										  {label:"selectedDownIcon", selected:true},
 																										  {label:"selectedDisabledIcon", selected:true}]}},
-																		  {label:"ComboBox", data:{property:[{label:"editable", selected:false}],
+																		  {label:"ComboBox", data:{property:[{label:"editable", selected:false},
+																			  								 {label:"mouseChildren", selected:true},
+																											 {label:"mouseEnabled", selected:true}],
 																			  					   skins:[{label:"cellRenderer", selected:false},
 																									   	  {label:"upSkin", selected:true},
 																										  {label:"overSkin", selected:true},
@@ -62,31 +68,305 @@
 																										  {label:"trackDownSkin", selected:true},
 																										  {label:"trackDisabledSkin", selected:true}]}},
 																		  {label:"DataGrid", data:{property:[{label:"resizableColumns", selected:false},
-																			  								 {label:"selectable", selected:false}],
+																			  								 {label:"selectable", selected:false},
+																											 {label:"mouseChildren", selected:true},
+																											 {label:"mouseEnabled", selected:true}],
 																			  					   skins:[{label:"cellRenderer", selected:false},
-																									   	  {label:"skin", selected:false},
-																										  {label:""}]}},
-																		  {label:"List"},
-																		  {label:"NumbericStepper"}, 
-																		  {label:"ProgressBar"},
-																		  {label:"RadioButton"},
-																		  {label:"ScrollBar"},
-																		  {label:"SelectableList"},
-																		  {label:"Slider"},
-																		  {label:"TextArea"},
-																		  {label:"TextInput"},
-																		  {label:"TileList"},
-																		  {label:"UIScrollBar"}]);
+																									   	  {label:"skin", selected:true},
+																										  {label:"upArrowUpSkin", selected:true},
+																										  {label:"upArrowOverSkin", selected:true},
+																										  {label:"upArrowDownSkin", selected:true},
+																										  {label:"upArrowDisabledSkin", selected:true},
+																										  {label:"downArrowUpSkin", selected:true},
+																										  {label:"downArrowOverSkin", selected:true},
+																										  {label:"downArrowDownSkin", selected:true},
+																										  {label:"downArrowDisabledSkin", selected:true},
+																										  {label:"thumbIcon", selected:true},
+																										  {label:"thumbUpSkin", selected:true},
+																										  {label:"thumbOverSkin", selected:true},
+																										  {label:"thumbDownSkin", selected:true},
+																										  {label:"thumbDisabledSkin", selected:true},
+																										  {label:"trackUpSkin", selected:true},
+																										  {label:"trackOverSkin", selected:true},
+																										  {label:"trackDownSkin", selected:true},
+																										  {label:"trackDisabledSkin", selected:true},
+																										  {label:"columnDividerSkin", selected:false},
+																										  {label:"columnStretchCursorSkin", selected:false},
+																										  {label:"headerDisabledSkin", selected:false},
+																										  {label:"headerDownSkin", selected:false},
+																										  {label:"headerOverSkin", selected:false},
+																										  {label:"headerUpSkin", selected:false},
+																										  {label:"headerRenderer", selected:false},
+																										  {label:"headerSortArrowAscSkin", selected:false},
+																										  {label:"headerSortArrowDescSkin", selected:false}]}},
+																		  {label:"List", data:{property:[{label:"mouseChildren", selected:true},
+																			  							 {label:"mouseEnabled", selected:true}],
+																			  				   skins:[{label:"cellRenderer", selected:false},
+																			  						  {label:"upArrowUpSkin", selected:true},
+																									  {label:"upArrowOverSkin", selected:true},
+																									  {label:"upArrowDownSkin", selected:true},
+																									  {label:"upArrowDisabledSkin", selected:true},
+																									  {label:"downArrowUpSkin", selected:true},
+																									  {label:"downArrowOverSkin", selected:true},
+																									  {label:"downArrowDownSkin", selected:true},
+																									  {label:"downArrowDisabledSkin", selected:true},
+																									  {label:"thumbIcon", selected:true},
+																									  {label:"thumbUpSkin", selected:true},
+																									  {label:"thumbOverSkin", selected:true},
+																									  {label:"thumbDownSkin", selected:true},
+																									  {label:"thumbDisabledSkin", selected:true},
+																									  {label:"trackUpSkin", selected:true},
+																									  {label:"trackOverSkin", selected:true},
+																									  {label:"trackDownSkin", selected:true},
+																									  {label:"trackDisabledSkin", selected:true}]}},
+																		  {label:"NumbericStepper", data:{property:[{label:"mouseChildren", selected:true},
+																			  										{label:"mouseEnabled", selected:true}],
+																			  							  skins:[{label:"upArrowUpSkin", selected:true},
+																			  									 {label:"upArrowOverSkin", selected:true},
+																												 {label:"upArrowDownSkin", selected:true},
+																												 {label:"upArrowDisabledSkin", selected:true},
+																												 {label:"downArrowUpSkin", selected:true},
+																												 {label:"downArrowOverSkin", selected:true},
+																												 {label:"downArrowDownSkin", selected:true},
+																												 {label:"downArrowDisabledSkin", selected:true},
+																												 {label:"TextInput_disabledSkin", selected:true},
+																												 {label:"TextInput_upskin", selected:true}]}}, 
+																		  {label:"ProgressBar", data:{property:[{label:"indeterminate", selected:false},
+																			  									{label:"mouseChildren", selected:true},
+																												{label:"mouseEnabled", selected:true}],
+																			  						  skins:[{label:"barSkin", selected:true},
+																										  	 {label:"icon", selected:true},
+																											 {label:"indeterminateBar", selected:true},
+																											 {label:"indeterminateSkin", selected:true},
+																											 {label:"trackSkin", selected:true}]}},
+																		  {label:"RadioButton", data:{property:[{label:"selected", selected:false},
+																			  									{label:"mouseChildren", selected:true},
+																												{label:"mouseEnabled", selected:true}],
+																			  						  skins:[{label:"upIcon", selected:true},
+																										     {label:"overIcon", selected:true},
+																											 {label:"downIcon", selected:true},
+																											 {label:"disabledIcon", selected:true},
+																											 {label:"selectedUpIcon", selected:true},
+																											 {label:"selectedOverIcon", selected:true},
+																											 {label:"selectedDownIcon", selected:true},
+																											 {label:"selectedDisabledIcon", selected:true}]}},
+																		  {label:"ScrollBar", data:{property:[{label:"mouseChildren", selected:true},
+																			  								  {label:"mouseEnabled", selected:true}],
+																			  						skins:[{label:"upArrowUpSkin", selected:true},
+																			  							   {label:"upArrowOverSkin", selected:true},
+																										   {label:"upArrowDownSkin", selected:true},
+																										   {label:"upArrowDisabledSkin", selected:true},
+																										   {label:"downArrowUpSkin", selected:true},
+																										   {label:"downArrowOverSkin", selected:true},
+																										   {label:"downArrowDownSkin", selected:true},
+																										   {label:"downArrowDisabledSkin", selected:true},
+																										   {label:"trackUpSkin", selected:true},
+																										   {label:"trackOverSkin", selected:true},
+																										   {label:"trackDownSkin", selected:true},
+																										   {label:"trackDisabledSkin", selected:true},
+																										   {label:"thumbUpSkin", selected:true},
+																										   {label:"thumbOverSkin", selected:true},
+																										   {label:"thumbDownSkin", selected:true},
+																										   {label:"thumbDisabledSkin", selected:true},
+																										   {label:"thumbIcon", selected:true}]}},
+																		  {label:"SelectableList", data:{property:[{label:"allowMultipleSelection", selected:true},
+																			  									   {label:"selectable", selected:true},
+																												   {label:"mouseChildren", selected:true},
+																												   {label:"mouseEnabled", selected:true}],
+																			  							 skins:[{label:"upArrowUpSkin", selected:true},
+																											 	{label:"upArrowOverSkin", selected:true},
+																												{label:"upArrowDownSkin", selected:true},
+																												{label:"upArrowDisabledSkin", selected:true},
+																												{label:"downArrowUpSkin", selected:true},
+																												{label:"downArrowOverSkin", selected:true},
+																												{label:"downArrowDownSkin", selected:true},
+																												{label:"downArrowDisabledSkin", selected:true},
+																												{label:"trackUpSkin", selected:true},
+																												{label:"trackOverSkin", selected:true},
+																												{label:"trackDownSkin", selected:true},
+																												{label:"trackDisabledSkin", selected:true},
+																												{label:"thumbIcon", selected:true},
+																												{label:"thumbUpSkin", selected:true},
+																												{label:"thumbOverSkin", selected:true},
+																												{label:"thumbDownSkin", selected:true},
+																												{label:"thumbDisabledSkin", selected:true},
+																												{label:"cellRenderer", selected:false}]}},
+																		  {label:"Slider", data:{property:[{label:"liveDragging", selected:false},
+																			  							   {label:"mouseChlidren", selected:true},
+																										   {label:"mouseEnabled", selected:true}],
+																			  					 skins:[{label:"sliderTrackDisabledSkin", selected:true},
+																									 	{label:"sliderTrackSkin", selected:true},
+																										{label:"thumbUpSkin", selected:true},
+																										{label:"thumbOverSkin", selected:true},
+																										{label:"thumbDownSkin", selected:true},
+																										{label:"thumbDisabledSkin", selected:true},
+																										{label:"tickSkin", selected:true}]}},
+																		  {label:"TextArea", data:{property:[{label:"alwaysShowSelection", selected:false},
+																			  								 {label:"displayAsPassword", selected:false},
+																											 {label:"editable", selected:true},
+																											 {label:"wordWrap", selected:true},
+																											 {label:"mouseChildren", selected:true},
+																											 {label:"mouseEnabled", selected:true}],
+																			  					   skins:[{label:"disabledSkin", selected:false},
+																									   	  {label:"upSkin", selected:false}]}},
+																		  {label:"TextInput", data:{property:[{label:"alwaysShowSelection", selected:false},
+																			  								  {label:"displayAsPassword", selected:false},
+																											  {label:"editable", selected:true},
+																											  {label:"mouseChildren", selected:true},
+																											  {label:"mouseEnabled", selected:true}],
+																			  						skins:[{label:"disabledSkin", selected:true},
+																										   {label:"upSkin", selected:true}]}},
+																		  {label:"TileList", data:{property:[{label:"mouseChildren", selected:true},
+																			  								 {label:"mouseEnabled", selected:true}],
+																			  					   skins:[{label:"upArrowUpSkin", selected:true},
+																			  							  {label:"upArrowOverSkin", selected:true},
+																										  {label:"upArrowDownSkin", selected:true},
+																										  {label:"upArrowDisabledSkin", selected:true},
+																										  {label:"downArrowUpSkin", selected:true},
+																										  {label:"downArrowOverSkin", selected:true},
+																										  {label:"downArrowDownSkin", selected:true},
+																										  {label:"downArrowDisabledSkin", selected:true},
+																										  {label:"trackUpSkin", selected:true},
+																										  {label:"trackOverSkin", selected:true},
+																										  {label:"trackDownSkin", selected:true},
+																										  {label:"trackDisabledSkin", selected:true},
+																										  {label:"thumbIcon", selected:true},
+																										  {label:"thumbUpSkin", selected:true},
+																										  {label:"thumbOverSkin", selected:true},
+																										  {label:"thumbDownSkin", selected:true},
+																										  {label:"thumbDisabledSkin", selected:true},
+																										  {label:"cellRenderer", selected:false},
+																										  {label:"skin", selected:true}]}},
+																		  {label:"UIScrollBar", data:{property:[{label:"mouseChildren", selected:true},
+																			  									{label:"mouseEnabled", selected:true}],
+																			  						  skins:[{label:"upArrowUpSkin", selected:true},
+																											 {label:"upArrowOverSkin", selected:true},
+																											 {label:"upArrowDownSkin", selected:true},
+																											 {label:"upArrowDisabledSkin", selected:true},
+																											 {label:"downArrowUpSkin", selected:true},
+																											 {label:"downArrowOverSkin", selected:true},
+																											 {label:"downArrowDownSkin", selected:true},
+																											 {label:"downArrowDisabledSkin", selected:true},
+																											 {label:"trackUpSkin", selected:true},
+																											 {label:"trackOverSkin", selected:true},
+																											 {label:"trackDownSkin", selected:true},
+																											 {label:"trackDisabledSkin", selected:true},
+																											 {label:"thumbIcon", selected:true},
+																											 {label:"thumbUpSkin", selected:true},
+																											 {label:"thumbOverSkin", selected:true},
+																											 {label:"thumbDownSkin", selected:true},
+																											 {label:"thumbDisabledSkin", selected:true}]}}]);
 			private var emptyPattern:RegExp = /\s+/g;
 			
 			protected function button1_clickHandler(event:MouseEvent):void
 			{
+				codeArea.text = "";
 				var str:String = normalResourceName.text.replace(emptyPattern, "");
-				if(str == ""){
-					Alert.show("请输入普通状态资源名!");
+				var str1:String = variableName.text.replace(emptyPattern, "");
+				if(str == "" || str1 == ""){
+					Alert.show("请输入 **资源获取接口** 与 **变量名**!");
 					return;
 				}
+				var com:String = componentList.selectedItem.label;
+				var varName:String = variableName.text;
+				var resName:String = normalResourceName.text;
 				
+				var resultStr:String = "var " + varName + ":" + com + " = new " + com + "();\n";
+				var data:Object = componentList.selectedItem.data;
+				var property:Array = data.property;
+				var skins:Array = data.skins;
+				if(property){
+					for each(var obj:Object in property){
+						resultStr += varName + "." + obj.label + " = " + obj.selected + ";\n";
+					}
+				}
+				if(skins){
+					for each(var o:Object in skins){
+						if(o.selected){
+							resultStr += varName + ".setStyle(\"" + o.label + "\", " + resName + "_" + o.label + "());\n";
+						}
+					}
+				}
+				
+				codeArea.text = resultStr;
+			}
+			
+			protected function componentList_changeHandler(event:IndexChangeEvent):void
+			{
+				var len:int = propOption.numElements;
+				for(var m:int = 0; m<len; m++){
+					var prop:CustomCheckBox = propOption.getElementAt(m) as CustomCheckBox;
+					prop.data = null;
+					prop.removeEventListener(Event.CHANGE, onPropChange);
+				}
+				propOption.removeAllElements();
+				propOption.percentHeight = 100;
+				
+				len = skinOption.numElements;
+				for(var n:int = 0; n<len; n++){
+					var skin:CustomCheckBox = skinOption.getElementAt(n) as CustomCheckBox;
+					skin.data = null;
+					skin.removeEventListener(Event.CHANGE, onSkinChange);
+				}
+				skinOption.removeAllElements();
+				skinOption.percentHeight = 100;
+				
+				var data:Object = componentList.selectedItem.data;
+				var property:Array = data.property;
+				var skins:Array = data.skins;
+				if(property){
+					len = property.length;
+					for(var i:int = 0; i<len; i++){
+						var obj:Object = property[i];
+						var propCB:CustomCheckBox = new CustomCheckBox();
+						propCB.label = obj.label;
+						propCB.data = obj.label;
+						propCB.index = i;
+						propCB.selected = obj.selected;
+						propOption.addElement(propCB);
+						propCB.addEventListener(Event.CHANGE, onPropChange);
+					}
+				}
+				if(skins){
+					len = skins.length;
+					for(var j:int = 0; j<len; j++){
+						var o:Object = skins[j];
+						var skinsCB:CustomCheckBox = new CustomCheckBox();
+						skinsCB.index = j;
+						skinsCB.label = o.label;
+						skinsCB.data = o.label;
+						skinsCB.selected = o.selected;
+						skinOption.addElement(skinsCB);
+						skinsCB.addEventListener(Event.CHANGE, onSkinChange);
+					}
+				}
+			}
+			
+			protected function componentList_creationCompleteHandler(event:FlexEvent):void
+			{
+				componentList.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
+			}
+			
+			protected function onPropChange(event:Event):void
+			{
+				var prop:CustomCheckBox = event.target as CustomCheckBox;
+				var index:int = prop.index;
+				var data:Object = componentList.selectedItem.data;
+				var props:Array = data.property;
+				if(props && props.length){
+					props[index].selected = prop.selected;
+				}
+			}
+			
+			protected function onSkinChange(event:Event):void
+			{
+				var skin:CustomCheckBox = event.target as CustomCheckBox;
+				var index:int = skin.index;
+				var data:Object = componentList.selectedItem.data;
+				var skins:Array = data.skins;
+				if(skins && skins.length){
+					skins[index].selected = skin.selected;
+				}
 			}
 			
 		]]>
@@ -94,18 +374,36 @@
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
-	<s:VGroup width="100%" height="100%" gap="10" paddingBottom="20" paddingLeft="20"
-			  paddingRight="20" paddingTop="20">
-		<s:HGroup width="100%" verticalAlign="middle">
-			<s:Label text="普通状态资源名:" />
-			<s:TextInput id="normalResourceName" />
-		</s:HGroup>
-		<s:HGroup width="100%" verticalAlign="middle">
-			<s:Label text="选择组件:" />
-			<s:DropDownList id="componentList" dataProvider="{components}" />
-			<s:Button label="生成代码" click="button1_clickHandler(event)" />
-		</s:HGroup>
-		<s:TileGroup id="skinOption" width="100%" orientation="rows" />
+	<s:HGroup width="100%" height="100%" gap="10">
+		<s:VGroup width="100%" height="100%" gap="10" paddingBottom="20" paddingLeft="20"
+				  paddingRight="20" paddingTop="10">
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label text="资源获取接口:" width="100" />
+				<s:TextInput id="normalResourceName" />
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label text="变量名:" width="100" />
+				<s:TextInput id="variableName" />
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label text="选择组件:" />
+				<s:DropDownList id="componentList" dataProvider="{components}" selectedIndex="0" width="200" change="componentList_changeHandler(event)"
+								creationComplete="componentList_creationCompleteHandler(event)" />
+				<s:Button label="生成代码" click="button1_clickHandler(event)" />
+			</s:HGroup>
+			<s:VGroup width="100%" paddingTop="10">
+				<s:Label text="*** 属性 ***" />
+				<mx:HRule width="100%"/>
+				<s:Scroller width="100%" height="80">
+					<s:TileGroup id="propOption" width="100%" height="100%" rowHeight="24" />
+				</s:Scroller>
+				<s:Label text="*** 皮肤 ***" />
+				<mx:HRule width="100%"/>
+				<s:Scroller width="100%" height="320">
+					<s:TileGroup id="skinOption" width="100%" height="100%" rowHeight="24" />
+				</s:Scroller>
+			</s:VGroup>
+		</s:VGroup>
 		<s:TextArea id="codeArea" width="100%" height="100%" />
-	</s:VGroup>
+	</s:HGroup>
 </s:WindowedApplication>
