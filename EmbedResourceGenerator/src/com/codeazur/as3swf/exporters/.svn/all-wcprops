@@ -1,0 +1,47 @@
+K 25
+svn:wc:ra_dav:version-url
+V 132
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters
+END
+FXGShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/FXGShapeExporter.as
+END
+AS3ShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/AS3ShapeExporter.as
+END
+JSCanvasShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 157
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/JSCanvasShapeExporter.as
+END
+CoreGraphicsShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 161
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/CoreGraphicsShapeExporter.as
+END
+JSONShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 153
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/JSONShapeExporter.as
+END
+SVGShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/SVGShapeExporter.as
+END
+AS3GraphicsDataShapeExporter.as
+K 25
+svn:wc:ra_dav:version-url
+V 164
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/com/codeazur/as3swf/exporters/AS3GraphicsDataShapeExporter.as
+END

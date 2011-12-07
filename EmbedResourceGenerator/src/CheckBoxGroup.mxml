@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:GridItemRenderer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				xmlns:s="library://ns.adobe.com/flex/spark" 
+				xmlns:mx="library://ns.adobe.com/flex/mx" width="100%" height="100%">
+	<fx:Script>
+		<![CDATA[
+			import spark.events.IndexChangeEvent;
+			
+			
+			protected function dropdownlist1_changeHandler(event:IndexChangeEvent):void
+			{
+				(data as ResData).skinIndex = skinChooser.selectedIndex;
+			}
+			
+			private function getSelectedIndex():int{
+				return (data as ResData).skinIndex;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<s:layout>
+		<s:HorizontalLayout verticalAlign="middle" horizontalAlign="center" />
+	</s:layout>
+	
+	<s:DropDownList dataProvider="{EmbedResourceGenerator.instance.skinNames}" selectedIndex="{(data as ResData).skinIndex}" change="dropdownlist1_changeHandler(event)" id="skinChooser" />
+	
+</s:GridItemRenderer>

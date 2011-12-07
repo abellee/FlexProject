@@ -1,17 +1,45 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false">
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false" initialize="windowedapplication1_initializeHandler(event)">
 	<fx:Script>
 		<![CDATA[
+			import avmplus.getQualifiedClassName;
+			import avmplus.getQualifiedSuperclassName;
+			
+			import com.codeazur.as3swf.SWF;
+			import com.codeazur.as3swf.data.SWFSymbol;
+			import com.codeazur.as3swf.tags.ITag;
+			import com.codeazur.as3swf.tags.TagSymbolClass;
+			
+			import fl.controls.Button;
+			import fl.controls.CheckBox;
+			import fl.controls.ComboBox;
+			import fl.controls.DataGrid;
+			import fl.controls.List;
+			import fl.controls.NumericStepper;
+			import fl.controls.ProgressBar;
+			import fl.controls.RadioButton;
+			import fl.controls.ScrollBar;
+			import fl.controls.SelectableList;
+			import fl.controls.Slider;
+			import fl.controls.TextArea;
+			import fl.controls.TextInput;
+			import fl.controls.TileList;
+			import fl.controls.UIScrollBar;
+			import fl.controls.dataGridClasses.DataGridColumn;
+			import fl.core.UIComponent;
+			import fl.data.DataProvider;
+			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
+			import mx.core.UIComponent;
 			import mx.events.FlexEvent;
 			import mx.events.IndexChangedEvent;
 			
 			import spark.events.IndexChangeEvent;
 			[Bindable]
-			private var components:ArrayCollection = new ArrayCollection([{label:"Button", data:{property:[{label:"emphasized", selected:true},
+			private var components:ArrayCollection = new ArrayCollection([{label:"Button", data:{property:[{label:"emphasized", selected:false},
 																										   {label:"toggle", selected:false},
 																										   {label:"mouseChildren", selected:false},
 																										   {label:"mouseEnabled", selected:true}],
@@ -39,6 +67,7 @@
 																									   	  {label:"overIcon", selected:true},
 																										  {label:"downIcon", selected:true},
 																										  {label:"disabledIcon", selected:true},
+																										  {label:"focusRectSkin", selected:true},
 																										  {label:"selectedUpIcon", selected:true},
 																										  {label:"selectedOverIcon", selected:true},
 																										  {label:"selectedDownIcon", selected:true},
@@ -50,6 +79,7 @@
 																									   	  {label:"upSkin", selected:true},
 																										  {label:"overSkin", selected:true},
 																										  {label:"downSkin", selected:true},
+																										  {label:"focusRectSkin", selected:true},
 																										  {label:"disabledSkin", selected:true},
 																										  {label:"upArrowUpSkin", selected:true},
 																										  {label:"upArrowOverSkin", selected:true},
@@ -60,9 +90,10 @@
 																										  {label:"downArrowDownSkin", selected:true},
 																										  {label:"downArrowDisabledSkin", selected:true},
 																										  {label:"thumbArrowUpSkin", selected:true},
-																										  {label:"thumbArrowOverSkin", selected:true},
-																										  {label:"thumbArrowDownSkin", selected:true},
-																										  {label:"thumbArrowDisabledSkin", selected:true},
+																										  {label:"thumbOverSkin", selected:true},
+																										  {label:"thumbDownSkin", selected:true},
+																										  {label:"thumbDisabledSkin", selected:true},
+																										  {label:"thumbIcon", selected:true},
 																										  {label:"trackUpSkin", selected:true},
 																										  {label:"trackOverSkin", selected:true},
 																										  {label:"trackDownSkin", selected:true},
@@ -77,6 +108,7 @@
 																										  {label:"upArrowOverSkin", selected:true},
 																										  {label:"upArrowDownSkin", selected:true},
 																										  {label:"upArrowDisabledSkin", selected:true},
+																										  {label:"focusRectSkin", selected:true},
 																										  {label:"downArrowUpSkin", selected:true},
 																										  {label:"downArrowOverSkin", selected:true},
 																										  {label:"downArrowDownSkin", selected:true},
@@ -106,6 +138,7 @@
 																									  {label:"upArrowOverSkin", selected:true},
 																									  {label:"upArrowDownSkin", selected:true},
 																									  {label:"upArrowDisabledSkin", selected:true},
+																									  {label:"focusRectSkin", selected:true},
 																									  {label:"downArrowUpSkin", selected:true},
 																									  {label:"downArrowOverSkin", selected:true},
 																									  {label:"downArrowDownSkin", selected:true},
@@ -119,12 +152,13 @@
 																									  {label:"trackOverSkin", selected:true},
 																									  {label:"trackDownSkin", selected:true},
 																									  {label:"trackDisabledSkin", selected:true}]}},
-																		  {label:"NumbericStepper", data:{property:[{label:"mouseChildren", selected:true},
+																		  {label:"NumericStepper", data:{property:[{label:"mouseChildren", selected:true},
 																			  										{label:"mouseEnabled", selected:true}],
 																			  							  skins:[{label:"upArrowUpSkin", selected:true},
 																			  									 {label:"upArrowOverSkin", selected:true},
 																												 {label:"upArrowDownSkin", selected:true},
 																												 {label:"upArrowDisabledSkin", selected:true},
+																												 {label:"focusRectSkin", selected:true},
 																												 {label:"downArrowUpSkin", selected:true},
 																												 {label:"downArrowOverSkin", selected:true},
 																												 {label:"downArrowDownSkin", selected:true},
@@ -136,6 +170,7 @@
 																												{label:"mouseEnabled", selected:true}],
 																			  						  skins:[{label:"barSkin", selected:true},
 																										  	 {label:"icon", selected:true},
+																											 {label:"focusRectSkin", selected:true},
 																											 {label:"indeterminateBar", selected:true},
 																											 {label:"indeterminateSkin", selected:true},
 																											 {label:"trackSkin", selected:true}]}},
@@ -145,6 +180,7 @@
 																			  						  skins:[{label:"upIcon", selected:true},
 																										     {label:"overIcon", selected:true},
 																											 {label:"downIcon", selected:true},
+																											 {label:"focusRectSkin", selected:true},
 																											 {label:"disabledIcon", selected:true},
 																											 {label:"selectedUpIcon", selected:true},
 																											 {label:"selectedOverIcon", selected:true},
@@ -157,6 +193,7 @@
 																										   {label:"upArrowDownSkin", selected:true},
 																										   {label:"upArrowDisabledSkin", selected:true},
 																										   {label:"downArrowUpSkin", selected:true},
+																										   {label:"focusRectSkin", selected:true},
 																										   {label:"downArrowOverSkin", selected:true},
 																										   {label:"downArrowDownSkin", selected:true},
 																										   {label:"downArrowDisabledSkin", selected:true},
@@ -169,34 +206,13 @@
 																										   {label:"thumbDownSkin", selected:true},
 																										   {label:"thumbDisabledSkin", selected:true},
 																										   {label:"thumbIcon", selected:true}]}},
-																		  {label:"SelectableList", data:{property:[{label:"allowMultipleSelection", selected:true},
-																			  									   {label:"selectable", selected:true},
-																												   {label:"mouseChildren", selected:true},
-																												   {label:"mouseEnabled", selected:true}],
-																			  							 skins:[{label:"upArrowUpSkin", selected:true},
-																											 	{label:"upArrowOverSkin", selected:true},
-																												{label:"upArrowDownSkin", selected:true},
-																												{label:"upArrowDisabledSkin", selected:true},
-																												{label:"downArrowUpSkin", selected:true},
-																												{label:"downArrowOverSkin", selected:true},
-																												{label:"downArrowDownSkin", selected:true},
-																												{label:"downArrowDisabledSkin", selected:true},
-																												{label:"trackUpSkin", selected:true},
-																												{label:"trackOverSkin", selected:true},
-																												{label:"trackDownSkin", selected:true},
-																												{label:"trackDisabledSkin", selected:true},
-																												{label:"thumbIcon", selected:true},
-																												{label:"thumbUpSkin", selected:true},
-																												{label:"thumbOverSkin", selected:true},
-																												{label:"thumbDownSkin", selected:true},
-																												{label:"thumbDisabledSkin", selected:true},
-																												{label:"cellRenderer", selected:false}]}},
 																		  {label:"Slider", data:{property:[{label:"liveDragging", selected:false},
 																			  							   {label:"mouseChlidren", selected:true},
 																										   {label:"mouseEnabled", selected:true}],
 																			  					 skins:[{label:"sliderTrackDisabledSkin", selected:true},
 																									 	{label:"sliderTrackSkin", selected:true},
 																										{label:"thumbUpSkin", selected:true},
+																										{label:"focusRectSkin", selected:true},
 																										{label:"thumbOverSkin", selected:true},
 																										{label:"thumbDownSkin", selected:true},
 																										{label:"thumbDisabledSkin", selected:true},
@@ -208,6 +224,7 @@
 																											 {label:"mouseChildren", selected:true},
 																											 {label:"mouseEnabled", selected:true}],
 																			  					   skins:[{label:"disabledSkin", selected:false},
+																									   	  {label:"focusRectSkin", selected:true},
 																									   	  {label:"upSkin", selected:false}]}},
 																		  {label:"TextInput", data:{property:[{label:"alwaysShowSelection", selected:false},
 																			  								  {label:"displayAsPassword", selected:false},
@@ -215,12 +232,14 @@
 																											  {label:"mouseChildren", selected:true},
 																											  {label:"mouseEnabled", selected:true}],
 																			  						skins:[{label:"disabledSkin", selected:true},
+																										   {label:"focusRectSkin", selected:true},
 																										   {label:"upSkin", selected:true}]}},
 																		  {label:"TileList", data:{property:[{label:"mouseChildren", selected:true},
 																			  								 {label:"mouseEnabled", selected:true}],
 																			  					   skins:[{label:"upArrowUpSkin", selected:true},
 																			  							  {label:"upArrowOverSkin", selected:true},
 																										  {label:"upArrowDownSkin", selected:true},
+																										  {label:"focusRectSkin", selected:true},
 																										  {label:"upArrowDisabledSkin", selected:true},
 																										  {label:"downArrowUpSkin", selected:true},
 																										  {label:"downArrowOverSkin", selected:true},
@@ -244,6 +263,7 @@
 																											 {label:"upArrowDownSkin", selected:true},
 																											 {label:"upArrowDisabledSkin", selected:true},
 																											 {label:"downArrowUpSkin", selected:true},
+																											 {label:"focusRectSkin", selected:true},
 																											 {label:"downArrowOverSkin", selected:true},
 																											 {label:"downArrowDownSkin", selected:true},
 																											 {label:"downArrowDisabledSkin", selected:true},
@@ -257,42 +277,59 @@
 																											 {label:"thumbDownSkin", selected:true},
 																											 {label:"thumbDisabledSkin", selected:true}]}}]);
 			private var emptyPattern:RegExp = /\s+/g;
+			private var curSkinLabel:SkinLabel;
+			private var resFile:File;
+			private var resList:Vector.<Bitmap> = new Vector.<Bitmap>();
+			private var curImageItem:ImageItem;
+			private var curSkinObjects:Object = {};
+			private var curComponentName:String;
 			
 			protected function button1_clickHandler(event:MouseEvent):void
 			{
-				codeArea.text = "";
-				var str:String = normalResourceName.text.replace(emptyPattern, "");
-				var str1:String = variableName.text.replace(emptyPattern, "");
-				if(str == "" || str1 == ""){
-					Alert.show("请输入 **资源获取接口** 与 **变量名**!");
-					return;
-				}
-				var com:String = componentList.selectedItem.label;
-				var varName:String = variableName.text;
-				var resName:String = normalResourceName.text;
-				
-				var resultStr:String = "var " + varName + ":" + com + " = new " + com + "();\n";
-				var data:Object = componentList.selectedItem.data;
-				var property:Array = data.property;
-				var skins:Array = data.skins;
-				if(property){
-					for each(var obj:Object in property){
-						resultStr += varName + "." + obj.label + " = " + obj.selected + ";\n";
-					}
-				}
-				if(skins){
-					for each(var o:Object in skins){
-						if(o.selected){
-							resultStr += varName + ".setStyle(\"" + o.label + "\", " + resName + "_" + o.label + "());\n";
-						}
-					}
-				}
-				
-				codeArea.text = resultStr;
+//				codeArea.text = "";
+//				var str:String = normalResourceName.text.replace(emptyPattern, "");
+//				var str1:String = variableName.text.replace(emptyPattern, "");
+//				if(str == "" || str1 == ""){
+//					Alert.show("请输入 **资源获取接口** 与 **变量名**!");
+//					return;
+//				}
+//				var com:String = componentList.selectedItem.label;
+//				var varName:String = variableName.text;
+//				var resName:String = normalResourceName.text;
+//				
+//				var resultStr:String = "var " + varName + ":" + com + " = new " + com + "();\n";
+//				var data:Object = componentList.selectedItem.data;
+//				var property:Array = data.property;
+//				var skins:Array = data.skins;
+//				if(property){
+//					for each(var obj:Object in property){
+//						resultStr += varName + "." + obj.label + " = " + obj.selected + ";\n";
+//					}
+//				}
+//				if(skins){
+//					var sameFun:String = null;
+//					for each(var o:Object in skins){
+//						if(o.selected){
+//							if(sameInterface.selected){
+//								if(!sameFun){
+//									sameFun = "var skin:Bitmap=new Bitmap(" + resName + "());\n";
+//									resultStr += sameFun;
+//								}
+//								resultStr += varName + ".setStyle(\"" + o.label + "\", " + "skin" + ");\n";
+//							}else{
+//								resultStr += varName + ".setStyle(\"" + o.label + "\", " + resName + "_" + o.label + "());\n";
+//							}
+//						}
+//					}
+//				}
+//				
+//				codeArea.text = resultStr;
 			}
 			
 			protected function componentList_changeHandler(event:IndexChangeEvent):void
 			{
+				curSkinObjects = {};
+				codeArea.text = "";
 				var len:int = propOption.numElements;
 				for(var m:int = 0; m<len; m++){
 					var prop:CustomCheckBox = propOption.getElementAt(m) as CustomCheckBox;
@@ -303,15 +340,17 @@
 				propOption.percentHeight = 100;
 				
 				len = skinOption.numElements;
-				for(var n:int = 0; n<len; n++){
-					var skin:CustomCheckBox = skinOption.getElementAt(n) as CustomCheckBox;
-					skin.data = null;
-					skin.removeEventListener(Event.CHANGE, onSkinChange);
-				}
+//				for(var n:int = 0; n<len; n++){
+//					var skin:CustomCheckBox = skinOption.getElementAt(n) as CustomCheckBox;
+//					skin.data = null;
+//					skin.removeEventListener(Event.CHANGE, onSkinChange);
+//				}
 				skinOption.removeAllElements();
 				skinOption.percentHeight = 100;
 				
 				var data:Object = componentList.selectedItem.data;
+				doPreview(componentList.selectedItem.label);
+				curComponentName = componentList.selectedItem.label;
 				var property:Array = data.property;
 				var skins:Array = data.skins;
 				if(property){
@@ -331,13 +370,16 @@
 					len = skins.length;
 					for(var j:int = 0; j<len; j++){
 						var o:Object = skins[j];
-						var skinsCB:CustomCheckBox = new CustomCheckBox();
-						skinsCB.index = j;
-						skinsCB.label = o.label;
-						skinsCB.data = o.label;
-						skinsCB.selected = o.selected;
-						skinOption.addElement(skinsCB);
-						skinsCB.addEventListener(Event.CHANGE, onSkinChange);
+						var skinLabel:SkinLabel = new SkinLabel();
+						skinLabel.labelStr = o.label;
+//						var skinsCB:CustomCheckBox = new CustomCheckBox();
+//						skinsCB.index = j;
+//						skinsCB.label = o.label;
+//						skinsCB.data = o.label;
+//						skinsCB.selected = o.selected;
+						skinOption.addElement(skinLabel);
+						skinLabel.addEventListener(MouseEvent.CLICK, onSkinLabelClick);
+						skinLabel.addEventListener(MouseEvent.MOUSE_UP, skinLabelMouseUp);
 					}
 				}
 			}
@@ -356,6 +398,9 @@
 				if(props && props.length){
 					props[index].selected = prop.selected;
 				}
+				var com:fl.core.UIComponent = (previewBox.getElementAt(0) as mx.core.UIComponent).getChildAt(0) as fl.core.UIComponent;
+				(com as fl.core.UIComponent)[prop.label] = prop.selected;
+				showCode();
 			}
 			
 			protected function onSkinChange(event:Event):void
@@ -369,6 +414,349 @@
 				}
 			}
 			
+			protected function onSkinLabelClick(event:MouseEvent):void
+			{
+				if(curSkinLabel){
+					curSkinLabel.removeFocus();
+				}
+				curSkinLabel = event.currentTarget as SkinLabel;
+				curSkinLabel.setFocusOn();
+			}
+			
+			protected function chooseResBtn_clickHandler(event:MouseEvent):void
+			{
+				if(!resFile) resFile = File.desktopDirectory;
+				resFile.addEventListener(Event.SELECT, onResFileSelected);
+				resFile.browseForOpen("*.SWF", [new FileFilter("*.swf", "*.swf")]);
+			}
+			
+			protected function onResFileSelected(event:Event):void
+			{
+				resFile.removeEventListener(Event.SELECT, onResFileSelected);
+				resPath.text = resFile.name;
+				resFile.addEventListener(Event.COMPLETE, onResFileLoaded);
+				resFile.load();
+			}
+			
+			protected function onResFileLoaded(event:Event):void
+			{
+				resFile.removeEventListener(Event.COMPLETE, onResFileLoaded);
+				var loader:Loader = new Loader();
+				var func:Function = function(event:Event):void{
+					loader.contentLoaderInfo.removeEventListener(Event.COMPLETE, func);
+					showImage(loader.contentLoaderInfo);
+				};
+				var lc:LoaderContext = new LoaderContext();
+				lc.allowLoadBytesCodeExecution = true;
+				loader.contentLoaderInfo.addEventListener(Event.COMPLETE, func);
+				loader.loadBytes(resFile.data, lc);
+			}
+			
+			private function showImage(loaderInfo:LoaderInfo):void
+			{
+				var list:Vector.<SWFSymbol> = getSymbolClass(new SWF(loaderInfo.bytes).tags);
+				skinList.removeAllElements();
+				skinList.requestedColumnCount = 4;
+				skinList.requestedRowCount = Math.ceil(list.length / 4);
+				for each(var symbol:SWFSymbol in list){
+					var img:ImageItem = new ImageItem();
+					var cl:Class = loaderInfo.applicationDomain.getDefinition(symbol.name) as Class;
+					var bd:BitmapData = new cl() as BitmapData;
+					img.imageSource = bd;
+					img.description = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
+					img.toolTip = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
+					skinList.addElement(img);
+					img.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownStartDrag);
+					stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpStopDrag);
+					stage.addEventListener(MouseEvent.MOUSE_MOVE, dragImageItem);
+				}
+			}
+			
+			private function getSymbolClass(tags:Vector.<ITag>):Vector.<SWFSymbol>{
+				for each(var tag:ITag in tags){
+					if(tag is TagSymbolClass){
+						return (tag as TagSymbolClass).symbols;
+					}
+				}
+				return null;
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				var os:String = Capabilities.os;
+				if(os.indexOf("Mac") != -1){
+					this.setStyle("fontFamily", "华文黑体");
+				}else if(os.indexOf("Windows XP") != -1){
+					this.setStyle("fontFamily", "宋体");
+				}else if(os.indexOf("Windows 7") != -1){
+					this.setStyle("fontFamily", "微软雅黑");
+				}
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+			}
+			
+			private function doPreview(str:String):void
+			{
+				previewBox.removeAllElements();
+				var ui:mx.core.UIComponent = new mx.core.UIComponent();
+				if(str){
+					switch(str){
+						case "Button":
+							var btn:fl.controls.Button = new fl.controls.Button();
+							btn.label = "Button";
+							ui.addChild(btn);
+							ui.width = btn.width;
+							ui.height = btn.height;
+							break;
+						case "CheckBox":
+							var cb:fl.controls.CheckBox = new fl.controls.CheckBox();
+							cb.label = "CheckBox";
+							ui.addChild(cb);
+							ui.width = cb.width;
+							ui.height = cb.height;
+							break;
+						case "ComboBox":
+							var comboBox:ComboBox = new ComboBox();
+							comboBox.dataProvider = new DataProvider([{label:"item0", name:"name0"}, {label:"item1", name:"name1"}, {label:"item2", name:"name2"}]);
+							ui.addChild(comboBox);
+							ui.width = comboBox.width;
+							ui.height = comboBox.height;
+							break;
+						case "DataGrid":
+							var dgColumn0:DataGridColumn = new DataGridColumn();
+							dgColumn0.dataField = "label";
+							dgColumn0.headerText = "Label";
+							
+							var dgColumn1:DataGridColumn = new DataGridColumn();
+							dgColumn1.dataField = "name";
+							dgColumn1.headerText = "Name";
+							
+							var dg:DataGrid = new DataGrid();
+							dg.columns.push(dgColumn0, dgColumn1);
+							dg.rowCount = 3;
+							dg.dataProvider = new DataProvider([{label:"item0", name:"name0"}, {label:"item1", name:"name1"}, {label:"item2", name:"name2"}]);
+							ui.addChild(dg);
+							ui.width = dg.width;
+							ui.height = dg.height;
+							break;
+						case "List":
+							var list:List = new List();
+							list.dataProvider = new DataProvider([{label:"item0", name:"name0"}, {label:"item1", name:"name1"}, {label:"item2", name:"name2"}]);
+							ui.addChild(list);
+							ui.width = list.width;
+							ui.height = list.height;
+							break;
+						case "NumericStepper":
+							var numbericStepper:NumericStepper = new NumericStepper();
+							numbericStepper.stepSize = 1;
+							numbericStepper.minimum = 0;
+							numbericStepper.maximum = 10;
+							ui.addChild(numbericStepper);
+							ui.width = numbericStepper.width;
+							ui.height = numbericStepper.height;
+							break;
+						case "ProgressBar":
+							var pb:ProgressBar = new ProgressBar();
+							ui.addChild(pb);
+							ui.width = pb.width;
+							ui.height = pb.height;
+							break;
+						case "RadioButton":
+							var rb:RadioButton = new RadioButton();
+							rb.label = "RadioButton";
+							ui.addChild(rb);
+							ui.width = rb.width;
+							ui.height = rb.height;
+							break;
+						case "ScrollBar":
+							var scrollBar:ScrollBar = new ScrollBar();
+							scrollBar.setSize(100, 100);
+							scrollBar.minScrollPosition = 0;
+							scrollBar.maxScrollPosition = 50;
+							ui.addChild(scrollBar);
+							ui.width = scrollBar.width;
+							ui.height = scrollBar.height;
+							break;
+						case "SelectableList":
+							
+							break;
+						case "Slider":
+							var slider:Slider = new Slider();
+							slider.minimum = 0;
+							slider.maximum = 100;
+							ui.addChild(slider);
+							ui.width = slider.width;
+							ui.height = slider.height;
+							break;
+						case "TextArea":
+							var textArea:fl.controls.TextArea = new fl.controls.TextArea();
+							textArea.text = "Test Text";
+							ui.addChild(textArea);
+							ui.width = textArea.width;
+							ui.height = textArea.height;
+							break;
+						case "TextInput":
+							var ti:fl.controls.TextInput = new fl.controls.TextInput();
+							ti.text = "Test Text";
+							ui.addChild(ti);
+							ui.width = ti.width;
+							ui.height = ti.height;
+							break;
+						case "TileList":
+							var tileList:TileList = new TileList();
+							tileList.dataProvider = new DataProvider([{label:"item0", name:"name0"}, {label:"item1", name:"name1"}, {label:"item2", name:"name2"}]);
+							ui.addChild(tileList);
+							ui.width = tileList.width;
+							ui.height = tileList.height;
+							break;
+						case "UIScrollBar":
+							var uisb:UIScrollBar = new UIScrollBar();
+							uisb.scrollTarget = getTempTextField();
+							ui.addChild(uisb);
+							ui.width = uisb.width;
+							ui.height = uisb.height;
+							break;
+					}
+					previewBox.addElement(ui);
+				}
+			}
+			
+			private function getTempSprite():Sprite{
+				var sp:Sprite = new Sprite();
+				sp.graphics.clear();
+				sp.graphics.beginFill(0xff0000, 1.0);
+				sp.graphics.drawRect(0,	0, 100, 400);
+				sp.graphics.endFill();
+				return sp;
+			}
+			
+			private function getTempTextField():TextField{
+				var tf:TextField = new TextField();
+				tf.text = "TestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\n";
+				tf.height = 300;
+				tf.width = 100;
+				return tf;
+			}
+			
+			protected function mouseDownStartDrag(event:MouseEvent):void
+			{
+				var curImage:ImageItem = event.currentTarget as ImageItem;
+				var imageItem:ImageItem = new ImageItem();
+				imageItem.imageSource = curImage.imageSource;
+				imageItem.description = curImage.description;
+				imageItem.hideTextArea();
+				curImageItem = imageItem;
+				this.addElement(curImageItem);
+				curImageItem.x = stage.mouseX;
+				curImageItem.y = stage.mouseY;
+			}
+			
+			protected function mouseUpStopDrag(event:MouseEvent):void
+			{
+				if(curImageItem && this.contains(curImageItem)){
+					this.removeElement(curImageItem);
+					curImageItem = null;
+				}
+			}
+			
+			protected function dragImageItem(event:MouseEvent):void
+			{
+				if(curImageItem){
+					curImageItem.startDrag();
+				}
+			}
+			
+			protected function skinLabelMouseUp(event:MouseEvent):void
+			{
+				var skinLabel:SkinLabel = event.currentTarget as SkinLabel;
+				if(skinLabel && curImageItem){
+					skinLabel.addSkin(curImageItem.imageSource as BitmapData);
+					var className:String = getQualifiedClassName(curImageItem.imageSource);
+					var so:SkinObject = new SkinObject();
+					var existObject:SkinObject = getSkinObject(className);
+					if(existObject){
+						so.varName = existObject.varName;
+						so.className = null;
+					}else{
+						so.varName = skinLabel.labelStr;
+						so.className = className;
+					}
+					curSkinObjects[skinLabel.labelStr] = so;
+					showCode();
+					var com:fl.core.UIComponent = (previewBox.getElementAt(0) as mx.core.UIComponent).getChildAt(0) as fl.core.UIComponent;
+					(com as fl.core.UIComponent).setStyle(skinLabel.labelStr, new Bitmap(curImageItem.imageSource));
+					(com as fl.core.UIComponent).width = curImageItem.imageSource.width;
+					(com as fl.core.UIComponent).height = curImageItem.imageSource.height;
+				}
+			}
+			
+			private function getSkinObject(str:String):SkinObject{
+				if(curSkinObjects){
+					for (var key:String in curSkinObjects){
+						var so:SkinObject = curSkinObjects[key] as SkinObject;
+						if(so && so.className == str) return so;
+					}
+				}else return null;
+				return null;
+			}
+			
+			private function showCode():void
+			{
+				var str:String = "var " + variableName.text + ":" + curComponentName + "= new " + curComponentName + "();\n";
+				var styleStr:String = "";
+				var data:Object = componentList.selectedItem.data;
+				var property:Array = data.property;
+				var skins:Array = data.skins;
+				if(hasTextField(curComponentName)){
+					if(curComponentName == "ComboBox" || curComponentName == "NumericStepper"){
+						str += variableName.text + ".textField.textField.autoSize = TextFieldAutoSize.LEFT;\n";
+					}else{
+						str += variableName.text + ".textField.autoSize = TextFieldAutoSize.LEFT;\n";
+					}
+				}
+				if(property){
+					for each(var obj:Object in property){
+						str += variableName.text + "." + obj.label + " = " + obj.selected + ";\n";
+					}
+				}
+				for (var key:String in curSkinObjects){
+					var so:SkinObject = curSkinObjects[key] as SkinObject;
+					if(so && so.className){
+						str += "var " + so.varName + ":Bitmap = new Bitmap(" + normalResourceName.text + "." + so.className + "());\n";
+					}
+					styleStr += variableName.text + ".setStyle(\"" + key + "\", " + so.varName +");\n"
+				}
+				str += styleStr;
+				codeArea.text = str;
+			}
+			
+			private function hasTextField(str:String):Boolean{
+				switch(str){
+					case "Button":
+						return true;
+						break;
+					case "CheckBox":
+						return true;
+						break;
+					case "ComboBox":
+						return true;
+						break;
+					case "NumericStepper":
+						return true;
+						break;
+					case "RadioButton":
+						return true;
+						break;
+					case "TextArea":
+						return true;
+						break;
+					case "TextInput":
+						return true;
+						break;
+				}
+				return false;
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -378,8 +766,14 @@
 		<s:VGroup width="100%" height="100%" gap="10" paddingBottom="20" paddingLeft="20"
 				  paddingRight="20" paddingTop="10">
 			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label text="素材包:" width="100" />
+				<s:TextInput id="resPath" />
+				<s:Button label="选择素材包..." id="chooseResBtn" click="chooseResBtn_clickHandler(event)" />
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
 				<s:Label text="资源获取接口:" width="100" />
 				<s:TextInput id="normalResourceName" />
+				<!--<s:CheckBox label="统一接口" id="sameInterface" />-->
 			</s:HGroup>
 			<s:HGroup width="100%" verticalAlign="middle">
 				<s:Label text="变量名:" width="100" />
@@ -389,21 +783,27 @@
 				<s:Label text="选择组件:" />
 				<s:DropDownList id="componentList" dataProvider="{components}" selectedIndex="0" width="200" change="componentList_changeHandler(event)"
 								creationComplete="componentList_creationCompleteHandler(event)" />
-				<s:Button label="生成代码" click="button1_clickHandler(event)" />
+				<!--<s:Button label="生成代码" click="button1_clickHandler(event)" />-->
 			</s:HGroup>
 			<s:VGroup width="100%" paddingTop="10">
 				<s:Label text="*** 属性 ***" />
-				<mx:HRule width="100%"/>
+				<mx:HRule width="100%" />
 				<s:Scroller width="100%" height="80">
 					<s:TileGroup id="propOption" width="100%" height="100%" rowHeight="24" />
 				</s:Scroller>
 				<s:Label text="*** 皮肤 ***" />
-				<mx:HRule width="100%"/>
+				<mx:HRule width="100%" />
 				<s:Scroller width="100%" height="320">
-					<s:TileGroup id="skinOption" width="100%" height="100%" rowHeight="24" />
+					<s:TileGroup id="skinOption" width="100%" height="100%" rowHeight="60" horizontalGap="20" verticalGap="20" />
 				</s:Scroller>
 			</s:VGroup>
 		</s:VGroup>
-		<s:TextArea id="codeArea" width="100%" height="100%" />
+		<s:VGroup width="100%" height="100%">
+			<s:TextArea id="codeArea" width="100%" height="200" />
+			<s:VGroup id="previewBox" width="100%" height="100" horizontalAlign="center" verticalAlign="middle" />
+			<s:Scroller width="100%" height="280">
+				<s:TileGroup id="skinList" width="100%" rowHeight="200" />
+			</s:Scroller>
+		</s:VGroup>
 	</s:HGroup>
 </s:WindowedApplication>

@@ -1,8 +1,498 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx">
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)" initialize="windowedapplication1_initializeHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import com.codeazur.as3swf.SWF;
+			import com.codeazur.as3swf.data.SWFSymbol;
+			import com.codeazur.as3swf.tags.ITag;
+			import com.codeazur.as3swf.tags.TagSymbolClass;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.ColorPickerEvent;
+			import mx.events.FlexEvent;
+			import mx.managers.PopUpManager;
+			
+			import spark.components.gridClasses.GridColumn;
+			import spark.events.GridItemEditorEvent;
+			
+			private var resDir:File;
+			private var preDir:File;
+			private var fileList:Array;
+			private var avilableType:Array = ["png", "jpg", "jpeg"];
+			private var typeList:Vector.<String> = new Vector.<String>(["Normal", "upSkin", "overSkin", "downSkin", "disabledSkin"]);
+			private var originClassName:String = null;
+			private var emptyPattern:RegExp = /\s+/g;
+			private var count:int = 0;
+			private var exportor:SWFExport;
+			private var processingPanel:ProcessingPanel;
+			private var codeConsole:CodeConsole;
+			private var fullScaleImage:FullScaleImage = new FullScaleImage();
+			private var bkColor:Number = 0xFFFFFF;
+			private var resourceViewer:ResourceViewer;
+			private var swfFile:File;
+			private var nativeProcess:NativeProcess;
+			private var nativeInfo:NativeProcessStartupInfo;
+			[Bindable]
+			public var skinNames:ArrayCollection = new ArrayCollection([{label:"Normal", data:""}, {label:"upSkin", data:"普通状态"},
+				{label:"overSkin", data:"经过状态"}, {label:"downSkin", data:"按下状态"}, {label:"disabledSkin", data:"禁用状态"},
+				{label:"selectedUpSkin", data:"选中:普通状态"}, {label:"selectedOverSkin", data:"选中:经过状态"},
+				{label:"selectedDownSkin", data:"选中:按下状态"}, {label:"selectedDisabledSkin", data:"选中:禁用状态"},
+				{label:"focusRectSkin", data:"获取焦点时的外框"}, {label:"icon", data:"图标"}, {label:"upIcon", data:"图标:普通状态"},
+				{label:"overIcon", data:"图标:经过状态"}, {label:"downIcon", data:"图标:按下状态"}, {label:"disabledIcon", data:"图标:禁用状态"},
+				{label:"selectedUpIcon", data:"图标选中:普通状态"}, {label:"selectedOverIcon", data:"图标选中:经过状态"},
+				{label:"selectedDownIcon", data:"图标选中:按下状态"}, {label:"selectedDisabledIcon", data:"图标选中:禁用状态"},
+				{label:"upArrowUpSkin", data:"向上箭头按钮:普通状态"}, {label:"upArrowOverSkin", data:"向上箭头按钮:经过状态"},
+				{label:"upArrowDownSkin", data:"向上箭头按钮:按下状态"}, {label:"upArrowDisabledSkin", data:"向上箭头按钮:禁用状态"},
+				{label:"downArrowUpSkin", data:"向下箭头按钮:普通状态"}, {label:"downArrowOverSkin", data:"向下箭头按钮:经过状态"},
+				{label:"downArrowDownSkin", data:"向下箭头按钮:按下状态"}, {label:"downArrowDisabledSkin", data:"向下箭头按钮:禁用状态"},
+				{label:"thumbArrowUpSkin", data:"滚动条的缩略图的外观"}, {label:"thumbOverSkin", data:"滚动条的缩略图上方时"}, {label:"thumbDownSkin", data:"滚动条的缩略图按下时"},
+				{label:"thumbDisabledSkin", data:"滚动条的缩略图禁用时"}, {label:"thumbIcon", data:"滚动条的缩略图的图标"}, {label:"trackUpSkin", data:"滚动轨道:普通状态"},
+				{label:"trackOverSkin", data:"滚动轨道:经过状态"}, {label:"trackDownSkin", data:"滚动轨道:按下状态"}, {label:"trackDisabledSkin", data:"滚动轨道:禁用状态"},
+				{label:"columnDividerSkin", data:"两列之间显示的分隔符"}, {label:"columnStretchCursorSkin", data:"两个列标题之间调整宽度时的鼠标样式"},
+				{label:"headerUpSkin", data:"标题栏:普通状态"}, {label:"headerOverSkin", data:"标题栏:经过状态"}, {label:"headerDownSkin", data:"标题栏:按下状态"},
+				{label:"headerDisabledSkin", data:"标题栏:禁用状态"}, {label:"headerSortArrowAscSkin", data:"标题栏:按升序排序时显示的排序箭头"},
+				{label:"headerSortArrowDescSkin", data:"按降序排序时显示的排序箭头"}, {label:"TextInput_disabledSkin", data:"输入框:禁用状态"},
+				{label:"TextInput_upskin", data:"输入框:普通状态"}, {label:"barSkin", data:"进度栏皮肤"}, {label:"indeterminateBar", data:"不确定栏动画的渲染器的类"},
+				{label:"indeterminateSkin", data:"不确定的进度栏的类的名称"}, {label:"trackSkin", data:"进度指示器轨道的皮肤"},
+				{label:"sliderTrackDisabledSkin", data:"Slider组件中的轨道禁用状态"}, {label:"sliderTrackSkin", data:"Slider组件中的轨道的普通状态"},
+				{label:"tickSkin", data:"Slider组件中的刻度的外观"}]);
+			[Bindable]
+			public static var instance:EmbedResourceGenerator;
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				instance = this;
+			}
+			
+			protected function resDirButton_clickHandler(event:MouseEvent):void
+			{
+				if(preDir) resDir = preDir;
+				else resDir = File.desktopDirectory;
+				resDir.addEventListener(Event.SELECT, onResDir_selectedHandler);
+				resDir.browseForDirectory("请选择资源目录");
+			}
+			
+			public function test(ba:ByteArray, w:int, h:int):void
+			{
+				var bd:BitmapData = new BitmapData(w, h, true, 0x00);
+				bd.setPixels(new Rectangle(0, 0, w, h), ba);
+				var ui:UIComponent = new UIComponent();
+				ui.addChild(new Bitmap(bd));
+				addElement(ui);
+				ui.x = Math.random() * 1000;
+				ui.y = Math.random() * 600;
+			}
+			
+			protected function onResDir_selectedHandler(event:Event):void
+			{
+				if(!fileList) fileList = [];
+				var files:Array = resDir.getDirectoryListing();
+				for each(var f:File in files){
+					if(isAvilableType(f.extension)){
+						var fileName:String = f.name;
+						var nameArr:Array = fileName.split("#");
+						var packageName:String = f.parent.name;
+						var resData:ResData = new ResData();
+						resData.annotation = String(nameArr[1]).split(".")[0];
+						resData.name = nameArr[0] + "." + f.extension;
+						resData.file = f;
+						if(f.extension == "png") resData.imageType = ImageType.PNG;
+						else if(f.extension == "jpg" || f.extension == "jpeg") resData.imageType = ImageType.JPEG;
+						else if(f.extension == "gif") resData.imageType = ImageType.GIF;
+						resData.packageName = packageName;
+						resData.className = nameArr[0].split(".")[0];
+						resData.loadBitmap();
+						fileList.push(resData);
+					}
+				}
+				fileNum.text = "共" + fileList.length + "个文件";
+				pathTextField.text = resDir.nativePath;
+				preDir = resDir;
+				resDG.dataProvider = new ArrayCollection(fileList);
+			}
+			
+			public function showFullScaleImage(bitmap:Bitmap):void
+			{
+				if(!fullScaleImage) fullScaleImage = new FullScaleImage();
+				fullScaleImage.bkColor = bkColor;
+				fullScaleImage.bitmap = bitmap;
+				PopUpManager.addPopUp(fullScaleImage, this, true);
+				PopUpManager.centerPopUp(fullScaleImage);
+			}
+			
+			private function getSymbolClass(tags:Vector.<ITag>):Vector.<SWFSymbol>{
+				for each(var tag:ITag in tags){
+					if(tag is TagSymbolClass){
+						return (tag as TagSymbolClass).symbols;
+					}
+				}
+				return null;
+			}
+			
+			private function isAvilableType(extension:String):Boolean
+			{
+				if(avilableType.indexOf(extension) == -1)
+					return false;
+				else
+					return true;
+			}
+			
+			protected function genButton_clickHandler(event:MouseEvent):void
+			{
+				if(!fileList || !fileList.length){
+					Alert.show("请先选择要打包的素材文件!");
+					return;
+				}
+				if(!processingPanel) processingPanel = new ProcessingPanel();
+				PopUpManager.addPopUp(processingPanel, this, true);
+				PopUpManager.centerPopUp(processingPanel);
+				if(!exportor) exportor = new SWFExport(null, Number(qualityText.text));
+				var bool:Boolean = exportor.createSWF(fileList, "", File.desktopDirectory.nativePath, new Date().time + "", "");
+				if(bool){
+					if(processingPanel && processingPanel.isPopUp)
+						PopUpManager.removePopUp(processingPanel);
+					showCode();
+				}
+			}
+			
+			protected function resDG_creationCompleteHandler(event:FlexEvent):void
+			{
+				var thumbColumn:GridColumn = new GridColumn();
+				thumbColumn.editable = false;
+				thumbColumn.itemRenderer = new ClassFactory(ThumbRenderer);
+				thumbColumn.headerText = "预览";
+				thumbColumn.dataField = "file";
+				thumbColumn.width = 100;
+				
+				var nameColumn:GridColumn = new GridColumn();
+				nameColumn.editable = false;
+				nameColumn.headerText = "素材文件名";
+				nameColumn.dataField = "name";
+				
+				var linkColumn:GridColumn = new GridColumn();
+				linkColumn.headerText = "类名";
+				linkColumn.dataField = "className";
+				
+				var descriptionColumn:GridColumn = new GridColumn();
+				descriptionColumn.headerText = "注释";
+				descriptionColumn.dataField = "annotation";
+				
+				var columnRenderer:GridColumn = new GridColumn();
+				columnRenderer.editable = false;
+				columnRenderer.itemRenderer = new ClassFactory(CheckBoxGroup);
+				columnRenderer.headerText = "皮肤类型";
+				
+				var operateColumn:GridColumn = new GridColumn();
+				operateColumn.editable = false;
+				operateColumn.itemRenderer = new ClassFactory(DeleteItem);
+				operateColumn.headerText = "操作";
+				operateColumn.dataField = "";
+				
+				resDG.columns = new ArrayList([thumbColumn, nameColumn, linkColumn, descriptionColumn, columnRenderer, operateColumn]);
+			}
+			
+			public function removeItem(index:int):void
+			{
+				if(fileList.length > index && index >= 0){
+					fileList.splice(index, 1);
+					resDG.dataProvider = new ArrayCollection(fileList);
+					fileNum.text = "共" + fileList.length + "个文件";
+				}
+			}
+			
+			protected function resDG_gridItemEditorSessionSaveHandler(event:GridItemEditorEvent):void
+			{
+				var dataField:String = event.column.dataField;
+				var rowIndex:int = event.rowIndex;
+				var rd:ResData = fileList[rowIndex] as ResData;
+				if(rd){
+					if(dataField == "className"){
+						var className:String = rd[dataField];
+						className = className.replace(emptyPattern, "");
+						if(className != originClassName){
+							if(checkExist(className, rowIndex)){
+								Alert.show("已存在相同的类名!");
+								rd[dataField] = originClassName;
+							}else{
+								rd[dataField] = className;
+							}
+						}
+					}
+				}
+			}
+			
+			private function checkExist(str:String, row:int):Boolean
+			{
+				var len:int = fileList.length;
+				for(var i:int = 0; i<len; i++){
+					var rd:ResData = fileList[i] as ResData;
+					if(rd && i != row && rd.className == str) return true;
+				}
+				return false;
+			}
+			
+			protected function resDG_gridItemEditorSessionStartHandler(event:GridItemEditorEvent):void
+			{
+				var dataField:String = event.column.dataField;
+				var rowIndex:int = event.rowIndex;
+				var rd:ResData = fileList[rowIndex] as ResData;
+				if(rd){
+					if(dataField == "className"){
+						originClassName = rd[dataField];
+					}
+				}
+			}
+			
+			public function addBitmap():void
+			{
+				if(fileList[count]) (fileList[count] as ResData).loadBitmap();
+				count++;
+			}
+			
+			private function showCode():void
+			{
+				if(!codeConsole) codeConsole = new CodeConsole();
+				var str:String = "";
+				var varStr:String = "";
+				var funStr:String = "";
+				var len:int = fileList.length;
+				for(var i:int = 0; i<len; i++){
+					var rd:ResData = fileList[i] as ResData;
+					if(rd){
+						if(rd.skinIndex == 0){
+							str += "/**\n* " + rd.annotation +"\n**/\n";
+							str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "\")]\n";
+							str += "public static var " + rd.className + ":Class;\n";
+							
+							varStr += "/**\n* " + rd.annotation +"\n**/\n";
+							varStr += "private var _" + rd.className + ":BitmapData;\n";
+							
+							funStr += "/**\n* " + rd.annotation +"\n**/\n";
+							funStr += "public function " + rd.className + "():BitmapData{\nif(!_" + rd.className + "){\n_" + rd.className
+								+ "= (new (Resource." + rd.className + ")() as Bitmap).bitmapData;\n}\nreturn _" + rd.className + ";\n}\n";
+						}else{
+							str += "/**\n* " + rd.annotation +" " + skinNames[rd.skinIndex].data + "\n**/\n";
+							str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_" + skinNames[rd.skinIndex].label + "\")]\n";
+							str += "public static var " + rd.className + "_" + skinNames[rd.skinIndex].label + ":Class;\n";
+							
+							varStr += "/**\n* " + rd.annotation +" " + skinNames[rd.skinIndex].data + "\n**/\n";
+							varStr += "private var _" + rd.className + "_" + skinNames[rd.skinIndex].label + ":BitmapData;\n";
+							
+							funStr += "/**\n* " + rd.annotation +"\n**/\n";
+							funStr += "public function " + rd.className + "_" + skinNames[rd.skinIndex].label
+								+ "():BitmapData{\nif(!_" + rd.className + "_" + skinNames[rd.skinIndex].label
+								+ "){\n_" + rd.className + "_" + skinNames[rd.skinIndex].label
+								+ "= (new (Resource." + rd.className + "_" + skinNames[rd.skinIndex].label
+								+ ")() as Bitmap).bitmapData;\n}\nreturn _" + rd.className + "_" + skinNames[rd.skinIndex].label + ";\n}\n";
+						}
+//						if(rd.isNormal || (!rd.isAll && !rd.isDisabledSkin && !rd.isDownSkin && !rd.isNormal && !rd.isOverSkin && !rd.isUpSkin)){
+//							str += "/**\n* " + rd.annotation +"\n**/\n";
+//							str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "\")]\n";
+//							str += "public static var " + rd.className + ":Class;\n";
+//						}else{
+//							if(rd.isAll){
+//								str += "/**\n* " + rd.annotation +" 普通状态\n**/\n";
+//								str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_upSkin\")]\n";
+//								str += "public static var " + rd.className + "_upSkin:Class;\n";
+//								str += "/**\n* " + rd.annotation +" 经过状态\n**/\n";
+//								str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_overSkin\")]\n";
+//								str += "public static var " + rd.className + "_overSkin:Class;\n";
+//								str += "/**\n* " + rd.annotation +" 点下状态\n**/\n";
+//								str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_downSkin\")]\n";
+//								str += "public static var " + rd.className + "_downSkin:Class;\n";
+//								str += "/**\n* " + rd.annotation +" 禁用状态\n**/\n";
+//								str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_disabledSkin\")]\n";
+//								str += "public static var " + rd.className + "_disabledSkin:Class;\n";
+//							}else{
+//								if(rd.isUpSkin){
+//									str += "/**\n* " + rd.annotation +" 普通状态\n**/\n";
+//									str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_upSkin\")]\n";
+//									str += "public static var " + rd.className + "_upSkin:Class;\n";
+//								}
+//								if(rd.isOverSkin){
+//									str += "/**\n* " + rd.annotation +" 经过状态\n**/\n";
+//									str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_overSkin\")]\n";
+//									str += "public static var " + rd.className + "_overSkin:Class;\n";
+//								}
+//								if(rd.isDownSkin){
+//									str += "/**\n* " + rd.annotation +" 点下状态\n**/\n";
+//									str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_downSkin\")]\n";
+//									str += "public static var " + rd.className + "_downSkin:Class;\n";
+//								}
+//								if(rd.isDisabledSkin){
+//									str += "/**\n* " + rd.annotation +" 禁用状态\n**/\n";
+//									str += "[Embed(source=\"" + rd.packageName + ".swf\", symbol=\"" + rd.className + "_disabledSkin\")]\n";
+//									str += "public static var " + rd.className + "_disabledSkin:Class;\n";
+//								}
+//							}
+//						}
+					}
+				}
+				codeConsole.codes = str;
+				codeConsole.varCodes = varStr;
+				codeConsole.funCodes = funStr;
+				PopUpManager.addPopUp(codeConsole, this, true);
+				PopUpManager.centerPopUp(codeConsole);
+				preBtn.visible = true;
+			}
+			
+			public function closeCodeConsole():void
+			{
+				PopUpManager.removePopUp(codeConsole);
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+				if(Capabilities.os.indexOf("Mac") != -1) this.setStyle("fontFamily", "华文黑体");
+				else if(Capabilities.os.indexOf("Windows 7") != -1) this.setStyle("fontFamily", "微软雅黑");
+				else this.setStyle("fontFamily", "宋体");
+			}
+			
+			protected function preBtn_clickHandler(event:MouseEvent):void
+			{
+				if(codeConsole){
+					PopUpManager.addPopUp(codeConsole, this, true);
+					PopUpManager.centerPopUp(codeConsole);
+				}
+			}
+			
+			protected function clearButton_clickHandler(event:MouseEvent):void
+			{
+				fileList = null;
+				pathTextField.text = "";
+				resDG.dataProvider = new ArrayCollection([]);
+			}
+			
+			public function closeFullScaleImage():void
+			{
+				if(fullScaleImage && fullScaleImage.isPopUp){
+					PopUpManager.removePopUp(fullScaleImage);
+				}
+			}
+			
+			protected function colorpicker1_changeHandler(event:ColorPickerEvent):void
+			{
+				bkColor = Number(bkColorPickr.value);
+				resDG.setStyle("contentBackgroundColor", bkColor);
+			}
+			
+			public function closeResourceViewer():void
+			{
+				if(resourceViewer && resourceViewer.isPopUp){
+					PopUpManager.removePopUp(resourceViewer);
+				}
+			}
+			
+			protected function viewRes_clickHandler(event:MouseEvent):void
+			{
+				if(!swfFile) swfFile = File.desktopDirectory;
+				swfFile.addEventListener(Event.SELECT, onSWFFileSelected);
+				swfFile.browseForOpen("*.swf", [new FileFilter("*.swf", "*.swf")]);
+			}
+			
+			private function onSWFFileSelected(event:Event):void
+			{
+				swfFile.removeEventListener(Event.SELECT, onSWFFileSelected);
+				swfFile.addEventListener(Event.COMPLETE, onSWFFileLoadComplete);
+				swfFile.load();
+			}
+			
+			protected function onSWFFileLoadComplete(event:Event):void
+			{
+				swfFile.removeEventListener(Event.COMPLETE, onSWFFileLoadComplete);
+				var swfLoader:Loader = new Loader();
+				swfLoader.contentLoaderInfo.addEventListener(Event.COMPLETE, onSWFLoadComplete);
+				var lc:LoaderContext = new LoaderContext();
+				lc.allowLoadBytesCodeExecution = true;
+				swfLoader.loadBytes(swfFile.data, lc);
+				swfFile = null;
+			}
+			
+			protected function onSWFLoadComplete(event:Event):void
+			{
+				var loaderInfo:LoaderInfo = event.target as LoaderInfo;
+				loaderInfo.removeEventListener(Event.COMPLETE, onSWFLoadComplete);
+				var arr:Vector.<SWFSymbol> = getSymbolClass(new SWF(loaderInfo.bytes).tags);
+				if(!resourceViewer) resourceViewer = new ResourceViewer();
+				resourceViewer.bkColor = bkColor;
+				PopUpManager.addPopUp(resourceViewer, this, true);
+				PopUpManager.centerPopUp(resourceViewer);
+				resourceViewer.showImages(loaderInfo, arr);
+			}
+			
+			protected function flashGen_clickHandler(event:MouseEvent):void
+			{
+				if(!nativeInfo) nativeInfo = new NativeProcessStartupInfo();
+				var file:File = new File("/Applications/Adobe Flash CS5.5/Adobe Flash CS5.5.app");
+				nativeInfo.executable = file;
+				var processArgs:Vector.<String> = new Vector.<String>();
+				nativeInfo.arguments = processArgs;
+				if(!nativeProcess) nativeProcess = new NativeProcess();
+				nativeProcess.start(nativeInfo);
+				return;
+				if(Config.flashPath == ""){
+					Alert.show("请先配置Flash在系统中的位置...", "", Alert.OK | Alert.CANCEL, this, onAlertClose);
+					return;
+				}
+			}
+			
+			private function onAlertClose(event:CloseEvent):void
+			{
+				if(event.detail == Alert.OK){
+					swfFile = File.desktopDirectory;
+					swfFile.addEventListener(Event.SELECT, onChooseFlash);
+					swfFile.browseForOpen("");
+				}
+			}
+			
+			protected function onChooseFlash(event:Event):void
+			{
+				swfFile.removeEventListener(Event.SELECT, onChooseFlash);
+				swfFile = null;
+				if(!nativeInfo) nativeInfo = new NativeProcessStartupInfo();
+				var file:File = new File("/Applications/Adobe\ Flash\ CS5.5/Adobe\ Flash\ CS5.5.app");
+				nativeInfo.executable = file;
+				var processArgs:Vector.<String> = new Vector.<String>();
+				nativeInfo.arguments = processArgs;
+				if(!nativeProcess) nativeProcess = new NativeProcess();
+				nativeProcess.start(nativeInfo);
+			}
+			
+		]]>
+	</fx:Script>
 	<fx:Declarations>
 		<!-- Place non-visual elements (e.g., services, value objects) here -->
 	</fx:Declarations>
+	<s:VGroup width="100%" paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" horizontalAlign="center">
+		<s:HGroup width="100%" verticalAlign="middle" height="35">
+			<s:TextInput editable="false" width="200" id="pathTextField" />
+			<s:Button label="选择资源目录..." id="resDirButton" click="resDirButton_clickHandler(event)" />
+			<s:Button label="生成" id="genButton" click="genButton_clickHandler(event)" />
+			<s:Button label="使用Flash导出" id="flashGen" click="flashGen_clickHandler(event)" />
+			<s:Label text="质量：" />
+			<s:TextInput id="qualityText" text="50" restrict="0-9" width="50" toolTip="质量越高，生成的文件越大!" />
+			<mx:ColorPicker change="colorpicker1_changeHandler(event)" id="bkColorPickr" />
+			<s:Button label="查看素材包" id="viewRes" click="viewRes_clickHandler(event)" />
+			<s:Button label="打开上次生成的代码" id="preBtn" click="preBtn_clickHandler(event)" visible="false" />
+		</s:HGroup>
+		<s:DataGrid id="resDG" width="100%" height="100%"
+					creationComplete="resDG_creationCompleteHandler(event)"
+					requestedMaxRowCount="8" rowHeight="60" editable="true"
+					gridItemEditorSessionSave="resDG_gridItemEditorSessionSaveHandler(event)"
+					gridItemEditorSessionStart="resDG_gridItemEditorSessionStartHandler(event)" />
+		<s:HGroup width="100%" horizontalAlign="center" verticalAlign="middle" gap="20">
+			<s:Label text="共0个文件" id="fileNum" />
+			<s:Button label="清空" id="clearButton" click="clearButton_clickHandler(event)" />
+		</s:HGroup>
+	</s:VGroup>
 </s:WindowedApplication>

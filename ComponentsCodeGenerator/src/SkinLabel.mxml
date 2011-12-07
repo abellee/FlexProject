@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:BorderContainer xmlns:fx="http://ns.adobe.com/mxml/2009" 
+				   xmlns:s="library://ns.adobe.com/flex/spark" 
+				   xmlns:mx="library://ns.adobe.com/flex/mx" width="120" height="60" cornerRadius="5" borderAlpha=".8" toolTip="{labelStr}"
+				   mouseOver="bordercontainer1_mouseOverHandler(event)" mouseOut="bordercontainer1_mouseOutHandler(event)" backgroundColor="0xeeeeee">
+	<s:layout>
+		<s:HorizontalLayout paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" verticalAlign="middle" horizontalAlign="center" />
+	</s:layout>
+
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Image;
+			import mx.core.UIComponent;
+			[Bindable]
+			public var labelStr:String = "";
+			
+			private var img:Image;
+			
+			protected function bordercontainer1_mouseOverHandler(event:MouseEvent):void
+			{
+				this.alpha = .5;
+			}
+			
+			protected function bordercontainer1_mouseOutHandler(event:MouseEvent):void
+			{
+				this.alpha = 1;
+			}
+			
+			public function setFocusOn():void
+			{
+				this.setStyle("borderColor", 0xFF0000);
+				this.setStyle("borderAlpha", 1);
+				this.setStyle("borderWeight", 3);
+			}
+			
+			public function removeFocus():void
+			{
+				this.setStyle("borderColor", 0x000000);
+				this.setStyle("borderAlpha", .8);
+				this.setStyle("borderWeight", 1);
+			}
+			
+			public function addSkin(bd:BitmapData):void
+			{
+				if(this.contains(lb)){
+					this.removeElement(lb);
+				}
+				if(!img){
+					img = new Image();
+					img.percentWidth = 100;
+					img.percentHeight = 100;
+				}
+				img.source = new Bitmap(bd);
+				this.addElement(img);
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label text="{labelStr}" width="100%" height="100%" verticalAlign="middle" textAlign="center" id="lb" />
+</s:BorderContainer>

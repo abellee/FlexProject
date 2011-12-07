@@ -1,0 +1,71 @@
+K 25
+svn:wc:ra_dav:version-url
+V 131
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup
+END
+HierarchicalSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/HierarchicalSetup.as
+END
+LevelTargetSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 151
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/LevelTargetSetup.as
+END
+ILogTarget.as
+K 25
+svn:wc:ra_dav:version-url
+V 145
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/ILogTarget.as
+END
+SimpleTargetSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/SimpleTargetSetup.as
+END
+mergeSetups.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/mergeSetups.as
+END
+MergedSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/MergedSetup.as
+END
+SimpleRegExpSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 152
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/SimpleRegExpSetup.as
+END
+rule.as
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/rule.as
+END
+LogSetupLevel.as
+K 25
+svn:wc:ra_dav:version-url
+V 148
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/LogSetupLevel.as
+END
+RegExpSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/RegExpSetup.as
+END
+WrapperRegExpSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 153
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/setup/WrapperRegExpSetup.as
+END

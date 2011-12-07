@@ -4,6 +4,12 @@
 					   xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="700" creationComplete="windowedapplication1_creationCompleteHandler(event)">
 	<fx:Script>
 		<![CDATA[
+			import com.codeazur.as3swf.SWF;
+			import com.codeazur.as3swf.data.SWFSymbol;
+			import com.codeazur.as3swf.tags.ITag;
+			import com.codeazur.as3swf.tags.Tag;
+			import com.codeazur.as3swf.tags.TagSymbolClass;
+			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.UIComponent;
@@ -96,6 +102,7 @@
 			private var aaa:int = 0;
 			private var loader:Loader = new Loader();
 			private var v:Vector.<Bitmap> = new Vector.<Bitmap>();
+			private var mc:MovieClip;
 			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
 			{
 				loadBitmap();
@@ -112,20 +119,27 @@
 			
 			private function loadByIndex():void
 			{
-				loader.load(new URLRequest(aaa + ".png"));
+				loader.load(new URLRequest("fittingRoom.swf"));
 			}
 			
 			private function onComplete(event:Event):void
 			{
-				var bitmap:Bitmap = event.target.content as Bitmap;
-				v.push(bitmap);
-				if(aaa >= 7){
-					var swfExport:SWFExport		= new SWFExport();
-					swfExport.createSWF(v, "tttt", File.desktopDirectory.nativePath, "aaaaaaaa");
-					return;
+				var swf:SWF = new SWF(loader.contentLoaderInfo.bytes);
+				var arr:Vector.<SWFSymbol> = getSymbolClass(swf.tags);
+//				mc = event.target.content as MovieClip;
+//				this.nativeWindow.width = mc.width;
+//				this.nativeWindow.height = mc.height;
+//				stage.addEventListener(Event.ENTER_FRAME, onEnterFrame);
+//				istage.addChild(mc);
+			}
+			
+			private function getSymbolClass(tags:Vector.<ITag>):Vector.<SWFSymbol>{
+				for each(var tag:ITag in tags){
+					if(tag is TagSymbolClass){
+						return (tag as TagSymbolClass).symbols;
+					}
 				}
-				aaa++;
-				loadByIndex();
+				return null;
 			}
 			
 			protected function schoolSelector_creationCompleteHandler(event:FlexEvent):void
@@ -382,6 +396,27 @@
 				roleContainer.addChild(bp);
 			}
 			
+			protected function onEnterFrame(event:Event):void
+			{
+				var bd:BitmapData = new BitmapData(mc.width, mc.height, true, 0x00);
+				bd.draw(mc);
+				v.push(new Bitmap(bd));
+				if(mc.currentFrame == mc.totalFrames){
+					mc.stop();
+					istage.removeChild(mc);
+					stage.removeEventListener(Event.ENTER_FRAME, onEnterFrame);
+					trace("finished");
+					var swfExport:SWFExport		= new SWFExport();
+					swfExport.createSWF(v, "tttt", File.desktopDirectory.nativePath, "aaaaaaaa");
+				}
+			}
+			
+			protected function screenShot(event:TimerEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -426,4 +461,7 @@
 	<s:Button x="544" y="139" label="坐骑跑步状态" click="button6_clickHandler(event)" />
 	<s:Label x="444" y="88" fontSize="14" fontWeight="bold" text="预览" />
 	<s:Button x="709" y="200" label="旋转"  click="button7_clickHandler(event)" />
+	<s:BorderContainer width="100%" height="100%">
+		<s:SpriteVisualElement id="istage" width="100%" height="100%" />
+	</s:BorderContainer>
 </s:WindowedApplication>

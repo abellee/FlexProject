@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:VGroup xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		  xmlns:s="library://ns.adobe.com/flex/spark" 
+		  xmlns:mx="library://ns.adobe.com/flex/mx" width="110" height="190" horizontalAlign="center">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.FlexEvent;
+			
+			[Bindable]
+			public var imageSource:BitmapData;
+			
+			[Bindable]
+			public var description:String;
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Image source="{imageSource}" width="100%" height="100%" />
+	<s:TextArea text="{description}" width="100%" height="80" editable="false" contentBackgroundAlpha="0" borderVisible="true" borderColor="0x000000" />
+</s:VGroup>

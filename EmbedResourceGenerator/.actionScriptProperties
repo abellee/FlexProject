@@ -23,8 +23,10 @@
   <flashCatalyst validateFlashCatalystCompatibility="false"/>
   <buildTargets>
     <buildTarget buildTargetName="default">
-      <airSettings airCertificatePath="" airTimestamp="true" version="1">
-        <airExcludes/>
+      <airSettings airCertificatePath="/Users/Abel/Desktop/KGEcertification.p12" airTimestamp="true" version="1">
+        <airExcludes>
+          <pathEntry path="org"/>
+        </airExcludes>
       </airSettings>
       <actionScriptSettings version="1"/>
     </buildTarget>

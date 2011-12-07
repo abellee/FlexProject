@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+				xmlns:s="library://ns.adobe.com/flex/spark"
+				xmlns:mx="library://ns.adobe.com/flex/mx"
+				width="900" height="500" close="titlewindow1_closeHandler(event)"
+				horizontalAlign="center" layout="horizontal" showCloseButton="true"
+				verticalAlign="middle">
+
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			[Bindable]
+			public var codes:String = "";
+			
+			[Bindable]
+			public var varCodes:String = "";
+			
+			[Bindable]
+			public var funCodes:String = "";
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				EmbedResourceGenerator.instance.closeCodeConsole();
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(codes != ""){
+					Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, codes);
+					Alert.show("复制成功！");
+				}
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(varCodes != ""){
+					Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, varCodes);
+					Alert.show("复制成功！");
+				}
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				if(funCodes != ""){
+					Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, funCodes);
+					Alert.show("复制成功！");
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%" height="100%" horizontalAlign="center">
+		<s:TextArea id="codeArea" text="{codes}" width="100%" height="100%" />
+		<s:Button label="复制" click="button1_clickHandler(event)" />
+	</s:VGroup>
+	<s:VGroup width="100%" height="100%" horizontalAlign="center">
+		<s:TextArea id="varCodeArea" text="{varCodes}" width="100%" height="100%" />
+		<s:Button label="复制" click="button2_clickHandler(event)" />
+	</s:VGroup>
+	<s:VGroup width="100%" height="100%" horizontalAlign="center">
+		<s:TextArea id="funcCodeArea" text="{funCodes}" width="100%" height="100%" />
+		<s:Button label="复制" click="button3_clickHandler(event)" />
+	</s:VGroup>
+</mx:TitleWindow>

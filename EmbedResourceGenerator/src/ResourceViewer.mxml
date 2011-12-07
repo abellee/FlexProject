@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="500" showCloseButton="true"
+		 close="titlewindow1_closeHandler(event)" backgroundColor="{bkColor}">
+	<fx:Script>
+		<![CDATA[
+			import com.codeazur.as3swf.data.SWFSymbol;
+			
+			import mx.core.UIComponent;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.components.Image;
+			
+			[Bindable]
+			public var bkColor:Number = 0xFFFFFF;
+			
+			public function showImages(loaderInfo:LoaderInfo, list:Vector.<SWFSymbol>):void
+			{
+				this.title = "共" + list.length + "个文件";
+				realStage.removeAllElements();
+				realStage.requestedColumnCount = 6;
+				realStage.requestedRowCount = Math.ceil(list.length / 6);
+				for each(var symbol:SWFSymbol in list){
+					var img:ImageItem = new ImageItem();
+					var cl:Class = loaderInfo.applicationDomain.getDefinition(symbol.name) as Class;
+					var bd:BitmapData = new cl() as BitmapData;
+					img.imageSource = bd;
+					img.description = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
+					img.toolTip = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
+					realStage.addElement(img);
+				}
+			}
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				EmbedResourceGenerator.instance.closeResourceViewer();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:TileGroup width="100%" height="100%" id="realStage"
+				 paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10"
+				 verticalGap="15" horizontalGap="15" columnWidth="110" rowHeight="200"
+				 horizontalAlign="center" verticalAlign="middle" />
+</mx:TitleWindow>

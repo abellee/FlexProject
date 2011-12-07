@@ -20,11 +20,13 @@ package
 	import flash.display.BitmapData;
 	import flash.events.EventDispatcher;
 	import flash.events.IEventDispatcher;
+	import flash.events.TimerEvent;
 	import flash.filesystem.File;
 	import flash.filesystem.FileMode;
 	import flash.filesystem.FileStream;
 	import flash.utils.ByteArray;
 	import flash.utils.CompressionAlgorithm;
+	import flash.utils.Timer;
 	
 	import org.as3commons.bytecode.abc.AbcFile;
 	import org.as3commons.bytecode.abc.enum.Opcode;
@@ -50,6 +52,14 @@ package
 		private var imgWidth:int = 0;
 		private var imgHeight:int = 0;
 		
+		private var timer:Timer = new Timer(500);
+		private var byteArrays:Vector.<ByteArray> = new Vector.<ByteArray>();
+		private var bitmaps:Vector.<Bitmap> = new Vector.<Bitmap>();
+		private var iden:String;
+		private var p:String;
+		private var folder:String;
+		private var count:int = 0;
+		
 		public function SWFExport(target:IEventDispatcher=null)
 		{
 			super(target);
@@ -58,21 +68,63 @@ package
 		public function createSWF(arr:Vector.<Bitmap>, identifier:String, path:String, folderName:String):Boolean
 		{
 			init();
-			var len:int = arr.length;
-			for(var i:int = 0; i<len; i++){
-				imgWidth = arr[i].width;
-				imgHeight = arr[i].height;
-				addPNG(encodePNG(arr[i].bitmapData), identifier + "_" + i, arr[i].bitmapData);
-			}
-			addClass();
-			var ba:ByteArray = publish();
-			var file:File = new File(path);
-			file = file.resolvePath(path).resolvePath(folderName).resolvePath(identifier + ".swf");
-			var fileStream:FileStream = new FileStream();
-			fileStream.open(file, FileMode.WRITE);
-			fileStream.writeBytes(ba);
-			fileStream.close();
+			iden = identifier;
+			p = path;
+			folder = folderName;
+			bitmaps = arr;
+			timer.addEventListener(TimerEvent.TIMER, onTimer);
+			timer.start();
 			return true;
+		}
+		
+		protected function onTimer2(event:TimerEvent):void
+		{
+			trace("addPNG ", count);
+			addPNG(byteArrays[count], iden + "_" + count, bitmaps[count].bitmapData);
+			count += 1;
+			if(count >= byteArrays.length){
+				trace("gen");
+				timer.stop();
+				var ba:ByteArray = publish();
+				var file:File = new File(p);
+				file = file.resolvePath(p).resolvePath(folder).resolvePath(iden + ".swf");
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeBytes(ba);
+				fileStream.close();
+			}
+		}
+		
+		protected function onTimer(event:TimerEvent):void
+		{
+			trace("on timer", count);
+			imgWidth = bitmaps[count].width;
+			imgHeight = bitmaps[count].height;
+			byteArrays.push(encodePNG(bitmaps[count].bitmapData));
+			count += 1;
+			if(count >= bitmaps.length){
+				trace("stop");
+				timer.stop();
+				timer.reset();
+				timer.removeEventListener(TimerEvent.TIMER, onTimer);
+				timer.addEventListener(TimerEvent.TIMER, onTimer2);
+				count = 0;
+				timer.start()
+			}
+//			var len:int = bitmaps.length;
+//			for(var i:int = 0; i<len; i++){
+//				imgWidth = bitmaps[i].width;
+//				imgHeight = bitmaps[i].height;
+//				addPNG(encodePNG(bitmaps[i].bitmapData), iden + "_" + i, bitmaps[i].bitmapData);
+//			}
+//			addClass();
+//			var ba:ByteArray = publish();
+//			var file:File = new File(p);
+//			file = file.resolvePath(p).resolvePath(folder).resolvePath(iden + ".swf");
+//			var fileStream:FileStream = new FileStream();
+//			fileStream.open(file, FileMode.WRITE);
+//			fileStream.writeBytes(ba);
+//			fileStream.close();
 		}
 		
 		private function addClass():void

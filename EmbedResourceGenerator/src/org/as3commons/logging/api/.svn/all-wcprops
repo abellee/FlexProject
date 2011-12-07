@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 129
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api
+END
+Logger.as
+K 25
+svn:wc:ra_dav:version-url
+V 139
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/Logger.as
+END
+getLogger.as
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/getLogger.as
+END
+getNamedLogger.as
+K 25
+svn:wc:ra_dav:version-url
+V 147
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/getNamedLogger.as
+END
+getClassLogger.as
+K 25
+svn:wc:ra_dav:version-url
+V 147
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/getClassLogger.as
+END
+LOGGER_FACTORY.as
+K 25
+svn:wc:ra_dav:version-url
+V 147
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/LOGGER_FACTORY.as
+END
+LoggerFactory.as
+K 25
+svn:wc:ra_dav:version-url
+V 146
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/LoggerFactory.as
+END
+ILogger.as
+K 25
+svn:wc:ra_dav:version-url
+V 140
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/ILogger.as
+END
+ILogSetup.as
+K 25
+svn:wc:ra_dav:version-url
+V 142
+/svn/webgame/!svn/ver/57/trunk/%E7%A8%8B%E5%BA%8F/%E5%89%8D%E7%AB%AF%E5%B7%A5%E5%85%B7/SWFExportor/src/org/as3commons/logging/api/ILogSetup.as
+END

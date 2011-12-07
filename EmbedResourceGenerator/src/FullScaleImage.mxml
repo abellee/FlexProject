@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+		 xmlns:s="library://ns.adobe.com/flex/spark" 
+		 xmlns:mx="library://ns.adobe.com/flex/mx" width="800" height="500" showCloseButton="true"
+		 close="titlewindow1_closeHandler(event)" verticalAlign="middle" horizontalAlign="center" title="{bitmap.width + 'X' + bitmap.height}"
+		 textAlign="center" backgroundColor="{bkColor}">
+	<fx:Script>
+		<![CDATA[
+			import mx.events.CloseEvent;
+			[Bindable]
+			public var bitmap:Bitmap;
+			
+			[Bindable]
+			public var bkColor:Number = 0xFFFFFF;
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				EmbedResourceGenerator.instance.closeFullScaleImage();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Image source="{bitmap}" id="img" width="100%" height="{bitmap.height}" mouseChildren="false" />
+</mx:TitleWindow>
