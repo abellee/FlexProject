@@ -25,6 +25,7 @@
     <buildTarget buildTargetName="default">
       <airSettings airCertificatePath="/Users/Abel/Desktop/KGEcertification.p12" airTimestamp="true" version="1">
         <airExcludes>
+          <pathEntry path="runner.scpt"/>
           <pathEntry path="org"/>
         </airExcludes>
       </airSettings>

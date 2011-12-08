@@ -432,18 +432,31 @@
 			
 			protected function flashGen_clickHandler(event:MouseEvent):void
 			{
-				if(!nativeInfo) nativeInfo = new NativeProcessStartupInfo();
-				var file:File = new File("/Applications/Adobe Flash CS5.5/Adobe Flash CS5.5.app");
-				nativeInfo.executable = file;
-				var processArgs:Vector.<String> = new Vector.<String>();
-				nativeInfo.arguments = processArgs;
-				if(!nativeProcess) nativeProcess = new NativeProcess();
-				nativeProcess.start(nativeInfo);
-				return;
 				if(Config.flashPath == ""){
 					Alert.show("请先配置Flash在系统中的位置...", "", Alert.OK | Alert.CANCEL, this, onAlertClose);
 					return;
 				}
+				callFlash();
+			}
+			
+			public function onOutputData(event:ProgressEvent):void
+			{
+				Alert.show("Got: " + nativeProcess.standardOutput.readUTFBytes(nativeProcess.standardOutput.bytesAvailable)); 
+			}
+			
+			public function onErrorData(event:ProgressEvent):void
+			{
+				Alert.show("ERROR -" + nativeProcess.standardError.readUTFBytes(nativeProcess.standardError.bytesAvailable)); 
+			}
+			
+			public function onExit(event:NativeProcessExitEvent):void
+			{
+				Alert.show("Process exited with " + event.exitCode);
+			}
+			
+			public function onIOError(event:IOErrorEvent):void
+			{
+				Alert.show(event.toString());
 			}
 			
 			private function onAlertClose(event:CloseEvent):void
@@ -459,13 +472,97 @@
 			{
 				swfFile.removeEventListener(Event.SELECT, onChooseFlash);
 				swfFile = null;
+				
+				callFlash();
+			}
+			
+			private function callFlash():void
+			{
+				//write .jsfl
+				var file:File = File.applicationStorageDirectory.resolvePath("package.jsfl");
+				var jsflStr:String = getJSFL();
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeUTFBytes(jsflStr);
+				fileStream.close();
+				//write complete
+				Alert.show(File.applicationStorageDirectory.nativePath);
 				if(!nativeInfo) nativeInfo = new NativeProcessStartupInfo();
-				var file:File = new File("/Applications/Adobe\ Flash\ CS5.5/Adobe\ Flash\ CS5.5.app");
+				file = new File("/usr/bin/osascript");
 				nativeInfo.executable = file;
 				var processArgs:Vector.<String> = new Vector.<String>();
+				var command:String = 'run script "tell application \\"Adobe Flash CS5.5\\" to open POSIX file \\"' + File.applicationStorageDirectory.resolvePath("package.jsfl").nativePath + '\\""';
+				processArgs.push("-e");
+				processArgs.push(command);
 				nativeInfo.arguments = processArgs;
 				if(!nativeProcess) nativeProcess = new NativeProcess();
+				nativeProcess.addEventListener(ProgressEvent.STANDARD_OUTPUT_DATA, onOutputData);
+				nativeProcess.addEventListener(ProgressEvent.STANDARD_ERROR_DATA, onErrorData);
+				nativeProcess.addEventListener(NativeProcessExitEvent.EXIT, onExit);
+				nativeProcess.addEventListener(IOErrorEvent.STANDARD_OUTPUT_IO_ERROR, onIOError);
 				nativeProcess.start(nativeInfo);
+			}
+			
+			private function getJSFL():String{
+				var str:String = "";
+				var result:String = "";
+				var len:int = fileList.length;
+				for(var i:int = 0; i<len; i++){
+					var rd:ResData = fileList[i] as ResData;
+					if(rd){
+						str += "\"" + rd.className + "\", ";
+					}
+				}
+				if(str != ""){
+					result = "var names = [" + str +"];\n";
+				}
+				return result + 'var doc = fl.createDocument();' +
+					'\nif(doc){\ndoc.width = 10;' +
+					'\ndoc.height = 10;' +
+					'\nvar uri = FLfile.platformPathToURI("' + pathTextField.text + '");' +
+					'\nif(uri){' +
+					'\nvar fileList = FLfile.listFolder(uri, "files");' +
+					'\nvar fileLen = fileList.length;' +
+					'\nfor(var j = 0; j < fileLen; j++){' +
+					'\nvar extension = fileList[j].substring(fileList[j].lastIndexOf(".") + 1);' +
+					'\nif(extension != "jpg" && extension != "png" && extension != "jpeg"){' +
+					'\ncontinue;' +
+					'\n}' +
+					'\ndoc.importFile(uri + "/" + fileList[j], true);' +
+					'\n}' +
+					'\nvar itemsList = doc.library.items;' +
+					'\nvar len = itemsList.length;' +
+					'\nfor(var i = 0; i < len; i++){' +
+					'\nvar item = itemsList[i];' +
+					'\nvar nameStr = item.name;' +
+					'\nvar className = names[i];' +
+					'\nitem.allowSmoothing = true;' +
+					'\nvar extension = nameStr.substring(nameStr.lastIndexOf(".") + 1);' +
+					'\nif(extension == "png"){' +
+					'\nitem.compressionType = "lossless";' +
+					'\n}else{' +
+					'\nitem.useImportedJPEGQuality  = true;' +
+					'\n}' +
+					'\nitem.linkageExportForAS = true;' +
+					'\nitem.linkageExportInFirstFrame = true;' +
+					'\nitem.linkageBaseClass = "flash.display.BitmapData";' +
+					'\nitem.linkageClassName = className;' +
+					'\n}' +
+					'\nfl.saveDocument(doc, uri + "/' + pathTextField.text.substring(pathTextField.text.lastIndexOf("/") + 1) + '.fla");' +
+					'\ndoc.publish();' +
+					'\ndoc.close();' +
+					'\n}' +
+					'\n}'
+			}
+			
+			protected function onError(event:Event):void
+			{
+				Alert.show("error");
+			}
+			
+			protected function onOutputClose(event:Event):void
+			{
+				Alert.show("output close");				
 			}
 			
 		]]>

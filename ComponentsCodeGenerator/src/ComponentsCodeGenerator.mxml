@@ -38,6 +38,7 @@
 			import mx.events.IndexChangedEvent;
 			
 			import spark.events.IndexChangeEvent;
+			import spark.events.TextOperationEvent;
 			[Bindable]
 			private var components:ArrayCollection = new ArrayCollection([{label:"Button", data:{property:[{label:"emphasized", selected:false},
 																										   {label:"toggle", selected:false},
@@ -279,10 +280,11 @@
 			private var emptyPattern:RegExp = /\s+/g;
 			private var curSkinLabel:SkinLabel;
 			private var resFile:File;
-			private var resList:Vector.<Bitmap> = new Vector.<Bitmap>();
+			private var resList:Vector.<ImageItem> = new Vector.<ImageItem>();
 			private var curImageItem:ImageItem;
 			private var curSkinObjects:Object = {};
 			private var curComponentName:String;
+			private var count:int = 0;
 			
 			protected function button1_clickHandler(event:MouseEvent):void
 			{
@@ -454,6 +456,7 @@
 			
 			private function showImage(loaderInfo:LoaderInfo):void
 			{
+				resList.length = 0;
 				var list:Vector.<SWFSymbol> = getSymbolClass(new SWF(loaderInfo.bytes).tags);
 				skinList.removeAllElements();
 				skinList.requestedColumnCount = 4;
@@ -466,6 +469,7 @@
 					img.description = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
 					img.toolTip = "名称:\n" + symbol.name + "\n" + "尺寸:\n" + bd.width + "X" + bd.height;
 					skinList.addElement(img);
+					resList.push(img);
 					img.addEventListener(MouseEvent.MOUSE_DOWN, mouseDownStartDrag);
 					stage.addEventListener(MouseEvent.MOUSE_UP, mouseUpStopDrag);
 					stage.addEventListener(MouseEvent.MOUSE_MOVE, dragImageItem);
@@ -757,6 +761,46 @@
 				return false;
 			}
 			
+			protected function searchText_changeHandler(event:TextOperationEvent):void
+			{
+				var keyword:String = searchText.text;
+				if(keyword.replace(/\s+/g, "") == ""){
+					count = 0;
+					showSearchResult(resList);
+					return;
+				}
+				count++;
+				if(count % 4 != 0){
+					return;
+				}
+				var resultList:Vector.<ImageItem> = new Vector.<ImageItem>();
+				var pattern:RegExp = new RegExp(keyword, "gi");
+				for each(var bd:ImageItem in resList){
+					var bdName:String = getQualifiedClassName(bd.imageSource);
+					if(pattern.test(bdName)){
+						resultList.push(bd);
+					}
+				}
+				showSearchResult(resultList);
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				searchText.text = "";
+				count = 0;
+				showSearchResult(resList);
+			}
+			
+			private function showSearchResult(resultList:Vector.<ImageItem>):void
+			{
+				skinList.removeAllElements();
+				skinList.requestedColumnCount = 4;
+				skinList.requestedRowCount = Math.ceil(resultList.length / 4);
+				for each(var img:ImageItem in resultList){
+					skinList.addElement(img);
+				}
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -767,7 +811,7 @@
 				  paddingRight="20" paddingTop="10">
 			<s:HGroup width="100%" verticalAlign="middle">
 				<s:Label text="素材包:" width="100" />
-				<s:TextInput id="resPath" />
+				<s:TextInput id="resPath" editable="false" />
 				<s:Button label="选择素材包..." id="chooseResBtn" click="chooseResBtn_clickHandler(event)" />
 			</s:HGroup>
 			<s:HGroup width="100%" verticalAlign="middle">
@@ -801,9 +845,15 @@
 		<s:VGroup width="100%" height="100%">
 			<s:TextArea id="codeArea" width="100%" height="200" />
 			<s:VGroup id="previewBox" width="100%" height="100" horizontalAlign="center" verticalAlign="middle" />
-			<s:Scroller width="100%" height="280">
-				<s:TileGroup id="skinList" width="100%" rowHeight="200" />
-			</s:Scroller>
+			<s:VGroup width="100%" height="280">
+				<s:HGroup width="100%" height="30" verticalAlign="middle">
+					<s:TextInput height="30" id="searchText" change="searchText_changeHandler(event)" />
+					<s:Button label="清空" click="button2_clickHandler(event)" id="clearButton" />
+				</s:HGroup>
+				<s:Scroller width="100%" height="240">
+					<s:TileGroup id="skinList" width="100%" rowHeight="200" />
+				</s:Scroller>
+			</s:VGroup>
 		</s:VGroup>
 	</s:HGroup>
 </s:WindowedApplication>
