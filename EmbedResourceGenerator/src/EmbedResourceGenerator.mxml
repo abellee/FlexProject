@@ -451,6 +451,10 @@
 			
 			public function onExit(event:NativeProcessExitEvent):void
 			{
+				if(event.exitCode == 0){
+					showCode();
+					return;
+				}
 				Alert.show("Process exited with " + event.exitCode);
 			}
 			
@@ -486,7 +490,12 @@
 				fileStream.writeUTFBytes(jsflStr);
 				fileStream.close();
 				//write complete
-				Alert.show(File.applicationStorageDirectory.nativePath);
+				
+				for each(var rd:ResData in fileList){
+					file = rd.file;
+					file.copyTo(new File(pathTextField.text + "-final").resolvePath(rd.className + "." + rd.file.extension), false);
+				}
+				
 				if(!nativeInfo) nativeInfo = new NativeProcessStartupInfo();
 				file = new File("/usr/bin/osascript");
 				nativeInfo.executable = file;
@@ -519,7 +528,7 @@
 				return result + 'var doc = fl.createDocument();' +
 					'\nif(doc){\ndoc.width = 10;' +
 					'\ndoc.height = 10;' +
-					'\nvar uri = FLfile.platformPathToURI("' + pathTextField.text + '");' +
+					'\nvar uri = FLfile.platformPathToURI("' + pathTextField.text + '-final");' +
 					'\nif(uri){' +
 					'\nvar fileList = FLfile.listFolder(uri, "files");' +
 					'\nvar fileLen = fileList.length;' +

@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
 					   xmlns:s="library://ns.adobe.com/flex/spark" 
-					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false" initialize="windowedapplication1_initializeHandler(event)">
+					   xmlns:mx="library://ns.adobe.com/flex/mx" width="1000" height="600" showStatusBar="false"
+					   initialize="windowedapplication1_initializeHandler(event)" creationComplete="windowedapplication1_creationCompleteHandler(event)">
 	<fx:Script>
 		<![CDATA[
 			import avmplus.getQualifiedClassName;
@@ -615,10 +616,15 @@
 							break;
 						case "UIScrollBar":
 							var uisb:UIScrollBar = new UIScrollBar();
-							uisb.scrollTarget = getTempTextField();
-							ui.addChild(uisb);
+							var tf:TextField = getTempTextField();
+							ui.addChild(tf);
+							uisb.scrollTarget = tf;
+							uisb.setSize(uisb.width, tf.height);
+							ui.addChildAt(uisb, 0);
 							ui.width = uisb.width;
 							ui.height = uisb.height;
+							uisb.x = tf.width;
+							uisb.y = tf.y;
 							break;
 					}
 					previewBox.addElement(ui);
@@ -636,8 +642,11 @@
 			
 			private function getTempTextField():TextField{
 				var tf:TextField = new TextField();
-				tf.text = "TestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\nTestText\n";
-				tf.height = 300;
+				tf.wordWrap = true;
+				tf.multiline = true;
+				tf.text = "TestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestText" +
+					"TestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestTextTestText";
+				tf.height = 100;
 				tf.width = 100;
 				return tf;
 			}
@@ -689,8 +698,8 @@
 					showCode();
 					var com:fl.core.UIComponent = (previewBox.getElementAt(0) as mx.core.UIComponent).getChildAt(0) as fl.core.UIComponent;
 					(com as fl.core.UIComponent).setStyle(skinLabel.labelStr, new Bitmap(curImageItem.imageSource));
-					(com as fl.core.UIComponent).width = curImageItem.imageSource.width;
-					(com as fl.core.UIComponent).height = curImageItem.imageSource.height;
+//					(com as fl.core.UIComponent).width = curImageItem.imageSource.width;
+//					(com as fl.core.UIComponent).height = curImageItem.imageSource.height;
 				}
 			}
 			
@@ -801,6 +810,13 @@
 				}
 			}
 			
+			private var update:Updator = new Updator();
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				// TODO Auto-generated method stub
+				
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -837,7 +853,7 @@
 				</s:Scroller>
 				<s:Label text="*** 皮肤 ***" />
 				<mx:HRule width="100%" />
-				<s:Scroller width="100%" height="320">
+				<s:Scroller width="100%" height="310">
 					<s:TileGroup id="skinOption" width="100%" height="100%" rowHeight="60" horizontalGap="20" verticalGap="20" />
 				</s:Scroller>
 			</s:VGroup>
