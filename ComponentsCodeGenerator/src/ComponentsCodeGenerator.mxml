@@ -17,6 +17,7 @@
 			import fl.controls.CheckBox;
 			import fl.controls.ComboBox;
 			import fl.controls.DataGrid;
+			import fl.controls.LabelButton;
 			import fl.controls.List;
 			import fl.controls.NumericStepper;
 			import fl.controls.ProgressBar;
@@ -35,6 +36,7 @@
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.core.UIComponent;
+			import mx.events.ColorPickerEvent;
 			import mx.events.FlexEvent;
 			import mx.events.IndexChangedEvent;
 			
@@ -508,14 +510,14 @@
 					switch(str){
 						case "Button":
 							var btn:fl.controls.Button = new fl.controls.Button();
-							btn.label = "Button";
+							btn.label = labelName.text;
 							ui.addChild(btn);
 							ui.width = btn.width;
 							ui.height = btn.height;
 							break;
 						case "CheckBox":
 							var cb:fl.controls.CheckBox = new fl.controls.CheckBox();
-							cb.label = "CheckBox";
+							cb.label = labelName.text;
 							ui.addChild(cb);
 							ui.width = cb.width;
 							ui.height = cb.height;
@@ -568,7 +570,7 @@
 							break;
 						case "RadioButton":
 							var rb:RadioButton = new RadioButton();
-							rb.label = "RadioButton";
+							rb.label = labelName.text;
 							ui.addChild(rb);
 							ui.width = rb.width;
 							ui.height = rb.height;
@@ -595,14 +597,14 @@
 							break;
 						case "TextArea":
 							var textArea:fl.controls.TextArea = new fl.controls.TextArea();
-							textArea.text = "Test Text";
+							textArea.text = labelName.text;
 							ui.addChild(textArea);
 							ui.width = textArea.width;
 							ui.height = textArea.height;
 							break;
 						case "TextInput":
 							var ti:fl.controls.TextInput = new fl.controls.TextInput();
-							ti.text = "Test Text";
+							ti.text = labelName.text;
 							ui.addChild(ti);
 							ui.width = ti.width;
 							ui.height = ti.height;
@@ -698,6 +700,7 @@
 					showCode();
 					var com:fl.core.UIComponent = (previewBox.getElementAt(0) as mx.core.UIComponent).getChildAt(0) as fl.core.UIComponent;
 					(com as fl.core.UIComponent).setStyle(skinLabel.labelStr, new Bitmap(curImageItem.imageSource));
+					(com as fl.core.UIComponent).setStyle("focusRectSkin", new Sprite());
 //					(com as fl.core.UIComponent).width = curImageItem.imageSource.width;
 //					(com as fl.core.UIComponent).height = curImageItem.imageSource.height;
 				}
@@ -737,9 +740,17 @@
 					if(so && so.className){
 						str += "var " + so.varName + ":Bitmap = new Bitmap(" + normalResourceName.text + "." + so.className + "());\n";
 					}
-					styleStr += variableName.text + ".setStyle(\"" + key + "\", " + so.varName +");\n"
+					styleStr += variableName.text + ".setStyle(\"" + key + "\", " + so.varName +");\n";
 				}
+				styleStr += variableName.text + ".setStyle(\"focusRectSkin\", new Sprite());\n";
 				str += styleStr;
+				if(curComponentName == "Button"){
+					str += variableName.text + ".width = upSkin.width;\n";
+					str += variableName.text + ".height = upSkin.height;\n";
+				}
+				if(curComponentName == "Button" || curComponentName == "CheckBox" || curComponentName == "RadioButton"){
+					str += variableName.text + ".label = \"" + labelName.text + "\";\n";
+				}
 				codeArea.text = str;
 			}
 			
@@ -817,6 +828,27 @@
 				
 			}
 			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				componentList.dispatchEvent(new IndexChangeEvent(IndexChangeEvent.CHANGE));
+			}
+			
+			protected function labelName_changeHandler(event:TextOperationEvent):void
+			{
+				var com:LabelButton = (previewBox.getElementAt(0) as mx.core.UIComponent).getChildAt(0) as LabelButton;
+				if(com) com.label = labelName.text;
+			}
+			
+			protected function copyButton_clickHandler(event:MouseEvent):void
+			{
+				Clipboard.generalClipboard.setData(ClipboardFormats.TEXT_FORMAT, codeArea.text);
+			}
+			
+			protected function bkColorChooser_changeHandler(event:ColorPickerEvent):void
+			{
+				this.setStyle("backgroundColor", bkColorChooser.value);
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -840,10 +872,15 @@
 				<s:TextInput id="variableName" />
 			</s:HGroup>
 			<s:HGroup width="100%" verticalAlign="middle">
+				<s:Label text="Label:" width="100" />
+				<s:TextInput id="labelName" change="labelName_changeHandler(event)" />
+			</s:HGroup>
+			<s:HGroup width="100%" verticalAlign="middle">
 				<s:Label text="选择组件:" />
 				<s:DropDownList id="componentList" dataProvider="{components}" selectedIndex="0" width="200" change="componentList_changeHandler(event)"
 								creationComplete="componentList_creationCompleteHandler(event)" />
-				<!--<s:Button label="生成代码" click="button1_clickHandler(event)" />-->
+				<s:Button label="重置" click="button3_clickHandler(event)" />
+				<mx:ColorPicker id="bkColorChooser" change="bkColorChooser_changeHandler(event)"/>
 			</s:HGroup>
 			<s:VGroup width="100%" paddingTop="10">
 				<s:Label text="*** 属性 ***" />
@@ -853,13 +890,16 @@
 				</s:Scroller>
 				<s:Label text="*** 皮肤 ***" />
 				<mx:HRule width="100%" />
-				<s:Scroller width="100%" height="310">
+				<s:Scroller width="100%" height="270">
 					<s:TileGroup id="skinOption" width="100%" height="100%" rowHeight="60" horizontalGap="20" verticalGap="20" />
 				</s:Scroller>
 			</s:VGroup>
 		</s:VGroup>
 		<s:VGroup width="100%" height="100%">
-			<s:TextArea id="codeArea" width="100%" height="200" />
+			<s:VGroup width="100%" height="200" horizontalAlign="center">
+				<s:TextArea id="codeArea" width="100%" height="100%" />
+				<s:Button id="copyButton" label="复制" click="copyButton_clickHandler(event)" />
+			</s:VGroup>
 			<s:VGroup id="previewBox" width="100%" height="100" horizontalAlign="center" verticalAlign="middle" />
 			<s:VGroup width="100%" height="280">
 				<s:HGroup width="100%" height="30" verticalAlign="middle">

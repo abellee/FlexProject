@@ -67,6 +67,8 @@
 			[Bindable]
 			public static var instance:EmbedResourceGenerator;
 			
+			private var conflictStr:String = "";
+			
 			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
 			{
 				instance = this;
@@ -93,6 +95,7 @@
 			
 			protected function onResDir_selectedHandler(event:Event):void
 			{
+				conflictStr = "";
 				if(!fileList) fileList = [];
 				var files:Array = resDir.getDirectoryListing();
 				for each(var f:File in files){
@@ -110,6 +113,9 @@
 						resData.packageName = packageName;
 						resData.className = nameArr[0].split(".")[0];
 						resData.loadBitmap();
+						if(!checkConflist(resData.className)){
+							conflictStr += fileName + ", ";
+						}
 						fileList.push(resData);
 					}
 				}
@@ -117,6 +123,16 @@
 				pathTextField.text = resDir.nativePath;
 				preDir = resDir;
 				resDG.dataProvider = new ArrayCollection(fileList);
+				if(conflictStr != ""){
+					Alert.show(conflictStr);
+				}
+			}
+			
+			private function checkConflist(name:String):Boolean{
+				for each(var rd:ResData in fileList){
+					if(rd.className == name) return false;
+				}
+				return true;
 			}
 			
 			public function showFullScaleImage(bitmap:Bitmap):void
@@ -574,6 +590,26 @@
 				Alert.show("output close");				
 			}
 			
+			protected function flashPathBtn_clickHandler(event:MouseEvent):void
+			{
+				var file:File = File.desktopDirectory;
+				file.addEventListener(Event.SELECT, onFileSelect);
+				file.browse([new FileFilter("*.EXE", "*.exe")]);
+			}
+			
+			private function onFileSelect(event:Event):void{
+				var file:File = event.target as File;
+				file.removeEventListener(Event.SELECT, onFileSelect);
+				Alert.show(file.nativePath);
+			}
+			
+			protected function flashPathBtn_creationCompleteHandler(event:FlexEvent):void
+			{
+				var os:String = Capabilities.os;
+				if(os.indexOf("Windows") != -1) flashPathBtn.visible = true;
+				else flashPathBtn.visible = false;
+			}
+			
 		]]>
 	</fx:Script>
 	<fx:Declarations>
@@ -590,6 +626,7 @@
 			<mx:ColorPicker change="colorpicker1_changeHandler(event)" id="bkColorPickr" />
 			<s:Button label="查看素材包" id="viewRes" click="viewRes_clickHandler(event)" />
 			<s:Button label="打开上次生成的代码" id="preBtn" click="preBtn_clickHandler(event)" visible="false" />
+			<s:Button label="设置Flash路径" id="flashPathBtn" click="flashPathBtn_clickHandler(event)" visible="false" creationComplete="flashPathBtn_creationCompleteHandler(event)" />
 		</s:HGroup>
 		<s:DataGrid id="resDG" width="100%" height="100%"
 					creationComplete="resDG_creationCompleteHandler(event)"
