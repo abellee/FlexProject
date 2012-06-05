@@ -1,0 +1,582 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009" 
+					   xmlns:s="library://ns.adobe.com/flex/spark" 
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   initialize="windowedapplication1_initializeHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   showStatusBar="false"
+					   width="800"
+					   height="700" resize="windowedapplication1_resizeHandler(event)" fontSize="12">
+	<fx:Script>
+		<![CDATA[
+			import com.as3xls.xls.Cell;
+			import com.as3xls.xls.ExcelFile;
+			import com.lipi.excel.Excel;
+			
+			import mx.collections.ArrayCollection;
+			import mx.collections.ArrayList;
+			import mx.controls.Alert;
+			import mx.controls.dataGridClasses.DataGridColumn;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			import mx.events.MenuEvent;
+			import mx.events.ResizeEvent;
+			import mx.managers.PopUpManager;
+			import mx.utils.Base64Decoder;
+			
+			import spark.components.Application;
+			
+			private var isFirstLaunch:Boolean = false;
+			private var configFileName:String = "config.xml";
+			private var templateSetting:TemplateSetting;
+			
+			[Bindable]
+			private var menuData:XMLList = new XMLList('<menuitem label="文件" data="top">' +
+				'<menuitem label="导入Excel表格" data="importExcel"/>' +
+				'<menuitem label="退出" data="exit"/>' +
+				'</menuitem>' +
+				'<menuitem label="系统" data="top">' +
+				'<menuitem label="设置" data="setting"/>' +
+				'</menuitem>');
+			
+			private var excelData:ArrayCollection;
+			
+			[Bindable]
+			private var curExcelData:ArrayCollection;
+			
+			private var curPage:int = 1;
+			private var totalPage:int = 1;
+			private var numPerPage:int = 20;
+			
+			public static const EXPORT_ALL:String = "export_all";
+			public static const EXPORT_SELECTED:String = "export_selected";
+			public static const EXPORT_PAGE:String = "export_page";
+			
+			private var curState:String = BannerGenerator.EXPORT_ALL;
+			
+			private var proccessReporter:ProcessReporter;
+			
+			private var isExporting:Boolean = false;
+			
+			private var controlDir:File = File.applicationDirectory;
+			
+			private var isCancel:Boolean = false;
+			
+			private var psScriptFileName:String = "export.jsx";
+			private var flashScriptFileName:String = "export.jsfl";
+			private var batFileName:String = "callPS.bat";
+			private var dataXMLFileName:String = "data.xml";
+			
+			private var startInfo:NativeProcessStartupInfo = new NativeProcessStartupInfo();
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.addEventListener(Event.CLOSING, windowedapplication1_closeHandler);
+				ComCenter.app = this;
+				var file:File = controlDir.resolvePath(configFileName);
+				if(file.exists){
+					isFirstLaunch = false;
+				}else{
+					isFirstLaunch = true;
+				}
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - this.nativeWindow.width) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - this.nativeWindow.height) / 2;
+			}
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				if(isFirstLaunch){
+					templateSetting = new TemplateSetting();
+					templateSetting.setStyle("textAlign", "center");
+					PopUpManager.addPopUp(templateSetting, this, true);
+					PopUpManager.centerPopUp(templateSetting);
+				}else{
+					var file:File = controlDir.resolvePath(configFileName);
+					var urlLoader:URLLoader = new URLLoader();
+					urlLoader.addEventListener(Event.COMPLETE, configFile_loadCompleteHandler);
+					urlLoader.load(new URLRequest(file.nativePath));
+				}
+			}
+			
+			private function configFile_loadCompleteHandler(event:Event):void
+			{
+				var urlLoader:URLLoader = event.target as URLLoader;
+				urlLoader.removeEventListener(Event.COMPLETE, configFile_loadCompleteHandler);
+				var xml:XML = XML(urlLoader.data);
+				var settingData:SettingData = new SettingData();
+				settingData.fileName = xml.template.fileName;
+				settingData.filePath = xml.template.fileName;
+				
+				settingData.companySymbolName = xml.template.company.symbolName;
+				settingData.companyMotionStartFrame = xml.template.company.startFrame;
+				settingData.companyMotionFinishFrame = xml.template.company.finishFrame;
+				
+				settingData.togetherSymbolName = xml.template.together.symbolName;
+				settingData.togetherMotionStartFrame = xml.template.together.startFrame;
+				settingData.togetherMotionFinishFrame = xml.template.together.finishFrame;
+				
+				settingData.followerSymbolName = xml.template.follower.symbolName;
+				settingData.followerMotionStartFrame = xml.template.follower.startFrame;
+				settingData.followerMotionFinishFrame = xml.template.follower.finishFrame;
+				
+				settingData.trustedSymbolName = xml.template.trusted.symbolName;
+				settingData.trustedMotionStartFrame = xml.template.trusted.startFrame;
+				settingData.trustedMotionFinishFrame = xml.template.trusted.finishFrame;
+				
+				settingData.flashPath = xml.flashPath;
+				settingData.psPath = xml.psPath;
+				
+				settingData.companyLayer = xml.template.company.layerName;
+				settingData.togetherLayer = xml.template.together.layerName;
+				settingData.followerLayer = xml.template.follower.layerName;
+				settingData.trustedLayer = xml.template.trusted.layerName;
+				
+				ComCenter.settingData = settingData;
+			}
+			
+			public function setTemplatePath(settingData:SettingData):void{
+				ComCenter.settingData = settingData;
+				var file:File = controlDir.resolvePath(configFileName);
+				var xmlStr:String = "";
+				xmlStr += "<config>\n";
+				
+				xmlStr += "	<flashPath>";
+				xmlStr += settingData.flashPath;
+				xmlStr += "</flashPath>\n";
+				
+				xmlStr += "	<psPath>";
+				xmlStr += settingData.psPath;
+				xmlStr += "</psPath>\n";
+				
+				xmlStr += "	<template>\n";
+				xmlStr += "		<fileName>";
+				xmlStr += settingData.fileName;
+				xmlStr += "</fileName>\n";
+				
+				xmlStr += "		<company>\n";
+				xmlStr += "			<layerName>";
+				xmlStr += settingData.companyLayer;
+				xmlStr += "</layerName>\n";
+				xmlStr += "			<symbolName>";
+				xmlStr += settingData.companySymbolName;
+				xmlStr += "</symbolName>\n";
+				xmlStr += "			<startFrame>";
+				xmlStr += settingData.companyMotionStartFrame;
+				xmlStr += "</startFrame>\n";
+				xmlStr += "			<finishFrame>";
+				xmlStr += settingData.companyMotionFinishFrame;
+				xmlStr += "</finishFrame>\n";
+				xmlStr += "		</company>\n";
+				
+				xmlStr += "		<together>\n";
+				xmlStr += "			<layerName>";
+				xmlStr += settingData.togetherLayer;
+				xmlStr += "</layerName>\n";
+				xmlStr += "			<symbolName>";
+				xmlStr += settingData.togetherSymbolName;
+				xmlStr += "</symbolName>\n";
+				xmlStr += "			<startFrame>";
+				xmlStr += settingData.togetherMotionStartFrame;
+				xmlStr += "</startFrame>\n";
+				xmlStr += "			<finishFrame>";
+				xmlStr += settingData.togetherMotionFinishFrame;
+				xmlStr += "</finishFrame>\n";
+				xmlStr += "		</together>\n";
+				
+				xmlStr += "		<follower>\n";
+				xmlStr += "			<layerName>";
+				xmlStr += settingData.followerLayer;
+				xmlStr += "</layerName>\n";
+				xmlStr += "			<symbolName>";
+				xmlStr += settingData.followerSymbolName;
+				xmlStr += "</symbolName>\n";
+				xmlStr += "			<startFrame>";
+				xmlStr += settingData.followerMotionStartFrame;
+				xmlStr += "</startFrame>\n";
+				xmlStr += "			<finishFrame>";
+				xmlStr += settingData.followerMotionFinishFrame;
+				xmlStr += "</finishFrame>\n";
+				xmlStr += "		</follower>\n";
+				
+				xmlStr += "		<trusted>\n";
+				xmlStr += "			<layerName>";
+				xmlStr += settingData.trustedLayer;
+				xmlStr += "</layerName>\n";
+				xmlStr += "			<symbolName>";
+				xmlStr += settingData.trustedSymbolName;
+				xmlStr += "</symbolName>\n";
+				xmlStr += "			<startFrame>";
+				xmlStr += settingData.trustedMotionStartFrame;
+				xmlStr += "</startFrame>\n";
+				xmlStr += "			<finishFrame>";
+				xmlStr += settingData.trustedMotionFinishFrame;
+				xmlStr += "</finishFrame>\n";
+				xmlStr += "		</trusted>\n";
+				
+				xmlStr += "	</template>\n";
+				xmlStr += "</config>";
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(new File(file.nativePath), FileMode.WRITE);
+				fileStream.writeUTFBytes(xmlStr);
+				fileStream.close();
+				PopUpManager.removePopUp(templateSetting);
+				templateSetting = null;
+				file = new File(settingData.filePath);
+				try{
+					file.copyTo(new File(controlDir.resolvePath(settingData.fileName).nativePath), true);
+				}catch(e:Error){
+					
+				}
+			}
+			
+			protected function windowedapplication1_resizeHandler(event:ResizeEvent):void
+			{
+				if(templateSetting){
+					PopUpManager.centerPopUp(templateSetting);
+				}
+			}
+			
+			protected function menubar1_itemClickHandler(event:MenuEvent):void
+			{
+				var action:String = event.item.@data;
+				switch(action){
+					case "setting":
+						templateSetting = new TemplateSetting();
+						PopUpManager.addPopUp(templateSetting, this, true);
+						PopUpManager.centerPopUp(templateSetting);
+						break;
+					case "importExcel":
+						var importFile:File = File.desktopDirectory;
+						importFile.addEventListener(Event.SELECT, importFile_onSelectHandler);
+						importFile.browse([new FileFilter("*.xls;*.xlsx", "*.xls;*.xlsx")]);
+						break;
+					case "exit":
+						this.nativeApplication.exit();
+						break;
+				}
+			}
+			
+			private function importFile_onSelectHandler(event:Event):void
+			{
+				var importFile:File = event.target as File;
+				var readFile:File = new File(importFile.nativePath);
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(readFile, FileMode.READ);
+				var ba:ByteArray = new ByteArray();
+				fileStream.readBytes(ba, 0, fileStream.bytesAvailable);
+				fileStream.close();
+				if(importFile.extension == "xls"){
+					var excelFile:ExcelFile = new ExcelFile();
+					excelFile.loadFromByteArray(ba);
+					excelData = excelFile.sheets[0].values;
+					if(excelData.length){
+						for(var index:Object in excelData){
+							var arr:Array = excelData[index];
+							if(arr.length){
+								var len:int = arr.length;
+								for(var i:int = 0; i<len; i++){
+									var cell:Cell = arr[i];
+									if(cell.value){
+										arr[i] = cell.value;
+									}else{
+										excelData.source.splice(int(index), 1);
+										break;
+									}
+								}
+							}
+						}
+					}
+				}else if(importFile.extension == "xlsx"){
+					var excel:Excel = new Excel(ba);
+					var array:Array = excel.getSheetArray();
+					excelData = new ArrayCollection(array);
+				}
+				parseDataIntoArrayCollection();
+			}
+			
+			private function parseDataIntoArrayCollection():void{
+				var ac:ArrayCollection = new ArrayCollection();
+				for each(var arr:Array in excelData){
+					if(arr && arr.length && arr[0] && arr[0] != "" && arr[1] && int(arr[1])){
+						ac.addItem({name:arr[0], together:arr[1], follower:arr[2], trusted:arr[3]});
+					}
+				}
+				excelData = ac;
+				totalPage = Math.ceil(excelData.length / numPerPage);
+				totalPageLabel.text = "共" + totalPage + "页";
+				var dataColumn0:DataGridColumn = new DataGridColumn();
+				dataColumn0.dataField = "name";
+				dataColumn0.headerText = "公司名称";
+				
+				var dataColumn1:DataGridColumn = new DataGridColumn();
+				dataColumn1.dataField = "together";
+				dataColumn1.headerText = "携手走过（天）";
+				
+				var dataColumn2:DataGridColumn = new DataGridColumn();
+				dataColumn2.dataField = "follower";
+				dataColumn2.headerText = "买家关注";
+				
+				var dataColumn3:DataGridColumn = new DataGridColumn();
+				dataColumn3.dataField = "trusted";
+				dataColumn3.headerText = "买家信任";
+				
+				dataGrid.columns = [dataColumn0, dataColumn1, dataColumn2, dataColumn3];
+				showCurPageData();
+				pageFlip.visible = true;
+			}
+			
+			private function showCurPageData():void
+			{
+				curExcelData = new ArrayCollection();
+				for(var i:int = (curPage - 1) * numPerPage; i < curPage * numPerPage; i++){
+					if(excelData && i < excelData.length && excelData.getItemAt(i)){
+						curExcelData.addItem(excelData.getItemAt(i));
+					}
+				}
+				curPageLabel.text = "当前第" + curPage + "页";
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				if(curPage <= 1){
+					return;
+				}
+				curPage = 1;
+				showCurPageData();
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(curPage <= 1){
+					return;
+				}
+				curPage--;
+				showCurPageData();
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				if(curPage >= totalPage){
+					return;
+				}
+				curPage++;
+				showCurPageData();
+			}
+			
+			protected function button4_clickHandler(event:MouseEvent):void
+			{
+				if(curPage >= totalPage){
+					return;
+				}
+				curPage = totalPage;
+				showCurPageData();
+			}
+			
+			protected function exportAll_clickHandler(event:MouseEvent):void
+			{
+				chooseSavingDir();
+				curState = BannerGenerator.EXPORT_ALL;
+			}
+			
+			protected function exportPage_clickHandler(event:MouseEvent):void
+			{
+				chooseSavingDir();
+				curState = BannerGenerator.EXPORT_PAGE;
+			}
+			
+			protected function exportSelected_clickHandler(event:MouseEvent):void
+			{
+				var arr:Array = dataGrid.selectedItems;
+				if(!arr.length){
+					Alert.show("未选中任何数据!");
+					return;
+				}
+				curState = BannerGenerator.EXPORT_SELECTED;
+				chooseSavingDir();
+			}
+			
+			private function writeJSFLByData(data:ArrayCollection):void
+			{
+				var file:File = new File(ComCenter.savingDir);
+				if(file.spaceAvailable / 1000000 < 100){
+					Alert.show("您当前的硬盘空间小于100MB, 可能无法满足导出所需的空间需求, 请选择其它目录保存！");
+					return;
+				}
+				ComCenter.outsideFolderName = ComCenter.outsideFolderName + new Date().time;
+				file = file.resolvePath(ComCenter.outsideFolderName);
+				file.createDirectory();
+				var saveDir:String = ComCenter.savingDir + "/" + ComCenter.outsideFolderName;
+				saveDir = saveDir.replace(/\\/g, "/");
+				saveDir = saveDir.replace(":", "|");
+				var xmlStr:String = "<data>\n	<saveDir>" + saveDir + "</saveDir>\n";
+				file = controlDir.resolvePath(dataXMLFileName);
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(new File(file.nativePath), FileMode.WRITE);
+				for each(var obj:Object in data){
+					if(isCancel){
+						isCancel = false;
+						fileStream.close();
+						break;
+					}
+					xmlStr += getDataXMLStr(obj);
+					if(!proccessReporter){
+						proccessReporter = new ProcessReporter();
+						proccessReporter.processString = "正在生成数据...";
+						PopUpManager.addPopUp(proccessReporter, this, true);
+						PopUpManager.centerPopUp(proccessReporter);
+						isExporting = true;
+					}
+				}
+				xmlStr += "</data>";
+				fileStream.writeUTFBytes(xmlStr);
+				fileStream.close();
+				
+				file = controlDir.resolvePath(batFileName);
+				fileStream.open(new File(file.nativePath), FileMode.WRITE);
+				fileStream.writeUTFBytes('start /d "' + ComCenter.settingData.psPath + '" Photoshop.exe ' + controlDir.resolvePath(psScriptFileName).nativePath);
+				fileStream.close();
+				
+				var exePath:String = "C:/Windows/system32/cmd.exe";
+				var processArg:Vector.<String> = new Vector.<String>();
+				processArg[0] = controlDir.resolvePath(flashScriptFileName).nativePath;
+				PopUpManager.removePopUp(proccessReporter);
+				proccessReporter = null;
+				isExporting = false;
+				startInfo.arguments = processArg;
+				startInfo.executable = new File(ComCenter.settingData.flashPath);
+				var process:NativeProcess = new NativeProcess();
+				process.start(startInfo);
+			}
+			
+			private function getDataXMLStr(data:Object):String
+			{
+				var str:String = "	<item>\n";
+				str += "		<company>";
+				str += data.name;
+				str += "</company>\n";
+				str += "		<together>";
+				str += data.together;
+				str += "</together>\n";
+				str += "		<follower>";
+				str += data.follower;
+				str += "</follower>\n";
+				str += "		<trusted>";
+				str += data.trusted;
+				str += "</trusted>\n";
+				str += "	</item>\n"
+				return str;
+			}
+			
+			public function cancelExport():void{
+				if(isExporting){
+					isExporting = false;
+					isCancel = true;
+					if(proccessReporter && proccessReporter.isPopUp)
+					{
+						PopUpManager.removePopUp(proccessReporter);
+						proccessReporter = null;
+					}
+				}
+			}
+			
+			private function chooseSavingDir():void
+			{
+				if(!excelData || !excelData.length || !curExcelData || !curExcelData.length){
+					Alert.show("请先导入Excel数据！");
+					return;
+				}
+				var file:File = File.desktopDirectory;
+				file.addEventListener(Event.SELECT, onFile_selectedHandler);
+				file.browseForDirectory("请选择要保存的位置...");
+			}
+			
+			private function onFile_selectedHandler(event:Event):void
+			{
+				var file:File = event.target as File;
+				file.removeEventListener(Event.SELECT, onFile_selectedHandler);
+				ComCenter.savingDir = file.nativePath;
+				switch(curState){
+					case BannerGenerator.EXPORT_ALL:
+						writeJSFLByData(excelData);
+						break;
+					case BannerGenerator.EXPORT_PAGE:
+						writeJSFLByData(curExcelData);
+						break;
+					case BannerGenerator.EXPORT_SELECTED:
+						var arr:Array = dataGrid.selectedItems;
+						var ac:ArrayCollection = new ArrayCollection(arr);
+						writeJSFLByData(ac);
+						break;
+				}
+			}
+			
+			protected function deleteSelected_clickHandler(event:MouseEvent):void
+			{
+				var arr:Array = dataGrid.selectedItems;
+				for each(var obj:Object in arr){
+					for each(var o:Object in excelData){
+						if(obj == o){
+							var index:int = excelData.getItemIndex(o);
+							excelData.removeItemAt(index);
+						}
+					}
+				}
+				totalPage = Math.ceil(excelData.length / numPerPage);
+				totalPageLabel.text = "共" + totalPage + "页";
+				showCurPageData();
+			}
+			
+			protected function emptyData_clickHandler(event:MouseEvent):void
+			{
+				Alert.show("确定要清空所有数据?", "", Alert.YES|Alert.NO, this, alertCloseHandler, null, Alert.NO);
+			}
+			
+			private function alertCloseHandler(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					excelData = null;
+					curExcelData = null;
+				}
+			}
+			
+			protected function windowedapplication1_closeHandler(event:Event):void
+			{
+				event.preventDefault();
+				if(isExporting){
+					Alert.show("当前正在导出数据, 是否真的决定退出?", "", Alert.YES|Alert.NO, this, exitConfirm, null, Alert.NO);
+					return;
+				}
+				this.nativeApplication.exit();
+			}
+			
+			private function exitConfirm(event:CloseEvent):void{
+				if(event.detail == Alert.YES){
+					this.nativeApplication.exit();
+				}
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:VGroup width="100%" height="100%">
+		<mx:MenuBar width="100%" height="24" dataProvider="{menuData}" labelField="@label" itemClick="menubar1_itemClickHandler(event)" />
+		<s:HGroup width="100%" paddingLeft="10">
+			<s:Button label="导出全部" id="exportAll" click="exportAll_clickHandler(event)" />
+			<s:Button label="导出当前页" id="exportPage" click="exportPage_clickHandler(event)" />
+			<s:Button label="导出选中行" id="exportSelected" click="exportSelected_clickHandler(event)" />
+			<s:Button label="删除选中行" id="deleteSelected" click="deleteSelected_clickHandler(event)" />
+			<s:Button label="清空" id="emptyData" click="emptyData_clickHandler(event)" />
+		</s:HGroup>
+		<mx:DataGrid id="dataGrid" dataProvider="{curExcelData}" width="100%" height="590" allowDragSelection="true" allowMultipleSelection="true" />
+		<s:HGroup width="100%" height="100%" verticalAlign="middle" horizontalAlign="center" id="pageFlip" visible="false">
+			<s:Button label="首页" click="button1_clickHandler(event)" />
+			<s:Button label="上一页" click="button2_clickHandler(event)" />
+			<s:Button label="下一页" click="button3_clickHandler(event)" />
+			<s:Button label="尾页" click="button4_clickHandler(event)" />
+			<s:Label text="当前第1页" id="curPageLabel" />
+			<mx:VRule height="10" />
+			<s:Label text="共1页" id="totalPageLabel" />
+		</s:HGroup>
+	</s:VGroup>
+</s:WindowedApplication>

@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009"
+		 xmlns:s="library://ns.adobe.com/flex/spark"
+		 xmlns:mx="library://ns.adobe.com/flex/mx"
+		 width="400" height="660" title="设置模板" titleStyleName="titleAlignment" initialize="titlewindow1_initializeHandler(event)">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		.titleAlignment{
+			textAlign:center;
+			fontWeight:bold;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.FlexEvent;
+			import mx.validators.Validator;
+			private var file:File;
+			
+			[Bindable]
+			private var filePath:String = "";
+			
+			[Bindable]
+			private var companySymbol:String = "";
+			
+			[Bindable]
+			private var companyStart:String = "";
+			
+			[Bindable]
+			private var companyFinish:String = "";
+			
+			[Bindable]
+			private var togetherSymbol:String = "";
+			
+			[Bindable]
+			private var togetherStart:String = "";
+			
+			[Bindable]
+			private var togetherFinish:String = "";
+			
+			[Bindable]
+			private var followSymbol:String = "";
+			
+			[Bindable]
+			private var followStart:String = "";
+			
+			[Bindable]
+			private var followFinish:String = "";
+			
+			[Bindable]
+			private var trustedSymbol:String = "";
+			
+			[Bindable]
+			private var trustedStart:String = "";
+			
+			[Bindable]
+			private var trustedFinish:String = "";
+			
+			[Bindable]
+			private var flashPathString:String = "";
+			
+			[Bindable]
+			private var psPathString:String = "";
+			
+			[Bindable]
+			private var companyLayerName:String = "";
+			
+			[Bindable]
+			private var togetherLayerName:String = "";
+			
+			[Bindable]
+			private var followLayerName:String = "";
+			
+			[Bindable]
+			private var trustedLayerName:String = "";
+			
+			protected function fileBtn_clickHandler(event:MouseEvent):void
+			{
+				file = File.desktopDirectory;
+				file.addEventListener(Event.SELECT, onFileSelect);
+				file.browse([new FileFilter("*.fla", "*.fla")]);
+			}
+			private function onFileSelect(event:Event):void
+			{
+				file.removeEventListener(Event.SELECT, onFileSelect);
+				pathTxt.text = file.nativePath;
+			}
+			
+			protected function pathTxt_clickHandler(event:MouseEvent):void
+			{
+				fileBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+			}
+			
+			protected function enterBtn_clickHandler(event:MouseEvent):void
+			{
+				var errorValid:Array = Validator.validateAll([comSymbolNameValid, pathValid, comStartValid, comLastValid, togetherSymbolValid, togetherStartValid, togetherLastValid, followerSymbolValid, followerStartValid, followerLastValid,
+					trustedSymbolValid, trustedStartValid, trustedLastValid, flashPathValid, psPathValid]);
+				if(errorValid.length){
+					Alert.show("参数未填写完整！");
+				}else{
+					var settingData:SettingData;
+					if(ComCenter.settingData){
+						settingData = ComCenter.settingData;
+					}else{
+						settingData = new SettingData();
+						settingData.filePath = file.nativePath;
+						settingData.fileName = file.name;
+					}
+					if(file){
+						settingData.filePath = file.nativePath;
+						settingData.fileName = file.name;
+					}else{
+						settingData.fileName = settingData.fileName;
+						settingData.filePath = File.applicationDirectory.resolvePath(settingData.fileName).nativePath;
+					}
+					settingData.companySymbolName = comSymbolName.text;
+					settingData.companyMotionStartFrame = int(comStartFrame.text);
+					settingData.companyMotionFinishFrame = int(comLastFrame.text);
+					
+					settingData.togetherSymbolName = togetherSymbolName.text;
+					settingData.togetherMotionStartFrame = int(togetherStartFrame.text);
+					settingData.togetherMotionFinishFrame = int(togetherLastFrame.text);
+					
+					settingData.followerSymbolName = followerSymbolName.text;
+					settingData.followerMotionStartFrame = int(followerStartFrame.text);
+					settingData.followerMotionFinishFrame = int(followerLastFrame.text);
+					
+					settingData.trustedSymbolName = trustedSymbolName.text;
+					settingData.trustedMotionStartFrame = int(trustedStartFrame.text);
+					settingData.trustedMotionFinishFrame = int(trustedLastFrame.text);
+					
+					settingData.flashPath = flashPath.text;
+					settingData.psPath = psPath.text.substring(0, psPath.text.lastIndexOf("\\") + 1);
+					
+					settingData.companyLayer = comLayer.text;
+					settingData.togetherLayer = togetherLayer.text;
+					settingData.followerLayer = followerLayer.text;
+					settingData.trustedLayer = trustedLayer.text;
+					
+					ComCenter.app.setTemplatePath(settingData);
+					file = null;
+				}
+			}
+			
+			protected function titlewindow1_initializeHandler(event:FlexEvent):void
+			{
+				if(ComCenter.settingData){
+					filePath = File.applicationDirectory.resolvePath(ComCenter.settingData.fileName).nativePath;
+					companySymbol = ComCenter.settingData.companySymbolName;
+					companyStart = ComCenter.settingData.companyMotionStartFrame + "";
+					companyFinish = ComCenter.settingData.companyMotionFinishFrame + "";
+					
+					togetherSymbol = ComCenter.settingData.togetherSymbolName;
+					togetherStart = ComCenter.settingData.togetherMotionStartFrame + "";
+					togetherFinish = ComCenter.settingData.togetherMotionFinishFrame + "";
+					
+					followSymbol = ComCenter.settingData.followerSymbolName;
+					followStart = ComCenter.settingData.followerMotionStartFrame + "";
+					followFinish = ComCenter.settingData.followerMotionFinishFrame + "";
+					
+					trustedSymbol = ComCenter.settingData.trustedSymbolName;
+					trustedStart = ComCenter.settingData.trustedMotionStartFrame + "";
+					trustedFinish = ComCenter.settingData.trustedMotionFinishFrame + "";
+					
+					flashPathString = ComCenter.settingData.flashPath;
+					psPathString = ComCenter.settingData.psPath;
+					
+					companyLayerName = ComCenter.settingData.companyLayer;
+					togetherLayerName = ComCenter.settingData.togetherLayer;
+					followLayerName = ComCenter.settingData.followerLayer;
+					trustedLayerName = ComCenter.settingData.trustedLayer;
+				}
+			}
+			
+			protected function flashBtn_clickHandler(event:MouseEvent):void
+			{
+				var flashFile:File = File.desktopDirectory;
+				flashFile.addEventListener(Event.SELECT, flashFile_onSelectedHandler);
+				flashFile.browse([new FileFilter("*.exe", "*.exe")]);
+			}
+			
+			private function flashFile_onSelectedHandler(event:Event):void
+			{
+				var flashFile:File = event.target as File;
+				flashFile.removeEventListener(Event.SELECT, flashFile_onSelectedHandler);
+				flashPath.text = flashFile.nativePath;
+			}
+			
+			protected function psBtn_clickHandler(event:MouseEvent):void
+			{
+				var psFile:File = File.desktopDirectory;
+				psFile.addEventListener(Event.SELECT, psFile_onSelectedHandler);
+				psFile.browse([new FileFilter("*.exe", "*.exe")]);
+			}
+			
+			private function psFile_onSelectedHandler(event:Event):void
+			{
+				var psFile:File = event.target as File;
+				psFile.removeEventListener(Event.SELECT, psFile_onSelectedHandler);
+				psPath.text = psFile.nativePath;
+			}
+			
+		]]>
+	</fx:Script>
+	
+	<fx:Declarations>
+		<mx:StringValidator id="comSymbolNameValid" source="{comSymbolName}" required="true" requiredFieldError="公司企业元件名不能为空!" property="text" />
+		<mx:StringValidator id="pathValid" source="{pathTxt}" required="true" requiredFieldError="模板路径不能为空!" property="text" />
+		<mx:StringValidator id="comStartValid" source="{comStartFrame}" required="true" requiredFieldError="公司企业补间动画起始帧不能为空!" property="text" />
+		<mx:StringValidator id="comLastValid" source="{comLastFrame}" required="true" requiredFieldError="公司企业补间动画终止帧不能为空!" property="text" />
+		
+		<mx:StringValidator id="togetherSymbolValid" source="{togetherSymbolName}" required="true" requiredFieldError="携手走过元件名不能为空!" property="text" />
+		<mx:StringValidator id="togetherStartValid" source="{togetherStartFrame}" required="true" requiredFieldError="携手走过补间动画起始帧不能为空!" property="text" />
+		<mx:StringValidator id="togetherLastValid" source="{togetherLastFrame}" required="true" requiredFieldError="携手走过补间动画终止帧不能为空!" property="text" />
+		
+		<mx:StringValidator id="followerSymbolValid" source="{followerSymbolName}" required="true" requiredFieldError="买家关注元件名不能为空!" property="text" />
+		<mx:StringValidator id="followerStartValid" source="{followerStartFrame}" required="true" requiredFieldError="买家关注补间动画起始帧不能为空!" property="text" />
+		<mx:StringValidator id="followerLastValid" source="{followerLastFrame}" required="true" requiredFieldError="买家关注补间动画终止帧不能为空!" property="text" />
+		
+		<mx:StringValidator id="trustedSymbolValid" source="{trustedSymbolName}" required="true" requiredFieldError="买家信任元件名不能为空!" property="text" />
+		<mx:StringValidator id="trustedStartValid" source="{trustedStartFrame}" required="true" requiredFieldError="买家信任补间动画起始帧不能为空!" property="text" />
+		<mx:StringValidator id="trustedLastValid" source="{trustedLastFrame}" required="true" requiredFieldError="买家信任补间动画终止帧不能为空!" property="text" />
+		
+		<mx:StringValidator id="flashPathValid" source="{flashPath}" required="true" requiredFieldError="Flash CS3路径不能为空!" property="text" />
+		<mx:StringValidator id="psPathValid" source="{psPath}" required="true" requiredFieldError="PhotoShop CS6路径不能为空!" property="text" />
+		
+		<mx:StringValidator id="comLayerValid" source="{comLayer}" required="true" requiredFieldError="公司企业所在层名称不能为空!" property="text" />
+		<mx:StringValidator id="togetherLayerValid" source="{togetherLayer}" required="true" requiredFieldError="携手走过所在层不能为空!" property="text" />
+		<mx:StringValidator id="followerLayerValid" source="{followerLayer}" required="true" requiredFieldError="买家关注所在层名称不能为空!" property="text" />
+		<mx:StringValidator id="trustedLayerValid" source="{trustedLayer}" required="true" requiredFieldError="买家信任所在层不能为空!" property="text" />
+	</fx:Declarations>
+	<s:VGroup width="390" horizontalAlign="center">
+		<s:VGroup horizontalAlign="center">
+			<mx:Form id="fm">
+				<mx:FormItem label="Flash CS3所在目录:" required="true">
+					<s:HGroup verticalAlign="middle" horizontalAlign="center" width="100%">
+						<s:TextInput id="flashPath" click="flashBtn_clickHandler(event)"
+									 editable="false" text="{flashPathString}"/>
+						<s:Button id="flashBtn" label="选择..." click="flashBtn_clickHandler(event)" />
+					</s:HGroup>
+				</mx:FormItem>
+				<mx:FormItem label="PhotoShop CS6所在目录:" required="true">
+					<s:HGroup verticalAlign="middle" horizontalAlign="center" width="100%">
+						<s:TextInput id="psPath" click="psBtn_clickHandler(event)"
+									 editable="false" text="{psPathString}"/>
+						<s:Button id="psBtn" label="选择..." click="psBtn_clickHandler(event)" />
+					</s:HGroup>
+				</mx:FormItem>
+				<mx:FormItem label="模板路径:" required="true">
+					<s:HGroup verticalAlign="middle" horizontalAlign="center" width="100%">
+						<s:TextInput id="pathTxt" click="pathTxt_clickHandler(event)"
+									 editable="false" text="{filePath}"/>
+						<s:Button id="fileBtn" label="选择..." click="fileBtn_clickHandler(event)" />
+					</s:HGroup>
+				</mx:FormItem>
+				<mx:FormItem label="公司企业库元件名:" color="#000000" errorColor="#FF0000"
+							errorString="公司企业元件名不能为空!" required="true">
+					<s:TextInput id="comSymbolName" text="{companySymbol}" />
+				</mx:FormItem>
+				<mx:FormItem label="公司企业所在层名称" errorColor="#FF0000" required="true">
+					<s:TextInput id="comLayer" text="{companyLayerName}" />
+				</mx:FormItem>
+				<mx:FormItem label="公司企业补间动画起始帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="comStartFrame" restrict="0-9" text="{companyStart}" />
+				</mx:FormItem>
+				<mx:FormItem label="公司企业补间动画终止帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="comLastFrame" restrict="0-9" text="{companyFinish}" />
+				</mx:FormItem>
+				
+				<mx:HRule width="100%" />
+				
+				<mx:FormItem label="携手走过库元件名:" color="#000000" errorColor="#FF0000"
+							 errorString="携手走过元件名不能为空!" required="true">
+					<s:TextInput id="togetherSymbolName" text="{togetherSymbol}" />
+				</mx:FormItem>
+				<mx:FormItem label="携手走过所在层名称" errorColor="#FF0000" required="true">
+					<s:TextInput id="togetherLayer" text="{togetherLayerName}" />
+				</mx:FormItem>
+				<mx:FormItem label="携手走过补间动画起始帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="togetherStartFrame" restrict="0-9" text="{togetherStart}" />
+				</mx:FormItem>
+				<mx:FormItem label="携手走过补间动画终止帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="togetherLastFrame" restrict="0-9" text="{togetherFinish}" />
+				</mx:FormItem>
+				
+				<mx:HRule width="100%" />
+				
+				<mx:FormItem label="买家关注库元件名:" color="#000000" errorColor="#FF0000"
+							 errorString="买家关注元件名不能为空!" required="true">
+					<s:TextInput id="followerSymbolName" text="{followSymbol}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家关注所在层名称" errorColor="#FF0000" required="true">
+					<s:TextInput id="followerLayer" text="{followLayerName}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家关注补间动画起始帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="followerStartFrame" restrict="0-9" text="{followStart}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家关注补间动画终止帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="followerLastFrame" restrict="0-9" text="{followFinish}" />
+				</mx:FormItem>
+				
+				<mx:HRule width="100%" />
+				
+				<mx:FormItem label="买家信任库元件名:" color="#000000" errorColor="#FF0000"
+							 errorString="买家信任元件名不能为空!" required="true">
+					<s:TextInput id="trustedSymbolName" text="{trustedSymbol}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家信任所在层名称" errorColor="#FF0000" required="true">
+					<s:TextInput id="trustedLayer" text="{trustedLayerName}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家信任补间动画起始帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="trustedStartFrame" restrict="0-9" text="{trustedStart}" />
+				</mx:FormItem>
+				<mx:FormItem label="买家信任补间动画终止帧" errorColor="#FF0000" required="true">
+					<s:TextInput id="trustedLastFrame" restrict="0-9" text="{trustedFinish}" />
+				</mx:FormItem>
+			</mx:Form>
+		</s:VGroup>
+		<s:Button label="确定" id="enterBtn" click="enterBtn_clickHandler(event)" />
+	</s:VGroup>
+</mx:TitleWindow>

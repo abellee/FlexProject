@@ -1,0 +1,31 @@
+<config>
+	<flashPath>D:\Program Files (x86)\Adobe\Adobe Flash CS3\Flash.exe</flashPath>
+	<psPath>D:\Program Files\Adobe\Adobe Photoshop CS6 (64 Bit)\</psPath>
+	<template>
+		<fileName>定-400-黄展招牌flash.fla</fileName>
+		<company>
+			<layerName>fds</layerName>
+			<symbolName>sfd</symbolName>
+			<startFrame>43</startFrame>
+			<finishFrame>43</finishFrame>
+		</company>
+		<together>
+			<layerName>fds</layerName>
+			<symbolName>fsd</symbolName>
+			<startFrame>43</startFrame>
+			<finishFrame>43</finishFrame>
+		</together>
+		<follower>
+			<layerName>dsf</layerName>
+			<symbolName>dfsd</symbolName>
+			<startFrame>43</startFrame>
+			<finishFrame>42</finishFrame>
+		</follower>
+		<trusted>
+			<layerName>fsd</layerName>
+			<symbolName>fd</symbolName>
+			<startFrame>43</startFrame>
+			<finishFrame>54</finishFrame>
+		</trusted>
+	</template>
+</config>
