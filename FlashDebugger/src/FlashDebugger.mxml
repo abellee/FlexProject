@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:WindowedApplication xmlns:fx="http://ns.adobe.com/mxml/2009"
+					   xmlns:s="library://ns.adobe.com/flex/spark"
+					   xmlns:mx="library://ns.adobe.com/flex/mx"
+					   xmlns:controls="flexlib.controls.*"
+					   xmlns:treeGridClasses="flexlib.controls.treeGridClasses.*"
+					   width="100%" height="100%" minWidth="800" minHeight="600"
+					   close="windowedapplication1_closeHandler(event)"
+					   closing="windowedapplication1_closingHandler(event)"
+					   creationComplete="windowedapplication1_creationCompleteHandler(event)"
+					   initialize="windowedapplication1_initializeHandler(event)"
+					   resize="windowedapplication1_resizeHandler(event)" showStatusBar="false" xmlns:local="*">
+	<fx:Style>
+		@namespace s "library://ns.adobe.com/flex/spark";
+		@namespace mx "library://ns.adobe.com/flex/mx";
+		mx|Alert{
+			fontSize:14;
+		}
+	</fx:Style>
+	
+	<fx:Script>
+		<![CDATA[
+			import mx.collections.ArrayCollection;
+			import mx.controls.Alert;
+			import mx.events.DataGridEvent;
+			import mx.events.FlexEvent;
+			import mx.events.ListEvent;
+			import mx.events.ResizeEvent;
+			import mx.events.TreeEvent;
+			import mx.managers.PopUpManager;
+			
+			private var _clientNameInput:ClientNameInput = new ClientNameInput();
+			private var _localConnection:LocalConnection = new LocalConnection();
+			
+			[Bindable]
+			private var dataProviderXMLList:XMLList;
+			
+			private var file:File;
+			
+			private static const NORMAL:String = "normal";
+			private static const PAUSE:String = "pause";
+			
+			private var curState:String = NORMAL;
+			
+			private var curSelectedItem:XML;
+			
+			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
+			{
+				PopUpManager.addPopUp(_clientNameInput, this, true);
+				PopUpManager.centerPopUp(_clientNameInput);
+				_clientNameInput.addEventListener(CustomEvent.CLOSE_PANEL, clientNameInput_closeHandler);
+				if(Capabilities.os.toLowerCase().indexOf("mac") >= 0){
+					Global.logBasePath = Config.logBasePathForMac.replace("username", Utils.currentOSUser());
+				}else{
+					Global.logBasePath = Config.logBasePathForWin.replace("username", Utils.currentOSUser());
+				}
+				file = new File(Global.logBasePath + "flashlog.txt");
+			}
+			
+			protected function windowedapplication1_initializeHandler(event:FlexEvent):void
+			{
+				this.nativeWindow.x = (Screen.mainScreen.visibleBounds.width - 800) / 2;
+				this.nativeWindow.y = (Screen.mainScreen.visibleBounds.height - 600) / 2;
+				this.nativeWindow.width = 800;
+				this.nativeWindow.height = 600;
+				
+				_localConnection.allowDomain("*");
+				_localConnection.allowInsecureDomain("*");
+				_localConnection.client = this;
+				_localConnection.connect("_server");
+				_localConnection.addEventListener(StatusEvent.STATUS, onStatus);
+				_localConnection.addEventListener(AsyncErrorEvent.ASYNC_ERROR, onAsyncError);
+			}
+			
+			protected function windowedapplication1_resizeHandler(event:ResizeEvent):void
+			{
+				if(_clientNameInput && _clientNameInput.isPopUp){
+					PopUpManager.centerPopUp(_clientNameInput);
+				}
+			}
+			
+			protected function windowedapplication1_closeHandler(event:Event):void
+			{
+				
+			}
+			
+			protected function windowedapplication1_closingHandler(event:Event):void
+			{
+				
+			}
+			
+			protected function clientNameInput_closeHandler(event:CustomEvent):void
+			{
+				_clientNameInput.removeEventListener(CustomEvent.CLOSE_PANEL, clientNameInput_closeHandler);
+				if(_clientNameInput && _clientNameInput.isPopUp){
+					PopUpManager.removePopUp(_clientNameInput);
+					addEventListener(Event.ENTER_FRAME, onEnter);
+				}
+				_localConnection.send(Global.clientName, "retrieveAllProperties", "onAllPropertiesBack");
+			}
+			
+			protected function onStatus(event:StatusEvent):void
+			{
+				if(event.level == "error"){
+					Alert.show("连接失败!", "Error:", Alert.OK, this);
+				}else{
+					
+				}
+			}
+			
+			protected function onAsyncError(event:AsyncErrorEvent):void
+			{
+				Alert.show(event.text, "AsyncError:", Alert.OK, this);
+			}
+			
+			protected function treegrid1_itemEditBeginningHandler(event:ListEvent):void
+			{
+				var data:XML = treeGrid.selectedItem as XML;
+				curSelectedItem = data;
+				getDataByXML(data);
+				if(!data.@isFinal.toString()) event.preventDefault();
+			}
+			
+			protected function onEnter(event:Event):void
+			{
+				if(curState == PAUSE) return;
+				var fileStream:FileStream = new FileStream();
+				fileStream.open(file, FileMode.READ);
+				fileStream.position = 0;
+				output.text = fileStream.readMultiByte(fileStream.bytesAvailable, "gb2312");
+				output.scroller.verticalScrollBar.value = output.scroller.verticalScrollBar.maximum;
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				output.text = "";
+				output.scroller.verticalScrollBar.value = output.scroller.verticalScrollBar.maximum;
+			}
+			
+			protected function button2_clickHandler(event:MouseEvent):void
+			{
+				if(curState == PAUSE){
+					curState = NORMAL;
+					(event.target as Button).label = "暂停";
+				}else{
+					curState = PAUSE;
+					(event.target as Button).label = "恢复";
+				}
+			}
+			
+			private function clearChildren(xml:XML):void
+			{
+				if(!xml) return;
+				for each(var xx:XML in xml.children()){
+					delete xml[xx.localName()];
+				}
+			}
+			
+			private function itemOpening_handler(event:TreeEvent):void
+			{
+				var data:XML = event.item as XML;
+				curSelectedItem = data;
+				getDataByXML(data);
+			}
+			
+			private function getDataByXML(data:XML):void
+			{
+				if(!data.children().length()) return;
+				var arr:Array = [];
+				var parentNode:XML = data.parent();
+				while(parentNode && parentNode.localName() != "root"){
+					arr.unshift(parentNode.@name.toString());
+					parentNode = parentNode.parent();
+				}
+				arr.push(data.@name.toString());
+				_localConnection.send(Global.clientName, "getValueOfParam", arr, "onValueOfNode");
+			}
+			
+			protected function button3_clickHandler(event:MouseEvent):void
+			{
+				_localConnection.send(Global.clientName, "retrieveAllProperties", "onAllPropertiesBack");
+			}
+			
+			/*********
+			 * 客户端接口
+			 */
+			public function onAllPropertiesBack(xml:XML):void
+			{
+				var x:XML = new XML("<root></root>");
+				x.appendChild(xml.variable);
+				x.appendChild(xml.accessor);
+				for each(var node:XML in x.children()){
+					if(node.children()){
+						delete node.metadata;
+					}
+					node.appendChild(new XML("<node name='' />"));
+				}
+				dataProviderXMLList = x.children();
+			}
+			
+			public function onValueOfNode(obj:Object):void
+			{
+				if(obj is XML){
+					var xml:XML = curSelectedItem;
+					//trace((obj as XML).toXMLString());
+					clearChildren(xml);
+					for each(var node:XML in (obj as XML).children()){
+						if(node.children()){
+							delete node.metadata;
+						}
+						if(!node.@isFinal.toString() || node.@isFinal.toString() == "false"){
+							node.appendChild(new XML("<node name='' />"));
+						}
+//						switch(node.@type.toLowerCase()){
+//							case "int":
+//							case "uint":
+//							case "number":
+//							case "boolean":
+//							case "null":
+//							case "void":
+//							case "string":
+//							case "function":
+//							case "date":
+//							case "error":
+//							case "event":
+//							case "regexp":
+//								node.appendChild(new XML("<node name='' />"));
+//								break;
+//							default:
+//								node.appendChild(new XML("<node name='' />"));
+//								break;
+//						}
+					}
+					xml.appendChild((obj as XML).children());
+				}
+			}
+			
+			protected function treeGrid_itemEditEndHandler(event:ListEvent):void
+			{
+				event.preventDefault();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		
+	</fx:Declarations>
+	<mx:Box paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" width="100%" height="100%">
+		<mx:HDividedBox id="main" width="100%" height="100%">
+			<s:VGroup width="100%" height="100%">
+				<mx:Tree width="100%" height="100%" id="treeGrid" dataProvider="{dataProviderXMLList}" editable="true"
+						 itemEditBeginning="treegrid1_itemEditBeginningHandler(event)" doubleClickEnabled="false" labelField="@name"
+						 itemOpen="itemOpening_handler(event)" editorUsesEnterKey="false" itemEditEnd="treeGrid_itemEditEndHandler(event)" />
+				<s:Button label="刷新" click="button3_clickHandler(event)" />
+			</s:VGroup>			
+			
+			<s:VGroup width="100%" height="100%">
+				<s:TextArea width="100%" height="100%" id="output" editable="false" fontSize="12" />
+				<s:HGroup width="100%" height="30" horizontalAlign="right" verticalAlign="middle">
+					<s:Button label="清空" click="button1_clickHandler(event)" />
+					<s:Button label="暂停" click="button2_clickHandler(event)" />
+				</s:HGroup>
+			</s:VGroup>
+		</mx:HDividedBox>
+	</mx:Box>
+</s:WindowedApplication>

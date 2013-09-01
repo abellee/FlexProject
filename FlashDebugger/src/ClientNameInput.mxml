@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<s:TitleWindow xmlns:fx="http://ns.adobe.com/mxml/2009" 
+			   xmlns:s="library://ns.adobe.com/flex/spark" 
+			   xmlns:mx="library://ns.adobe.com/flex/mx"
+			   width="400" height="200"
+			   close="titlewindow1_closeHandler(event)"
+			   creationComplete="titlewindow1_creationCompleteHandler(event)" keyDown="titlewindow1_keyDownHandler(event)">
+	<fx:Script>
+		<![CDATA[
+			import mx.controls.Alert;
+			import mx.events.CloseEvent;
+			import mx.events.FlexEvent;
+			
+			import spark.filters.GlowFilter;
+			
+			protected function titlewindow1_closeHandler(event:CloseEvent):void
+			{
+				var str:String = clientName.text.replace(/\s+/g, "");
+				if(str == ""){
+					Alert.show("客户端链接名不能为空!", "Error:", Alert.OK, this);
+					return;
+				}
+				this.dispatchEvent(new CustomEvent(CustomEvent.CLOSE_PANEL));
+			}
+			
+			protected function button1_clickHandler(event:MouseEvent):void
+			{
+				var str:String = clientName.text.replace(/\s+/g, "");
+				if(str == ""){
+					Alert.show("客户端链接名不能为空!", "Error:", Alert.OK, this);
+					return;
+				}
+				Global.clientName = str;
+				clientName.text = "";
+				this.dispatchEvent(new CustomEvent(CustomEvent.CLOSE_PANEL));
+			}
+			
+			protected function titlewindow1_creationCompleteHandler(event:FlexEvent):void
+			{
+				this.filters = [new spark.filters.GlowFilter(0x000000, 0.2, 10, 10, 2, 3)];
+			}
+			
+			protected function titlewindow1_keyDownHandler(event:KeyboardEvent):void
+			{
+				if(event.keyCode == Keyboard.ENTER){
+					connectBtn.dispatchEvent(new MouseEvent(MouseEvent.CLICK));
+				}
+			}
+			
+			protected function connectBtn_creationCompleteHandler(event:FlexEvent):void
+			{
+				clientName.setFocus();
+			}
+			
+		]]>
+	</fx:Script>
+	<fx:Declarations>
+		<!-- Place non-visual elements (e.g., services, value objects) here -->
+	</fx:Declarations>
+	<s:Label x="129" y="32" fontSize="15" text="请输入客户端链接名:"/>
+	<s:TextInput id="clientName" x="101" y="64" width="197" fontSize="12"/>
+	<s:Button x="166" y="104" width="65" label="连 接" fontSize="12" click="button1_clickHandler(event)" id="connectBtn"
+			  creationComplete="connectBtn_creationCompleteHandler(event)" />
+</s:TitleWindow>
