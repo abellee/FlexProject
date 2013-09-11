@@ -20,6 +20,11 @@
 	
 	<fx:Script>
 		<![CDATA[
+			
+			/*TODO:添加局域网支持。
+			1：主控端显示与被控端的连接状态
+			2：新建一个窗口显示来自局域网内的数据*/
+			
 			import mx.collections.ArrayCollection;
 			import mx.controls.Alert;
 			import mx.events.DataGridEvent;
@@ -43,6 +48,8 @@
 			private var curState:String = NORMAL;
 			
 			private var curSelectedItem:XML;
+			
+			private var fileStream:FileStream = new FileStream();
 			
 			protected function windowedapplication1_creationCompleteHandler(event:FlexEvent):void
 			{
@@ -124,17 +131,20 @@
 			protected function onEnter(event:Event):void
 			{
 				if(curState == PAUSE) return;
-				var fileStream:FileStream = new FileStream();
 				fileStream.open(file, FileMode.READ);
 				fileStream.position = 0;
-				output.text = fileStream.readMultiByte(fileStream.bytesAvailable, "gb2312");
-				output.scroller.verticalScrollBar.value = output.scroller.verticalScrollBar.maximum;
+				var content:String = fileStream.readMultiByte(fileStream.bytesAvailable, "gb2312");
+				output.htmlText = content;
+				output.verticalScrollPosition = output.maxVerticalScrollPosition;
 			}
 			
 			protected function button1_clickHandler(event:MouseEvent):void
 			{
-				output.text = "";
-				output.scroller.verticalScrollBar.value = output.scroller.verticalScrollBar.maximum;
+				output.htmlText = "";
+				fileStream.open(file, FileMode.WRITE);
+				fileStream.writeUTFBytes("");
+				fileStream.close();
+				output.verticalScrollPosition = output.maxVerticalScrollPosition;
 			}
 			
 			protected function button2_clickHandler(event:MouseEvent):void
@@ -235,6 +245,12 @@
 				}
 			}
 			
+			public function uncaughtErrorTrace(str:String):void
+			{
+				globalError.htmlText += "<font color='#FF0000'>" + str + "</font>";
+				globalError.verticalScrollPosition = globalError.maxVerticalScrollPosition;
+			}
+			
 			protected function treeGrid_itemEditEndHandler(event:ListEvent):void
 			{
 				event.preventDefault();
@@ -255,11 +271,12 @@
 			</s:VGroup>			
 			
 			<s:VGroup width="100%" height="100%">
-				<s:TextArea width="100%" height="100%" id="output" editable="false" fontSize="12" />
+				<mx:TextArea width="100%" height="424" id="output" editable="false" fontSize="12" />
 				<s:HGroup width="100%" height="30" horizontalAlign="right" verticalAlign="middle">
 					<s:Button label="清空" click="button1_clickHandler(event)" />
 					<s:Button label="暂停" click="button2_clickHandler(event)" />
 				</s:HGroup>
+				<mx:TextArea width="100%" height="100%" id="globalError" editable="false" fontSize="12" />
 			</s:VGroup>
 		</mx:HDividedBox>
 	</mx:Box>
